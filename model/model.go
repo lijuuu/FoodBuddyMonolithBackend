@@ -85,4 +85,5 @@ type Restaurant struct{
 	Name        string `validate:"required" json:"name"`
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
+	Blocked bool 
 }

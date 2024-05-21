@@ -29,15 +29,15 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	//validate the struct body
-	validate := validator.New()
-	err := validate.Struct(form)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to validate the struct body",
-			"ok":    false,
-		})
-		return
-	}
+	// validate := validator.New()
+	// err := validate.Struct(form)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "failed to validate the struct body",
+	// 		"ok":    false,
+	// 	})
+	// 	return
+	// }
 
 	var user model.User
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", form.Email).First(&user)
@@ -57,14 +57,14 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	    //check is the user is blocked by the admin
-		if user.Blocked{
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "user is restricted from accessing, blocked by the administrator","ok": false})
-			return
-		}
+	//check is the user is blocked by the admin
+	if user.Blocked {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user is restricted from accessing, blocked by the administrator", "ok": false})
+		return
+	}
 
 	//get the hash and compare it with password from body
-	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(form.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(form.Password))
 	if err != nil {
 		//passwords do not match
 		c.JSON(http.StatusBadRequest, gin.H{

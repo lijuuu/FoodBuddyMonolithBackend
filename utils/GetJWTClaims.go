@@ -13,7 +13,7 @@ import (
 // GetJWTEmailClaim attempts to extract the email claim from a JWT token.
 func GetJWTEmailClaim(c *gin.Context) {
 	var jwttoken struct {
-		JWTToken string `json:"jwttoken"`
+		JWTToken string `json:"token"`
 	}
 
 	if err := c.BindJSON(&jwttoken); err != nil {

@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func GetCategoryList(c *gin.Context) {
@@ -23,7 +22,7 @@ func GetCategoryList(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"categorylist": category,
-		"ok":       true,
+		"ok":           true,
 	})
 }
 
@@ -38,15 +37,15 @@ func AddCategory(c *gin.Context) {
 	}
 
 	//validate the struct body
-	validate := validator.New()
-	err := validate.Struct(category)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to validate the struct body",
-			"ok":    false,
-		})
-		return
-	}
+	// validate := validator.New()
+	// err := validate.Struct(category)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "failed to validate the struct body",
+	// 		"ok":    false,
+	// 	})
+	// 	return
+	// }
 
 	// Check if the category is already present
 	if err := database.DB.Where("name =?", category.Name).Find(&existingcategory).Error; err != nil {
@@ -57,14 +56,13 @@ func AddCategory(c *gin.Context) {
 		return
 	}
 
-	if category.Name == existingcategory.Name{
+	if category.Name == existingcategory.Name {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "category already exists",
 			"ok":    false,
 		})
 		return
 	}
-
 
 	category.ID = 0
 	if err := database.DB.Create(&category); err != nil {
@@ -100,6 +98,23 @@ func EditCategory(c *gin.Context) {
 		})
 		return
 	}
+
+	if err := database.DB.Where("name =?", category.Name).Find(&existingcategory).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "error while checking category name",
+			"ok":    false,
+		})
+		return
+	}
+
+	if category.Name == existingcategory.Name {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "category already exists",
+			"ok":    false,
+		})
+		return
+	}
+
 
 	if err := database.DB.Updates(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -146,7 +161,7 @@ func DeleteCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusInternalServerError, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully  deleted the category",
 		"ok":      true,
 	})

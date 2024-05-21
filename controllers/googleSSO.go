@@ -76,6 +76,10 @@ func GoogleHandleCallback(c *gin.Context) {
         Blocked: false,
     }
 
+    if newUser.Name == ""{
+        newUser.Name = User.Email
+    }
+
     // Check if the user already exists
     var existingUser model.User
     if err := database.DB.Where("email =? AND deleted_at IS NULL", newUser.Email).First(&existingUser).Error; err!= nil {
