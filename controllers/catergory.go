@@ -11,6 +11,7 @@ import (
 
 func GetCategoryList(c *gin.Context) {
 	var category []model.Category
+	
 
 	tx := database.DB.Select("*").Find(&category)
 	if tx.Error != nil {
@@ -24,6 +25,22 @@ func GetCategoryList(c *gin.Context) {
 		"categorylist": category,
 		"ok":           true,
 	})
+}
+
+func GetCategoryProductList(c *gin.Context) {
+    var categories []model.Category
+    if err := database.DB.Preload("Products").Find(&categories).Error; err!= nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "error": "failed to retrieve categories",
+            "ok":    false,
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "categorylist": categories,
+        "ok":          true,
+    })
 }
 
 func AddCategory(c *gin.Context) {

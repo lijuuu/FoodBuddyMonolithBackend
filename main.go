@@ -44,6 +44,7 @@ func main() {
 
 	//admin category management
 	router.GET("/api/v1/admin/categories/all", controllers.GetCategoryList)//pass
+	router.GET("/api/v1/admin/categories/products/all", controllers.GetCategoryProductList)//pass
 	router.POST("/api/v1/admin/categories/add", controllers.AddCategory)//pass
 	router.POST("/api/v1/admin/categories/edit", controllers.EditCategory)//pass
 	router.GET("/api/v1/admin/categories/delete/:categoryid", controllers.DeleteCategory)//pass
@@ -56,6 +57,7 @@ func main() {
 
 	//admin category management
 	router.GET("/api/v1/admin/restaurants/all", controllers.GetRestaurants)
+	router.GET("/api/v1/admin/restaurants/products/:restaurantid", controllers.GetRestaurantProductsByID)
 	router.POST("/api/v1/admin/restaurants/add", controllers.AddRestaurant)
 	router.POST("/api/v1/admin/restaurants/edit", controllers.EditRestaurant)
 	router.GET("/api/v1/admin/restaurants/delete/:restaurantid", controllers.DeleteRestaurant)

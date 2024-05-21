@@ -26,6 +26,32 @@ func GetRestaurants(c *gin.Context) {
 	})
 }
 
+func GetRestaurantProductsByID(c *gin.Context) {
+    restaurantIDStr := c.Param("restaurantid")
+    restaurantID, err := strconv.Atoi(restaurantIDStr)
+    if err!= nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "Invalid restaurant ID",
+            "ok":    false,
+        })
+        return
+    }
+
+    var products []model.Product
+    if err := database.DB.Where("restaurant_id =?", restaurantID).Find(&products).Error; err!= nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Failed to retrieve products",
+            "ok":    false,
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "products": products,
+        "ok":      true,
+    })
+}
+
 func AddRestaurant(c *gin.Context) {
 	//bind json
 	var restaurant model.Restaurant
