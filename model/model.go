@@ -77,6 +77,9 @@ type Product struct {
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	Price       uint   `validate:"required" json:"price"`
 	Stock       uint   `validate:"required" json:"stock"`
+	//totalorders till now
+	//avg rating
+	//veg or non veg, validate this
 }
 
 type Restaurant struct{

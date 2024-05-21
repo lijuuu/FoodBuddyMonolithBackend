@@ -51,13 +51,14 @@ func main() {
 
 	//admin product management
 	router.GET("/api/v1/admin/products/all", controllers.GetProductList)//pass
+	//all veg products - add a field in model.products
+	router.GET("/api/v1/admin/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID)
 	router.POST("/api/v1/admin/products/add", controllers.AddProduct)                 //productid = 0 ;add product only if doesnt exist on the the tables,and only with the valid category
 	router.POST("/api/v1/admin/products/edit", controllers.EditProduct)               //productid = 0,only allow values from categrory
 	router.GET("/api/v1/admin/products/delete/:productid", controllers.DeleteProduct) //check if the product is deleted
 
 	//admin category management
 	router.GET("/api/v1/admin/restaurants/all", controllers.GetRestaurants)
-	router.GET("/api/v1/admin/restaurants/products/:restaurantid", controllers.GetRestaurantProductsByID)
 	router.POST("/api/v1/admin/restaurants/add", controllers.AddRestaurant)
 	router.POST("/api/v1/admin/restaurants/edit", controllers.EditRestaurant)
 	router.GET("/api/v1/admin/restaurants/delete/:restaurantid", controllers.DeleteRestaurant)
