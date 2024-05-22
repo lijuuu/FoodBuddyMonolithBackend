@@ -12,12 +12,15 @@ const (
 )
 
 type EnvVariables struct {
-	ClientID     string
-	ClientSecret string
-	DBUser       string
-	DBPassword   string
-	DBName       string
-	JWTSecret    string
+	ClientID            string
+	ClientSecret        string
+	DBUser              string
+	DBPassword          string
+	DBName              string
+	JWTSecret           string
+	CloudinaryCloudName string
+	CloudinaryAccessKey string
+	CloudinarySecretKey string
 }
 
 type User struct {
@@ -69,24 +72,24 @@ type Category struct {
 
 type Product struct {
 	gorm.Model
-	ID          uint   `validate:"required"`
-	RestaurantID uint `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"` 
-	CategoryID  uint   `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"` 
-	Name        string `validate:"required" json:"name"`
-	Description string `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price       uint   `validate:"required" json:"price"`
-	Stock       uint   `validate:"required" json:"stock"`
+	ID           uint     `validate:"required"`
+	RestaurantID uint     `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
+	CategoryID   uint     `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
+	Name         string   `validate:"required" json:"name"`
+	Description  string   `gorm:"column:description" validate:"required" json:"description"`
+	ImageURL     []string `gorm:"column:image_url" validate:"required" json:"image_url"`
+	Price        uint     `validate:"required" json:"price"`
+	Stock        uint     `validate:"required" json:"stock"`
 	//totalorders till now
 	//avg rating
 	//veg or non veg, validate this
 }
 
-type Restaurant struct{
+type Restaurant struct {
 	gorm.Model
 	ID          uint   `validate:"required"`
 	Name        string `validate:"required" json:"name"`
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Blocked bool 
+	Blocked     bool
 }
