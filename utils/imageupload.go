@@ -78,6 +78,7 @@ func ImageUpload(c *gin.Context) {
 			return
 		}
 
+		fmt.Println(uploadResult)
 		uploadedURLs = append(uploadedURLs, uploadResult.SecureURL)
 	}
 
