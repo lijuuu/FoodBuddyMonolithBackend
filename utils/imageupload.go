@@ -66,8 +66,8 @@ func ImageUpload(c *gin.Context) {
 
 		// Define the upload parameters with the desired transformations
 		uploadParams := uploader.UploadParams{
-			Transformation: "w_300,h_300,c_fill", // Resize to 300x300 and crop to fill
-			Folder:         "your-folder-name",   // Optional: specify a folder in your S3 bucket
+			Transformation: "w_300,h_300,c_fill", 
+			Folder:         "foodbuddy",   
 		}
 
 		// Upload the file with transformation to Cloudinary
