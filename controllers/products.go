@@ -95,6 +95,8 @@ func AddProduct(c *gin.Context) {
 		return
 	}
 
+	
+
 	// Proceed with adding the product if all checks pass
 	if err := database.DB.Create(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
