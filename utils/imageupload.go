@@ -27,10 +27,8 @@ func ImageUpload(c *gin.Context) {
 		return
 	}
 
-	// Create a context
 	ctx := context.Background()
 
-	// Form data
 	form, err := c.MultipartForm()
 	if err != nil {
 		log.Printf("Failed to get multipart form: %v", err)
@@ -56,7 +54,7 @@ func ImageUpload(c *gin.Context) {
 		}
 		defer file.Close()
 
-		// Read the file into a buffer
+		// read the file into a buffer
 		buf := bytes.NewBuffer(nil)
 		if _, err := io.Copy(buf, file); err != nil {
 			log.Printf("Failed to read file: %v", err)
@@ -64,13 +62,13 @@ func ImageUpload(c *gin.Context) {
 			return
 		}
 
-		// Define the upload parameters with the desired transformations
+		// define the upload parameters with the desired transformations
 		uploadParams := uploader.UploadParams{
 			Transformation: "w_300,h_300,c_fill", 
 			Folder:         "foodbuddy",   
 		}
 
-		// Upload the file with transformation to Cloudinary
+		// upload the file with transformation to Cloudinary
 		uploadResult, err := cld.Upload.Upload(ctx, buf, uploadParams)
 		if err != nil {
 			log.Printf("Failed to upload file: %v", err)
@@ -86,6 +84,7 @@ func ImageUpload(c *gin.Context) {
 
 }
 
+//to check the file type 
 func isValidFormat(fileName string) bool {
 	ext := strings.ToLower(filepath.Ext(fileName))
 	return ext == ".jpg" || ext == ".jpeg" || ext == ".png"
