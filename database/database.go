@@ -31,7 +31,7 @@ func ConnectToDB() {
 
 func AutoMigrate() {
 	DB.AutoMigrate(&model.User{})
+	DB.AutoMigrate(&model.Restaurant{})
 	DB.AutoMigrate(&model.Category{})
 	DB.AutoMigrate(&model.Product{})
-	DB.AutoMigrate(&model.Restaurant{})
 }
