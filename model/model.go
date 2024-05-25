@@ -57,8 +57,8 @@ type GoogleResponse struct {
 }
 
 type LoginForm struct {
-    Email    string `form:"email" validate:"required,email" json:"email"`
-    Password string `form:"password" validate:"required" json:"password"`
+	Email    string `form:"email" validate:"required,email" json:"email"`
+	Password string `form:"password" validate:"required" json:"password"`
 }
 
 type Category struct {
@@ -74,14 +74,14 @@ type ImageSlice []string
 
 type Product struct {
 	gorm.Model
-	ID           uint     `validate:"required"`
-	RestaurantID uint     `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
-	CategoryID   uint     `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
-	Name         string   `validate:"required" json:"name"`
-	Description  string   `gorm:"column:description" validate:"required" json:"description"`
+	ID           uint   `validate:"required"`
+	RestaurantID uint   `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
+	CategoryID   uint   `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
+	Name         string `validate:"required" json:"name"`
+	Description  string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL     string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price        uint     `validate:"required" json:"price"`
-	Stock        uint     `validate:"required" json:"stock"`
+	Price        uint   `validate:"required" json:"price"`
+	Stock        uint   `validate:"required" json:"stock"`
 	//totalorders till now
 	//avg rating
 	//veg or non veg, validate this
@@ -94,4 +94,9 @@ type Restaurant struct {
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	Blocked     bool
+}
+
+type FavouriteProduct struct {
+	UserID    uint `validate:"required"`
+	ProductID uint `validate:"required"`
 }

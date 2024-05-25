@@ -27,29 +27,29 @@ func GetProductList(c *gin.Context) {
 }
 
 func GetProductsByRestaurantID(c *gin.Context) {
-    restaurantIDStr := c.Param("restaurantid")
-    restaurantID, err := strconv.Atoi(restaurantIDStr)
-    if err!= nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "Invalid restaurant ID",
-            "ok":    false,
-        })
-        return
-    }
+	restaurantIDStr := c.Param("restaurantid")
+	restaurantID, err := strconv.Atoi(restaurantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid restaurant ID",
+			"ok":    false,
+		})
+		return
+	}
 
-    var products []model.Product
-    if err := database.DB.Where("restaurant_id =?", restaurantID).Find(&products).Error; err!= nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "error": "Failed to retrieve products",
-            "ok":    false,
-        })
-        return
-    }
+	var products []model.Product
+	if err := database.DB.Where("restaurant_id =?", restaurantID).Find(&products).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve products",
+			"ok":    false,
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "products": products,
-        "ok":      true,
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"products": products,
+		"ok":       true,
+	})
 }
 
 func AddProduct(c *gin.Context) {
@@ -94,8 +94,6 @@ func AddProduct(c *gin.Context) {
 		})
 		return
 	}
-
-	
 
 	// Proceed with adding the product if all checks pass
 	if err := database.DB.Create(&product).Error; err != nil {
@@ -175,8 +173,8 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 	// Check if the product exists by id
-    var product model.Product
-    if err := database.DB.First(&product, productID).Error; err != nil {
+	var product model.Product
+	if err := database.DB.First(&product, productID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "product is not present on the database",
 			"ok":    false,
@@ -184,7 +182,7 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 
-    //delete the product
+	//delete the product
 	if err := database.DB.Delete(&product, productID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "unable to delete the product from the database",
@@ -198,4 +196,140 @@ func DeleteProduct(c *gin.Context) {
 		"ok":      true,
 	})
 
+}
+
+func GetFavouriteProductByUserID(c *gin.Context) {
+
+	userIDStr := c.Param("userid")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid userid format",
+			"ok":    true,
+		})
+		return
+	}
+
+	var FavouriteProducts []model.FavouriteProduct
+
+	if err := database.DB.Where("user_id =?", userID).Find(&FavouriteProducts).Error; err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"error": "the userid doesn't exist on the database",
+			"ok":    true,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"favouritelist": FavouriteProducts,
+		"ok":            true,
+	})
+
+}
+
+func AddFavouriteProduct(c *gin.Context) {
+	var request struct {
+		UserID    uint `validate:"required,number" json:"user_id"`
+		ProductID uint `validate:"required,number" json:"product_id"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "failed to bind the json",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Extracted validation logic for clarity
+	if ok := validate(request, c); !ok {
+		return
+	}
+
+	var existingFavouriteProduct model.FavouriteProduct
+	var userinfo model.User
+	var productinfo model.Product
+
+	// Check if the user exists
+	if err := database.DB.Where("id =?", request.UserID).First(&userinfo).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "User not found.",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Check if the product exists
+	if err := database.DB.Where("id =?", request.ProductID).First(&productinfo).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Product not found.",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Check if the favorite product combination already exists
+	if err := database.DB.Where("user_id =? AND product_id =?", request.UserID, request.ProductID).First(&existingFavouriteProduct).Error; err == nil {
+		// If there's no error, it means the favorite product already exists
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Favorite product already exists.",
+			"ok":    false,
+		})
+		return
+	}
+
+	// If everything checks out, add the favorite product
+	if err := database.DB.Create(&model.FavouriteProduct{UserID: request.UserID, ProductID: request.ProductID}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to add favorite product.",
+			"ok":    false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Favorite product added successfully.",
+		"ok":      true,
+	})
+}
+
+func RemoveFavouriteProduct(c *gin.Context) {
+	var request struct {
+		UserID    uint `validate:"required,number" json:"user_id"`
+		ProductID uint `validate:"required,number" json:"product_id"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "failed to bind the json",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Extracted validation logic for clarity
+	if ok := validate(request, c); !ok {
+		return
+	}
+
+	var existingFavouriteProduct model.FavouriteProduct
+
+	if err := database.DB.Where(&model.FavouriteProduct{UserID: request.UserID, ProductID: request.ProductID}).First(&existingFavouriteProduct).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Favorite product dont exists.",
+			"ok":    false,
+		})
+		return
+	}
+	if err := database.DB.Where("user_id =? AND product_id =?", request.UserID, request.ProductID).Delete(&model.FavouriteProduct{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to delete favorite product.",
+			"ok":    false,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Favorite product deleted successfully.",
+		"ok":      true,
+	})
 }
