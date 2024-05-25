@@ -57,8 +57,8 @@ type GoogleResponse struct {
 }
 
 type LoginForm struct {
-	Email    string `form:"email" validate:"required, email" json:"email"`
-	Password string `form:"password" json:"password"`
+    Email    string `form:"email" validate:"required,email" json:"email"`
+    Password string `form:"password" validate:"required" json:"password"`
 }
 
 type Category struct {

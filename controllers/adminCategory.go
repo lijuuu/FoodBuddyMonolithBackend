@@ -182,5 +182,4 @@ func DeleteCategory(c *gin.Context) {
 		"message": "successfully  deleted the category",
 		"ok":      true,
 	})
-
 }

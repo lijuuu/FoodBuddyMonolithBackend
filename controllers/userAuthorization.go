@@ -135,24 +135,10 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	if form.Email == "" || form.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid credentials",
-			"ok":    false,
-		})
+	ok := validate(form,c)
+	if !ok{
 		return
 	}
-
-	//validate the struct body
-	// validate := validator.New()
-	// err := validate.Struct(form)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "failed to validate the struct body",
-	// 		"ok":    false,
-	// 	})
-	// 	return
-	// }
 
 	var user model.User
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", form.Email).First(&user)
