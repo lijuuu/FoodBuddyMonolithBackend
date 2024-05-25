@@ -34,5 +34,5 @@ func validate(value interface{}, c *gin.Context) bool {
 		})
 		return false
 	}
-	return false
+	return true
 }
