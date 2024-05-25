@@ -70,6 +70,8 @@ type Category struct {
 	Products    []Product `gorm:"foreignKey:CategoryID"`
 }
 
+type ImageSlice []string
+
 type Product struct {
 	gorm.Model
 	ID           uint     `validate:"required"`
@@ -77,7 +79,7 @@ type Product struct {
 	CategoryID   uint     `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
 	Name         string   `validate:"required" json:"name"`
 	Description  string   `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL     []string `gorm:"column:image_url" validate:"required" json:"image_url"`
+	ImageURL     string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	Price        uint     `validate:"required" json:"price"`
 	Stock        uint     `validate:"required" json:"stock"`
 	//totalorders till now
