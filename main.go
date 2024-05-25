@@ -50,6 +50,14 @@ func main() {
 	router.POST("/api/v1/admin/categories/edit", controllers.EditCategory)                  //pass
 	router.GET("/api/v1/admin/categories/delete/:categoryid", controllers.DeleteCategory)   //pass
 
+	//restaurant management
+	router.GET("/api/v1/admin/restaurants/all", controllers.GetRestaurants)
+	router.POST("/api/v1/admin/restaurants/add", controllers.AddRestaurant)
+	router.POST("/api/v1/admin/restaurants/edit", controllers.EditRestaurant)
+	router.GET("/api/v1/admin/restaurants/delete/:restaurantid", controllers.DeleteRestaurant)
+	router.GET("/api/v1/admin/restaurants/block/:restaurantid", controllers.BlockRestaurant)
+	router.GET("/api/v1/admin/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
+
 	//admin product management
 	router.GET("/api/v1/admin/products/all", controllers.GetProductList) //pass
 	//all veg products - add a field in model.products
@@ -58,17 +66,9 @@ func main() {
 	router.POST("/api/v1/admin/products/edit", controllers.EditProduct)               //productid = 0,only allow values from categrory
 	router.GET("/api/v1/admin/products/delete/:productid", controllers.DeleteProduct) //check if the product is deleted
 
-	//admin category management
-	router.GET("/api/v1/admin/restaurants/all", controllers.GetRestaurants)
-	router.POST("/api/v1/admin/restaurants/add", controllers.AddRestaurant)
-	router.POST("/api/v1/admin/restaurants/edit", controllers.EditRestaurant)
-	router.GET("/api/v1/admin/restaurants/delete/:restaurantid", controllers.DeleteRestaurant)
-	router.GET("/api/v1/admin/restaurants/block/:restaurantid", controllers.BlockRestaurant)
-	router.GET("/api/v1/admin/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
-
 	//image upload using cloudinary
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
-	router.POST("/api/v1/uploadimage",utils.ImageUpload)
+	router.POST("/api/v1/uploadimage", utils.ImageUpload)
 
 	//logout - removes the cookie "Authorization"
 	router.GET("/api/v1/logout", controllers.Logout)
