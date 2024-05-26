@@ -98,7 +98,7 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusInternalServerError, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully edited the restaurant",
 		"ok":      true,
 	})
