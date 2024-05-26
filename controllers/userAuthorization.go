@@ -164,6 +164,8 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
+	// password with salt = user.salt + form.password 
+
 	//get the hash and compare it with password from body
 	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(form.Password))
 	if err != nil {
@@ -238,6 +240,8 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
+	//create salt and add it to the password
+	//salt+password
 	//hash the password
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 
@@ -256,6 +260,7 @@ func EmailSignup(c *gin.Context) {
 		LoginMethod:        model.EmailLoginMethod,
 		VerificationStatus: model.VerificationStatusPending,
 		Blocked:            false,
+		//add salt 
 	}
 
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", body.Email).First(&User)
