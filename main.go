@@ -23,7 +23,7 @@ func main() {
 	router.POST("/api/v1/emailsignup", controllers.EmailSignup) //pass
 
 	//otpverification
-	// router.GET("/api/v1/emailotp") // Uncomment and use this if you decide to implement it
+	// router.GET("/api/v1/emailotp") 
 	router.POST("/api/v1/verifyotp", controllers.VerifyOTP) //pass
 
 	// //pass jwt token as a json
