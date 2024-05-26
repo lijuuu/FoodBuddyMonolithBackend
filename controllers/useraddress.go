@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +21,7 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(UserAddress)
+	//checking the user sending is performing in his/her account..
 	email, ok := EmailFromUserID(UserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -30,7 +30,7 @@ func AddUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email);!ok{
+	if ok := VerifyJWT(c, email); !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "unauthorized user",
 			"ok":    false,
@@ -38,12 +38,15 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 
+	//to make sure the addressid is autoincremented by the gorm
 	UserAddress.AddressID = 0
 
+	//validating the useraddress for required,number tag etc....
 	if ok := validate(UserAddress, c); !ok {
 		return
 	}
 
+	//check if the user exists...
 	var userinfo model.User
 	if err := database.DB.First(&userinfo, UserAddress.UserID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -63,6 +66,7 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 
+	//check if the user already has 3 address...3 is the limit
 	if len(UserAddresses) >= 3 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "user already have three addresses, please delete or edit the existing addresses",
@@ -90,11 +94,12 @@ func AddUserAddress(c *gin.Context) {
 func GetUserAddress(c *gin.Context) {
 
 	//get the userid from the param
-	UserID := c.Param("userid")
-	if UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get the params",
-			"ok":    false,
+	userIDStr := c.Param("userid")
+	UserID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid userid format",
+			"ok":    true,
 		})
 		return
 	}
@@ -109,6 +114,24 @@ func GetUserAddress(c *gin.Context) {
 		return
 	}
 
+	//checking the user sending is performing in his/her account..
+	email, ok := EmailFromUserID(uint(UserID))
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email); !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
+			"ok":    false,
+		})
+		return
+	}
+
+	//check if there's any address related to the user
 	if len(UserAddresses) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "no addresses related to the userid",
@@ -134,7 +157,6 @@ func EditUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	
 
 	// Retrieve the existing UserAddress record
 	var existingUserAddress model.Address
@@ -146,6 +168,7 @@ func EditUserAddress(c *gin.Context) {
 		return
 	}
 
+	//check if the user is not impersonating other users through jwt email and users email match..
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -154,7 +177,7 @@ func EditUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email);!ok{
+	if ok := VerifyJWT(c, email); !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "unauthorized user",
 			"ok":    false,
@@ -207,6 +230,7 @@ func DeleteUserAddress(c *gin.Context) {
 		return
 	}
 
+	//check if the user is not impersonating other users through jwt email and users email match..
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -215,7 +239,7 @@ func DeleteUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email);!ok{
+	if ok := VerifyJWT(c, email); !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "unauthorized user",
 			"ok":    false,
@@ -223,6 +247,7 @@ func DeleteUserAddress(c *gin.Context) {
 		return
 	}
 
+	//delete the user address
 	if err := database.DB.Delete(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed to delete the address",
@@ -231,6 +256,7 @@ func DeleteUserAddress(c *gin.Context) {
 		return
 	}
 
+	//return the response
 	c.JSON(http.StatusOK, gin.H{
 		"message": "address deleted successfully",
 		"ok":      true,

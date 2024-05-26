@@ -201,7 +201,7 @@ func DeleteProduct(c *gin.Context) {
 func GetFavouriteProductByUserID(c *gin.Context) {
 
 	userIDStr := c.Param("userid")
-	userID, err := strconv.Atoi(userIDStr)
+	UserID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid userid format",
@@ -210,9 +210,26 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 		return
 	}
 
+	//checking the user sending is performing in his/her account..
+	email, ok := EmailFromUserID(uint(UserID))
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email); !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
+			"ok":    false,
+		})
+		return
+	}
+
 	var FavouriteProducts []model.FavouriteProduct
 
-	if err := database.DB.Where("user_id =?", userID).Find(&FavouriteProducts).Error; err != nil {
+	if err := database.DB.Where("user_id =?", UserID).Find(&FavouriteProducts).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"error": "the userid doesn't exist on the database",
 			"ok":    true,
@@ -241,6 +258,8 @@ func AddFavouriteProduct(c *gin.Context) {
 		return
 	}
 
+
+	//check if the user is not impersonating other users through jwt email and users email match..
 	email, ok := EmailFromUserID(request.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -323,6 +342,7 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		return
 	}
 
+	//check if the user is not impersonating other users through jwt email and users email match..
 	email, ok := EmailFromUserID(request.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
