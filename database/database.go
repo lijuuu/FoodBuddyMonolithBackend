@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"foodbuddy/model"
 	"foodbuddy/utils"
+
 	"log"
 
 	"gorm.io/driver/mysql"
@@ -14,7 +15,6 @@ var DB *gorm.DB
 
 func ConnectToDB() {
 	var err error
-
 	databaseCredentials := utils.GetEnvVariables()
 
 	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v?charset=utf8mb4&parseTime=True&loc=Local", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)

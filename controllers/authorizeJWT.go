@@ -36,7 +36,7 @@ func GenerateJWT(c *gin.Context, email string) string {
 }
 
 
-func VerifyJWT(c *gin.Context,useremail string) {
+func VerifyJWT(c *gin.Context,useremail string)bool {
 	utils.NoCache(c)
 
 	// Attempt to retrieve the JWT token from the cookie
@@ -46,7 +46,7 @@ func VerifyJWT(c *gin.Context,useremail string) {
 			"error": "no JWT token found in the cookie",
 			"ok": false,
 		})
-		return 
+		return false
 	}
 
 	// Decode and validate the token
@@ -63,7 +63,7 @@ func VerifyJWT(c *gin.Context,useremail string) {
 			"error": errstr,
 			"ok": false,
 		})
-		return
+		return false
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
@@ -73,7 +73,7 @@ func VerifyJWT(c *gin.Context,useremail string) {
 				"error": "JWT token expired, please log in again",
 				"ok": false,
 			})
-			return
+			return false
 		}
 
 		// Retrieve the user associated with the token
@@ -84,7 +84,7 @@ func VerifyJWT(c *gin.Context,useremail string) {
 				"error": "failed to retrieve user information from the database",
 				"ok": false,
 			})
-			return
+			return false
 		}
 
 		if useremail != user.Email{
@@ -92,7 +92,7 @@ func VerifyJWT(c *gin.Context,useremail string) {
 				"error": "unauthorized user",
 				"ok": false,
 			})
-			return
+			return false
 		}
 
 		// If we reach this point, the JWT is valid and the user is authenticated
@@ -100,11 +100,22 @@ func VerifyJWT(c *gin.Context,useremail string) {
 			"message":"jwt is a valid one, proceed to login",
 			"ok": true,
 		})
-		c.Next()
+		return true
+		
 	} else {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "internal server error occurred while parsing the JWT token",
 			"ok": false,
 		})
 	}
+	return true
+}
+
+func EmailFromUserID(UserID uint) (string, bool) {
+	var userinfo model.User
+	if err := database.DB.Where("id = ?", UserID).First(&userinfo).Error; err != nil {
+		return "", false
+	}
+
+	return userinfo.Email, true
 }
