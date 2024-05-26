@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 var googleOauthConfig = &oauth2.Config{
 	RedirectURL:  "http://localhost:8080/api/v1/googlecallback",
 	ClientID:     utils.GetEnvVariables().ClientID,
@@ -126,7 +125,6 @@ func GoogleHandleCallback(c *gin.Context) {
 
 }
 
-
 func EmailLogin(c *gin.Context) {
 	var form model.LoginForm
 
@@ -135,8 +133,8 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	ok := validate(form,c)
-	if !ok{
+	ok := validate(form, c)
+	if !ok {
 		return
 	}
 
@@ -164,10 +162,11 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	// password with salt = user.salt + form.password 
+	// password with salt = user.salt + form.password
+	saltedPassword := user.Salt + form.Password
 
 	//get the hash and compare it with password from body
-	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(form.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(saltedPassword))
 	if err != nil {
 		//passwords do not match
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -241,9 +240,11 @@ func EmailSignup(c *gin.Context) {
 	}
 
 	//create salt and add it to the password
+	Salt := utils.GenerateRandomString(7)
 	//salt+password
+	saltedPassword := Salt + body.Password
 	//hash the password
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -260,7 +261,7 @@ func EmailSignup(c *gin.Context) {
 		LoginMethod:        model.EmailLoginMethod,
 		VerificationStatus: model.VerificationStatusPending,
 		Blocked:            false,
-		//add salt 
+		Salt:               Salt,
 	}
 
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", body.Email).First(&User)
