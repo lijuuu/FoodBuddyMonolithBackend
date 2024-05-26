@@ -12,12 +12,12 @@ func validate(value interface{}, c *gin.Context) bool {
 		"Name_required":            "Please enter  Name",
 		"Password_required":        "Please enter  Password",
 		"ConfirmPassword_required": "Please enter  ConfirmPassword",
-		"Email_email":              "Please enter a valid email address", 
-		"UserID_required":"Please enter a valid user id",
-		"AddressID_required":"Please enter a valid address id",
-		"AddressID_number":"Please enter a numerical value for address id",
-		"UserID_number":"Please enter a numerical value for user id",
-		"ProductID_number":"Please enter a numerical value for product id",
+		"Email_email":              "Please enter a valid email address",
+		"UserID_required":          "Please enter a valid user id",
+		"AddressID_required":       "Please enter a valid address id",
+		"AddressID_number":         "Please enter a numerical value for address id",
+		"UserID_number":            "Please enter a numerical value for user id",
+		"ProductID_number":         "Please enter a numerical value for product id",
 	}
 	// validate the struct body
 	validate := validator.New()
