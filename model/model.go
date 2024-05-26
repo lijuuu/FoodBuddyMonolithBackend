@@ -28,6 +28,7 @@ type User struct {
 	ID                 uint   `validate:"required"`
 	Name               string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
 	Email              string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
+	PhoneNumber        string `gorm:"column:email;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture            string `gorm:"column:picture;type:text" json:"picture"`
 	HashedPassword     string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
 	Salt               string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
@@ -89,7 +90,7 @@ type Product struct {
 
 type Restaurant struct {
 	gorm.Model
-	ID          uint   `validate:"required"`
+	ID          uint   `validate:"required,number"`
 	Name        string `validate:"required" json:"name"`
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
@@ -99,4 +100,14 @@ type Restaurant struct {
 type FavouriteProduct struct {
 	UserID    uint `validate:"required"`
 	ProductID uint `validate:"required"`
+}
+
+type UserAddress struct {
+	UserID       uint   `validate:"required,number" json:"user_id"`
+	AddressID    uint   `validate:"required,number" json:"address_id"`
+	AddressType  string `validate:"required" json:"address_type"`
+	StreetName   string `validate:"required" json:"street_name"`
+	StreetNumber string `validate:"required" json:"street_number"`
+	City         string `validate:"required" json:"city"`
+	PostalCode   string `validate:"required" json:"postal_code"`
 }

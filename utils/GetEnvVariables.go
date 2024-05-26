@@ -25,8 +25,8 @@ func GetEnvVariables() model.EnvVariables {
 		DBName:              os.Getenv("DBNAME"),
 		JWTSecret:           os.Getenv("JWTSECRET"),
 		CloudinaryCloudName: os.Getenv("CLOUDNAME"),
-		CloudinaryAccessKey:         os.Getenv("CLOUDINARYACCESSKEY"),
-		CloudinarySecretKey:         os.Getenv("CLOUDINARYSECRETKEY"),
+		CloudinaryAccessKey: os.Getenv("CLOUDINARYACCESSKEY"),
+		CloudinarySecretKey: os.Getenv("CLOUDINARYSECRETKEY"),
 	}
 	return EnvVariables
 }

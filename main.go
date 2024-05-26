@@ -66,11 +66,19 @@ func main() {
 	router.POST("/api/v1/admin/products/edit", controllers.EditProduct)               //productid = 0,only allow values from categrory
 	router.GET("/api/v1/admin/products/delete/:productid", controllers.DeleteProduct) //check if the product is deleted
 
-	//add favourite products 
+	// favourite products 
 	router.GET("/api/v1/admin/products/favourite/:userid",controllers.GetFavouriteProductByUserID) //by user id 
 	router.POST("/api/v1/admin/products/favourite/add",controllers.AddFavouriteProduct) //by user id 
 	router.POST("/api/v1/admin/products/favourite/delete",controllers.RemoveFavouriteProduct)
 
+
+	//user address 
+	router.POST("/api/v1/user/address/add",controllers.AddUserAddress)
+	router.GET("/api/v1/user/address/:userid",controllers.GetUserAddress)
+	router.POST("/api/v1/user/address/edit",controllers.EditUserAddress)
+	router.POST("api/v1/user/address/delete",controllers.DeleteUserAddress)
+
+	
 	//image upload using cloudinary
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
 	router.POST("/api/v1/uploadimage", utils.ImageUpload)

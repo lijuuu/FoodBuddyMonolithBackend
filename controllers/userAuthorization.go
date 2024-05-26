@@ -262,7 +262,7 @@ func EmailSignup(c *gin.Context) {
 
 	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
 
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": tx.Error,
 			"ok":    false,
 		})
@@ -272,7 +272,7 @@ func EmailSignup(c *gin.Context) {
 		// User does not exist, proceed to create
 		tx = database.DB.Create(&User)
 		if tx.Error != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"error": tx.Error,
 				"ok":    false,
 			})
