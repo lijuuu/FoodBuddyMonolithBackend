@@ -36,7 +36,7 @@ func GenerateJWT(c *gin.Context, email string) string {
 }
 
 
-func VerifyJWT(c *gin.Context) {
+func VerifyJWT(c *gin.Context,useremail string) {
 	utils.NoCache(c)
 
 	// Attempt to retrieve the JWT token from the cookie
@@ -46,7 +46,7 @@ func VerifyJWT(c *gin.Context) {
 			"error": "no JWT token found in the cookie",
 			"ok": false,
 		})
-		return
+		return 
 	}
 
 	// Decode and validate the token
@@ -82,6 +82,14 @@ func VerifyJWT(c *gin.Context) {
 		if tx.Error!= nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "failed to retrieve user information from the database",
+				"ok": false,
+			})
+			return
+		}
+
+		if useremail != user.Email{
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "unauthorized user",
 				"ok": false,
 			})
 			return

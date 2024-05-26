@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 )
 
 func AddUserAddress(c *gin.Context)  {
-	var UserAddress model.UserAddress
+	var UserAddress model.Address
 
 	//bind the json to the struct 
 	if err:= c.BindJSON(&UserAddress);err != nil{
@@ -20,12 +21,26 @@ func AddUserAddress(c *gin.Context)  {
 		return
 	}
 
+	UserAddress.AddressID =0
+
 	if ok := validate(UserAddress,c);!ok{
 		return
 	}
 
+	fmt.Println(UserAddress)
+
+	var userinfo model.User
+	if err := database.DB.First(&userinfo,UserAddress.UserID ).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User not found",
+			"ok":    false,
+		})
+		return
+	}
+
+
 	//check if there is 3 addresses, if >= 3 return address limit reached
-	var UserAddresses []model.UserAddress
+	var UserAddresses []model.Address
 	if err:= database.DB.Where("user_id = ?",UserAddress.UserID).Find(&UserAddresses).Error;err!=nil{
 		c.JSON(http.StatusInternalServerError,gin.H{
 			"error":"failed to retrieve the existing user addresses from the database",
@@ -33,6 +48,7 @@ func AddUserAddress(c *gin.Context)  {
 		})
 		return
 	}
+
 
 	if len(UserAddresses) >= 3{
 		c.JSON(http.StatusInternalServerError,gin.H{
@@ -53,10 +69,9 @@ func AddUserAddress(c *gin.Context)  {
 
     //return the addresses of the particular user
 	c.JSON(http.StatusOK,gin.H{
-		"useraddresses":UserAddresses,
+		"useraddresses":UserAddress,
 		"ok":true,
 	})
-
 }
 
 func GetUserAddress(c *gin.Context)  {
@@ -72,7 +87,7 @@ func GetUserAddress(c *gin.Context)  {
 	}
 
 	//get the addresses where user_id == UserID
-  	var UserAddresses []model.UserAddress
+  	var UserAddresses []model.Address
 	if err:= database.DB.Where("user_id = ?",UserID).Find(&UserAddresses).Error;err!= nil{
 		c.JSON(http.StatusNotFound,gin.H{
 			"error":"failed to get informations from the database",
@@ -95,10 +110,87 @@ func GetUserAddress(c *gin.Context)  {
 	})
 }
 
-func EditUserAddress(c *gin.Context)  {
-  	
+func EditUserAddress(c *gin.Context) {
+    var updateUserAddress model.Address
+
+    // Bind the incoming JSON to the updateUserAddress struct
+    if err := c.BindJSON(&updateUserAddress); err!= nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+		   "error": "failed to bind the incoming request",
+		    "ok": false,
+		   })
+        return
+    }
+
+
+    // Retrieve the existing UserAddress record
+    var existingUserAddress model.Address
+    if err := database.DB.Where("user_id =? AND address_id =?", updateUserAddress.UserID, updateUserAddress.AddressID).First(&existingUserAddress).Error; err!= nil {
+        c.JSON(http.StatusNotFound, gin.H{
+		"error": "address not found",
+		"ok": false,
+	     })
+        return
+    }
+
+
+    // Update the existing record with the new values
+	existingUserAddress.AddressType = updateUserAddress.AddressType
+    existingUserAddress.StreetName = updateUserAddress.StreetName
+	existingUserAddress.StreetNumber = updateUserAddress.StreetNumber
+    existingUserAddress.City = updateUserAddress.City
+    existingUserAddress.State = updateUserAddress.State
+    existingUserAddress.PostalCode = updateUserAddress.PostalCode
+
+
+    // Save the updated record back to the database
+    if err := database.DB.Updates(&existingUserAddress).Error; err!= nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+		"error": "failed to update the address",
+		 "ok": false,
+		})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+		"message": "address updated successfully",
+	    "ok": true,
+	})
 }
 
 func DeleteUserAddress(c *gin.Context)  {
-  	
+	var AddressInfo model.Address
+
+    // Bind the incoming JSON to the updateUserAddress struct
+    if err := c.BindJSON(&AddressInfo); err!= nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+		   "error": "failed to bind the incoming request",
+		    "ok": false,
+		   })
+        return
+    }
+
+	//check the userid and addressid 
+	var existingUserAddress model.Address
+	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err!= nil {
+		c.JSON(http.StatusNotFound, gin.H{
+		"error": "address not found",
+		"ok": false,
+			})
+		return
+	}
+	
+	if err := database.DB.Delete(&existingUserAddress).Error;err!= nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to delete the address",
+			"ok": false,
+				})
+			return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "address deleted successfully",
+		"ok": true,
+			})
+
 }

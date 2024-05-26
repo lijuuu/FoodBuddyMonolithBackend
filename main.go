@@ -26,11 +26,8 @@ func main() {
 	// router.GET("/api/v1/emailotp") // Uncomment and use this if you decide to implement it
 	router.POST("/api/v1/verifyotp", controllers.VerifyOTP) //pass
 
-	//check whether the jwt is a valid one, takes the jwttoken from cookie "Authorization"
-	router.GET("/api/v1/verifyjwt-cookie", controllers.VerifyJWT) //pass
-
-	//pass jwt token as a json
-	router.POST("/api/v1/verifyjwt-json", utils.GetJWTEmailClaim) //pass
+	// //pass jwt token as a json
+	// router.POST("/api/v1/verifyjwt-json", utils.GetJWTEmailClaim) //pass
 
 	//load google sso page and get result as json
 	router.GET("/api/v1/googlesso", controllers.GoogleHandleLogin)         //pass
@@ -76,7 +73,7 @@ func main() {
 	router.POST("/api/v1/user/address/add",controllers.AddUserAddress)
 	router.GET("/api/v1/user/address/:userid",controllers.GetUserAddress)
 	router.POST("/api/v1/user/address/edit",controllers.EditUserAddress)
-	router.POST("api/v1/user/address/delete",controllers.DeleteUserAddress)
+	router.POST("api/v1/user/address/delete/",controllers.DeleteUserAddress)
 
 	
 	//image upload using cloudinary

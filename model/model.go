@@ -102,12 +102,13 @@ type FavouriteProduct struct {
 	ProductID uint `validate:"required"`
 }
 
-type UserAddress struct {
-	UserID       uint   `validate:"required,number" json:"user_id"`
-	AddressID    uint   `validate:"required,number" json:"address_id"`
-	AddressType  string `validate:"required" json:"address_type"`
-	StreetName   string `validate:"required" json:"street_name"`
-	StreetNumber string `validate:"required" json:"street_number"`
-	City         string `validate:"required" json:"city"`
-	PostalCode   string `validate:"required" json:"postal_code"`
+type Address struct {
+	UserID       uint   `validate:"required,number" json:"user_id" gorm:"column:user_id"`
+	AddressID    uint   `gorm:"primaryKey;autoIncrement;column:address_id" json:"address_id"`
+	AddressType  string `validate:"required" json:"address_type" gorm:"column:address_type"`
+	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
+	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`
+	City         string `validate:"required" json:"city" gorm:"column:city"`
+	State         string `validate:"required" json:"state" gorm:"column:state"`
+	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
 }
