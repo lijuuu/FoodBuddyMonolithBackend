@@ -54,15 +54,9 @@ func AddCategory(c *gin.Context) {
 	}
 
 	//validate the struct body
-	// validate := validator.New()
-	// err := validate.Struct(category)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "failed to validate the struct body",
-	// 		"ok":    false,
-	// 	})
-	// 	return
-	// }
+	if ok:= validate(category,c);!ok{
+       return
+	}
 
 	// Check if the category is already present
 	if err := database.DB.Where("name =?", category.Name).Find(&existingcategory).Error; err != nil {

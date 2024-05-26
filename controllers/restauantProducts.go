@@ -241,6 +241,22 @@ func AddFavouriteProduct(c *gin.Context) {
 		return
 	}
 
+	email, ok := EmailFromUserID(request.UserID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email);!ok{
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
+			"ok":    false,
+		})
+		return
+	}
+
 	// Extracted validation logic for clarity
 	if ok := validate(request, c); !ok {
 		return
@@ -302,6 +318,22 @@ func RemoveFavouriteProduct(c *gin.Context) {
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "failed to bind the json",
+			"ok":    false,
+		})
+		return
+	}
+
+	email, ok := EmailFromUserID(request.UserID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email);!ok{
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
 			"ok":    false,
 		})
 		return

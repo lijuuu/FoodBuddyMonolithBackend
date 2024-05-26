@@ -19,6 +19,9 @@ func main() {
 
 	router.LoadHTMLGlob("templates/*")
 
+	//admin login
+	// router.POST("/api/v1/emaillogin",controllers.AdminLogin)
+
 	router.POST("/api/v1/emaillogin", controllers.EmailLogin)   //pass
 	router.POST("/api/v1/emailsignup", controllers.EmailSignup) //pass
 
@@ -59,9 +62,9 @@ func main() {
 	router.GET("/api/v1/admin/products/all", controllers.GetProductList) //pass
 	//all veg products - add a field in model.products
 	router.GET("/api/v1/admin/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID)
-	router.POST("/api/v1/admin/products/add", controllers.AddProduct)                 //productid = 0 ;add product only if doesnt exist on the the tables,and only with the valid category
-	router.POST("/api/v1/admin/products/edit", controllers.EditProduct)               //productid = 0,only allow values from categrory
-	router.GET("/api/v1/admin/products/delete/:productid", controllers.DeleteProduct) //check if the product is deleted
+	router.POST("/api/v1/admin/products/add", controllers.AddProduct)               
+	router.POST("/api/v1/admin/products/edit", controllers.EditProduct)              
+	router.GET("/api/v1/admin/products/delete/:productid", controllers.DeleteProduct) 
 
 	// favourite products 
 	router.GET("/api/v1/admin/products/favourite/:userid",controllers.GetFavouriteProductByUserID) //by user id 

@@ -23,6 +23,12 @@ type EnvVariables struct {
 	CloudinarySecretKey string
 }
 
+
+type Admin struct{
+	gorm.Model
+	Email string `validate:"required,email"`
+}
+
 type User struct {
 	gorm.Model
 	ID                 uint   `validate:"required"`
@@ -37,13 +43,6 @@ type User struct {
 	Blocked            bool   `gorm:"column:blocked;type:bool" json:"blocked"`
 	OTP                int    `gorm:"column:otp;type:int" json:"otp"`
 	OTPexpiry          int64  `gorm:"column:otp_expiry" json:"otp_expiry"`
-}
-
-type Admin struct {
-	gorm.Model
-	ID    uint   `gorm:"column:id;type:int;auto_increment;primary_key" json:"id"`
-	Name  string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
-	Email string `gorm:"column:email;type:varchar(255)" validate:"email" json:"email"`
 }
 
 type GoogleResponse struct {
@@ -64,7 +63,7 @@ type LoginForm struct {
 
 type Category struct {
 	gorm.Model
-	ID          uint      `validate:"required"`
+	ID          uint      
 	Name        string    `validate:"required" json:"name"`
 	Description string    `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string    `gorm:"column:image_url" validate:"required" json:"image_url"`
