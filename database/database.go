@@ -36,4 +36,5 @@ func AutoMigrate() {
 	DB.AutoMigrate(&model.Product{})
 	DB.AutoMigrate(&model.FavouriteProduct{})
 	DB.AutoMigrate(&model.Address{})
+	DB.AutoMigrate(&model.Admin{})
 }

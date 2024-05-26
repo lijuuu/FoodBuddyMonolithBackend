@@ -134,12 +134,29 @@ func EditUserAddress(c *gin.Context) {
 		})
 		return
 	}
+	
 
 	// Retrieve the existing UserAddress record
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", updateUserAddress.UserID, updateUserAddress.AddressID).First(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "address not found",
+			"ok":    false,
+		})
+		return
+	}
+
+	email, ok := EmailFromUserID(existingUserAddress.UserID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email);!ok{
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
 			"ok":    false,
 		})
 		return
@@ -185,6 +202,22 @@ func DeleteUserAddress(c *gin.Context) {
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "address not found",
+			"ok":    false,
+		})
+		return
+	}
+
+	email, ok := EmailFromUserID(existingUserAddress.UserID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "failed to get user email from the database",
+			"ok":    false,
+		})
+		return
+	}
+	if ok := VerifyJWT(c, email);!ok{
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "unauthorized user",
 			"ok":    false,
 		})
 		return

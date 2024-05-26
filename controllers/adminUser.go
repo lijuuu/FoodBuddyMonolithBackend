@@ -142,16 +142,3 @@ func UnblockUser(c *gin.Context) {
 	})
 }
 
-func AdminLogin(c *gin.Context) {
-	Email := c.PostForm("Email")
-	Password := c.PostForm("Password")
-
-	if Email == "" || Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid credentials, try again",
-			"ok":    false,
-		})
-		return
-	}
-
-}

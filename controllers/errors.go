@@ -9,9 +9,9 @@ import (
 
 func validate(value interface{}, c *gin.Context) bool {
 	var translator = map[string]string{
-		"Name_required":            "Please enter your Name",
-		"Password_required":        "Please enter your Password",
-		"ConfirmPassword_required": "Please enter your ConfirmPassword",
+		"Name_required":            "Please enter  Name",
+		"Password_required":        "Please enter  Password",
+		"ConfirmPassword_required": "Please enter  ConfirmPassword",
 		"Email_email":              "Please enter a valid email address", 
 		"UserID_required":"Please enter a valid user id",
 		"AddressID_required":"Please enter a valid address id",
