@@ -64,7 +64,7 @@ func ImageUpload(c *gin.Context) {
 
 		// define the upload parameters with the desired transformations
 		uploadParams := uploader.UploadParams{
-			Transformation: "w_300,h_300,c_fill", 
+			Transformation: "f_auto/q_auto/c_crop,w_300,h_300,c_fill", 
 			Folder:         "foodbuddy",   
 		}
 

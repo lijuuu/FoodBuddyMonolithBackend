@@ -80,8 +80,8 @@ func main() {
 	router.POST("/api/v1/user/address/delete", controllers.DeleteUserAddress)
 
 	// image upload route
-	router.GET("/api/v1/user/uploadimage", view.LoadUpload)
-	router.POST("/api/v1/user/uploadimage", utils.ImageUpload)
+	router.GET("/api/v1/uploadimage", view.LoadUpload)
+	router.POST("/api/v1/uploadimage", utils.ImageUpload)
 
 	// logout route
 	router.GET("/api/v1/logout",controllers.Logout)
