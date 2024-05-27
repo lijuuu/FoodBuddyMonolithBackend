@@ -37,7 +37,7 @@ func AddRestaurant(c *gin.Context) {
 	}
 
 	//validate the restaurant data
-	if ok:= validate(restaurant,c);!ok{
+	if ok := validate(restaurant, c); !ok {
 		return
 	}
 
@@ -58,8 +58,8 @@ func AddRestaurant(c *gin.Context) {
 		return
 	}
 
-   //set block as false
-  restaurant.Blocked = false
+	//set block as false
+	restaurant.Blocked = false
 
 	//add to db
 	if err := database.DB.Create(&restaurant).Error; err != nil {
@@ -161,7 +161,7 @@ func BlockRestaurant(c *gin.Context) {
 
 	//check resturant by id
 	var restaurant model.Restaurant
-   if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
+	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "restaurant not found",
 			"ok":    false,
@@ -177,7 +177,7 @@ func BlockRestaurant(c *gin.Context) {
 		})
 		return
 	}
-   //set Blocked as true
+	//set Blocked as true
 	restaurant.Blocked = true
 
 	tx := database.DB.Updates(&restaurant)
@@ -191,7 +191,7 @@ func BlockRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "restaurant is blocked", "restaurant": restaurant, "ok": true,
 	})
-	
+
 }
 
 func UnblockRestaurant(c *gin.Context) {
@@ -208,7 +208,7 @@ func UnblockRestaurant(c *gin.Context) {
 
 	//check resturant by id
 	var restaurant model.Restaurant
-   if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
+	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "restaurant not found",
 			"ok":    false,
@@ -224,19 +224,20 @@ func UnblockRestaurant(c *gin.Context) {
 		})
 		return
 	}
-   //set Blocked as true
+	//set Blocked as false
 	restaurant.Blocked = false
 
-	if err := database.DB.Model(&restaurant).UpdateColumn("blocked", false);err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to change the block status ",
+	if err := database.DB.Model(&restaurant).UpdateColumn("blocked", false).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
 			"ok":    false,
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "restaurant is blocked", 
-      "restaurant": restaurant, 
-      "ok": true,
+		"message":    "restaurant is unblocked",
+		"restaurant": restaurant,
+		"ok":         true,
 	})
 }

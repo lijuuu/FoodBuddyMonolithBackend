@@ -118,14 +118,7 @@ func EditCategory(c *gin.Context) {
 		return
 	}
 
-	if category.Name == existingcategory.Name {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "category already exists",
-			"ok":    false,
-		})
-		return
-	}
-
+   category.Name = existingcategory.Name 
 
 	if err := database.DB.Updates(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -8,9 +8,13 @@ import (
 	"foodbuddy/model"
 	"foodbuddy/utils"
 	"io"
+	"math/rand"
 	"net/http"
+	"net/smtp"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -59,7 +63,7 @@ func GoogleHandleCallback(c *gin.Context) {
 	}
 	defer response.Body.Close()
 
-	//read the content of the reponse.body 
+	//read the content of the reponse.body
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read user info", "ok": false})
@@ -73,7 +77,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info", "ok": false})
 		return
 	}
-
 
 	//pass the values needed from the google response to the newuser struct
 	newUser := model.User{
@@ -131,14 +134,13 @@ func GoogleHandleCallback(c *gin.Context) {
 	// Return success response
 	fmt.Println("google signup done")
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Logged in successfully", 
-	    "user": existingUser,
-		"jwttoken": tokenstring, 
-		"ok": true,
+		"message":  "Logged in successfully",
+		"user":     existingUser,
+		"jwttoken": tokenstring,
+		"ok":       true,
 	})
 
 }
-
 
 func EmailLogin(c *gin.Context) {
 	var form model.LoginForm
@@ -179,7 +181,7 @@ func EmailLogin(c *gin.Context) {
 	if user.Blocked {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "user is restricted from accessing, blocked by the administrator",
-		    "ok": false,
+			"ok":    false,
 		})
 		return
 	}
@@ -222,11 +224,11 @@ func EmailLogin(c *gin.Context) {
 
 	// Return success response
 	c.JSON(http.StatusOK, gin.H{
-		"message": "logged in successfully",
-		 "user": user, 
-		 "jwttoken": tokenstring, 
-		 "ok": true,
-		})
+		"message":  "logged in successfully",
+		"user":     user,
+		"jwttoken": tokenstring,
+		"ok":       true,
+	})
 
 	c.Next()
 
@@ -334,7 +336,6 @@ func EmailSignup(c *gin.Context) {
 		"ok":      true,
 	})
 	c.Next()
-
 }
 
 // removing cookie "authorization"
@@ -345,4 +346,253 @@ func Logout(c *gin.Context) {
 		"ok":      true,
 	})
 	c.Next()
+}
+
+func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	otp := r.Intn(900000) + 100000
+
+	// Check if the provided otpexpiry has already passed
+	now := time.Now().Unix()
+	if otpexpiry > 0 && now < otpexpiry {
+		// OTP is still valid, respond with a message and do not send a new OTP
+		c.JSON(http.StatusOK, gin.H{
+			"error": "OTP is still valid. wait before sending another request.",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Proceed to send a new OTP if the previous one has expired or if no otpexpiry was provided
+	// Set expiryTime as 10 minutes from now
+	expiryTime := now + 10*60 // 10 minutes in seconds
+
+	fmt.Printf("Sending mail because OTP has expired: %v\n", expiryTime)
+
+	from := "foodbuddycode@gmail.com"
+	appPassword := "emdnwucohpvcoyin"
+	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
+
+	mail := fmt.Sprintf("FoodBuddy OTP Verification\nThis is your Verification code: %d", otp)
+
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(mail))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "sending otp failed",
+			"ok":    false,
+		})
+		return
+	}
+
+	user := model.User{
+		ID:        userID,
+		OTP:       otp,
+		OTPexpiry: expiryTime, // Store the Unix timestamp directly
+	}
+
+	tx := database.DB.Updates(&user)
+	if tx.Error != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"error": "failed to save otp on database",
+			"ok":    false,
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "verification code sent to mail,verify to continue",
+			"ok":      true,
+		})
+	}
+}
+
+func VerifyOTP(c *gin.Context) {
+
+	var userRequest model.User
+	var user model.User
+
+	if err := c.BindJSON(&userRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"ok":    false,
+		})
+		return
+	}
+
+	tx := database.DB.Where("email =?", userRequest.Email).First(&user)
+	if tx.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "user not found",
+			"ok":    false,
+		})
+		return
+	}
+
+	if user.VerificationStatus == model.VerificationStatusVerified {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "user already verified",
+			"ok":    false,
+		})
+		return
+	}
+
+	if user.OTP == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "login before verifying otp",
+			"ok":    false,
+		})
+		return
+	}
+
+	if user.OTPexpiry < time.Now().Unix() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "otp expired",
+			"ok":    false,
+		})
+		return
+	}
+
+	if user.OTP != userRequest.OTP {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid otp",
+			"ok":    false,
+		})
+		return
+	}
+
+	// Correctly placed inside the if block to ensure it only executes if the OTP is correct
+	user.VerificationStatus = model.VerificationStatusVerified
+
+	tx = database.DB.Updates(&user)
+	if tx.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "otp verification failed",
+			"ok":    false,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "otp verified successfully",
+		"user":    user,
+		"ok":      true,
+	})
+}
+
+func GenerateJWT(c *gin.Context, email string) string {
+	//generate token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": email,
+		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
+	})
+
+	//sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(utils.GetEnvVariables().JWTSecret))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "error while generating jwt ",
+		})
+		return ""
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
+	return tokenString
+}
+
+func VerifyJWT(c *gin.Context, useremail string) bool {
+	utils.NoCache(c)
+
+	// Attempt to retrieve the JWT token from the cookie
+	tokenString, err := c.Cookie("Authorization")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "no JWT token found in the cookie",
+			"ok":    false,
+		})
+		return false
+	}
+
+	// Decode and validate the token
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(utils.GetEnvVariables().JWTSecret), nil
+	})
+
+	if err != nil {
+		errstr := fmt.Sprintf("internal server error occurred while parsing the JWT token : /n %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errstr,
+			"ok":    false,
+		})
+		return false
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		// Check if the token is expired
+		if claimsExpiration, ok := claims["exp"].(float64); ok && claimsExpiration < float64(time.Now().Unix()) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "JWT token expired, please log in again",
+				"ok":    false,
+			})
+			return false
+		}
+
+		// Retrieve the user associated with the token
+		var user model.User
+		tx := database.DB.FirstOrInit(&user, "email =?", claims["sub"])
+		if tx.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "failed to retrieve user information from the database",
+				"ok":    false,
+			})
+			return false
+		}
+		ok := IsAdmin(user.Email)
+
+		if useremail != user.Email || !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "unauthorized user",
+				"ok":    false,
+			})
+			return false
+		}
+
+		// If we reach this point, the JWT is valid and the user is authenticated
+		c.JSON(http.StatusAccepted, gin.H{
+			"message": "jwt is a valid one, proceed to login",
+			"ok":      true,
+		})
+		return true
+
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "internal server error occurred while parsing the JWT token",
+			"ok":    false,
+		})
+		return false
+	}
+	return true
+}
+
+func EmailFromUserID(UserID uint) (string, bool) {
+	var userinfo model.User
+	if err := database.DB.Where("id = ?", UserID).First(&userinfo).Error; err != nil {
+		return "", false
+	}
+
+	return userinfo.Email, true
+}
+
+func IsAdmin(email string) bool {
+	var Admin model.Admin
+	if err := database.DB.Where("email = ?", email).First(&Admin).Error; err != nil {
+		return false
+	}
+	if Admin.Email == "" {
+		return false
+	}
+
+	return true
 }
