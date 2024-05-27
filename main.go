@@ -86,7 +86,12 @@ func main() {
 	// logout route
 	router.GET("/api/v1/logout",controllers.Logout)
 
+
+	router.Run(":8080")
+
 }
+
+
 
 // /controllers
 //     admin_controller.go          // Handles admin-specific operations.
@@ -100,3 +105,4 @@ func main() {
 
 //request and reponse for all the endpoints in the postman
 //add validation
+//error in google  //solved --changed googleclient api and secret
