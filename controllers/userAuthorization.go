@@ -36,17 +36,21 @@ func GoogleHandleCallback(c *gin.Context) {
 	utils.NoCache(c)
 	fmt.Println("Starting to handle callback")
 	code := c.Query("code")
+
+	//check for code defined on googlehandlelogin still exists
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing code parameter", "ok": false})
 		return
 	}
 
+	//exchange code for token, code is exchanged to make sure the state is same
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange token", "ok": false})
 		return
 	}
 
+	//use access token and get reponse of the user
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
 		fmt.Println("google signup done")
@@ -55,12 +59,14 @@ func GoogleHandleCallback(c *gin.Context) {
 	}
 	defer response.Body.Close()
 
+	//read the content of the reponse.body 
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read user info", "ok": false})
 		return
 	}
 
+	//store the content from the json to the user struct of model.GoogleResponse
 	var User model.GoogleResponse
 	err = json.Unmarshal(content, &User)
 	if err != nil {
@@ -68,6 +74,8 @@ func GoogleHandleCallback(c *gin.Context) {
 		return
 	}
 
+
+	//pass the values needed from the google response to the newuser struct
 	newUser := model.User{
 		Name:               User.Name,
 		Email:              User.Email,
@@ -77,6 +85,7 @@ func GoogleHandleCallback(c *gin.Context) {
 		Blocked:            false,
 	}
 
+	//if no name is present on the response use the email as the name
 	if newUser.Name == "" {
 		newUser.Name = User.Email
 	}
@@ -121,23 +130,32 @@ func GoogleHandleCallback(c *gin.Context) {
 
 	// Return success response
 	fmt.Println("google signup done")
-	c.JSON(http.StatusOK, gin.H{"message": "Logged in successfully", "user": existingUser, "jwttoken": tokenstring, "ok": true})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Logged in successfully", 
+	    "user": existingUser,
+		"jwttoken": tokenstring, 
+		"ok": true,
+	})
 
 }
+
 
 func EmailLogin(c *gin.Context) {
 	var form model.LoginForm
 
+	//get the json from the request
 	if err := c.BindJSON(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	//validate the content of the json
 	ok := validate(form, c)
 	if !ok {
 		return
 	}
 
+	//chekc whether the email exist on the database, if not return an error
 	var user model.User
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", form.Email).First(&user)
 	if tx.Error != nil {
@@ -148,6 +166,7 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
+	//check if the login methods are the same as email, if google prompt to use google login
 	if user.LoginMethod != model.EmailLoginMethod {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "please login through google",
@@ -158,7 +177,10 @@ func EmailLogin(c *gin.Context) {
 
 	//check is the user is blocked by the admin
 	if user.Blocked {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user is restricted from accessing, blocked by the administrator", "ok": false})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user is restricted from accessing, blocked by the administrator",
+		    "ok": false,
+		})
 		return
 	}
 
@@ -188,8 +210,6 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	//generate the jwt token and set it in cookie using generatejwt fn,
-	//check jwt via cookie thru /api/v1/verifyjwt
-	// and using json through /api/v1/checkjwt
 	tokenstring := GenerateJWT(c, user.Email)
 
 	if tokenstring == "" {
@@ -201,7 +221,12 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	// Return success response
-	c.JSON(http.StatusOK, gin.H{"message": "logged in successfully", "user": user, "jwttoken": tokenstring, "ok": true})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "logged in successfully",
+		 "user": user, 
+		 "jwttoken": tokenstring, 
+		 "ok": true,
+		})
 
 	c.Next()
 
@@ -243,9 +268,9 @@ func EmailSignup(c *gin.Context) {
 	Salt := utils.GenerateRandomString(7)
 	//salt+password
 	saltedPassword := Salt + body.Password
+
 	//hash the password
 	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -254,6 +279,7 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
+	//add the data to user struct
 	User := model.User{
 		Name:               body.Name,
 		Email:              body.Email,
@@ -264,10 +290,9 @@ func EmailSignup(c *gin.Context) {
 		Salt:               Salt,
 	}
 
+	//check if the user exists on the database
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", body.Email).First(&User)
-
 	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
-
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": tx.Error,
 			"ok":    false,
