@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"net/http"
@@ -126,11 +127,15 @@ func EditProduct(c *gin.Context) {
 			"ok":    false,
 		})
 	}
+
+	if ok:= validate(product,c);!ok{
+		return
+	}
 	// Check if the product exists by id
-	var existingProduct model.Restaurant
-	if err := database.DB.First(&existingProduct, product.ID).Error; err != nil {
+	var existingProduct model.Product
+	if err := database.DB.Where("id = ?",product.ID).First(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to fetch product details from the database",
+			"error": "failed to fetch product from the database",
 			"ok":    false,
 		})
 		return
@@ -161,7 +166,7 @@ func EditProduct(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusBadRequest, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully changed product info",
 		"ok":      true,
 	})
@@ -201,7 +206,6 @@ func DeleteProduct(c *gin.Context) {
 		"message": "successfully  deleted the product",
 		"ok":      true,
 	})
-
 }
 
 func GetFavouriteProductByUserID(c *gin.Context) {
@@ -225,6 +229,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 		})
 		return
 	}
+	fmt.Println(email)
 	if ok := VerifyJWT(c, email); !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "unauthorized user",
@@ -247,7 +252,6 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 		"favouritelist": FavouriteProducts,
 		"ok":            true,
 	})
-
 }
 
 func AddFavouriteProduct(c *gin.Context) {

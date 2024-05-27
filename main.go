@@ -20,7 +20,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	// authentication routes
-	router.POST("/api/v1/adminlogin", controllers.AdminLogin)
+	// router.POST("/api/v1/adminlogin", controllers.AdminLogin)
 	router.POST("/api/v1/user/emaillogin", controllers.EmailLogin)
 	router.POST("/api/v1/user/emailsignup", controllers.EmailSignup)
 	router.POST("/api/v1/user/verifyotp", controllers.VerifyOTP)
@@ -36,7 +36,7 @@ func main() {
 	router.GET("/api/v1/public/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID)
 	router.GET("/api/v1/public/restaurants/all", controllers.GetRestaurants)
 
-	// admin routes
+	// admin routes with check admin middleware
 	adminRoutes := router.Group("/api/v1/admin",controllers.CheckAdmin)
 	{
 		// user management
@@ -104,5 +104,5 @@ func main() {
 
 
 //request and reponse for all the endpoints in the postman
-//add validation
+//add validation 
 //error in google  //solved --changed googleclient api and secret
