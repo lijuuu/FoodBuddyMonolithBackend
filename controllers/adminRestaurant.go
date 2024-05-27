@@ -36,6 +36,11 @@ func AddRestaurant(c *gin.Context) {
 		})
 	}
 
+	//validate the restaurant data
+	if ok:= validate(restaurant,c);!ok{
+		return
+	}
+
 	var existingRestaurant model.Restaurant
 	if err := database.DB.Where("name =?", restaurant.Name).Find(&existingRestaurant).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

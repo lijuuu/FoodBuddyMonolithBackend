@@ -74,7 +74,7 @@ type ImageSlice []string
 
 type Product struct {
 	gorm.Model
-	ID           uint   `validate:"required"`
+	ID           uint   
 	RestaurantID uint   `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
 	CategoryID   uint   `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
 	Name         string `validate:"required" json:"name"`
@@ -89,7 +89,7 @@ type Product struct {
 
 type Restaurant struct {
 	gorm.Model
-	ID          uint   `validate:"required,number"`
+	ID          uint 
 	Name        string `validate:"required" json:"name"`
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
