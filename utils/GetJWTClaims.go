@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -11,21 +12,18 @@ import (
 )
 
 // GetJWTEmailClaim attempts to extract the email claim from a JWT token.
-func GetJWTEmailClaim(c *gin.Context) {
-	var jwttoken struct {
-		JWTToken string `json:"token"`
-	}
-
-	if err := c.BindJSON(&jwttoken); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(),"ok": false,})
-		return
+func GetJWTEmailClaim(c *gin.Context) (string){
+	JWTToken, err := c.Cookie("Authorization")
+	if JWTToken == "" || err != nil {
+		fmt.Println("no Authorization token available")
+		return ""
 	}
 
 	hmacSecretString := GetEnvVariables().JWTSecret
 	hmacSecret := []byte(hmacSecretString)
 
 	// Parse the token
-	token, err := jwt.Parse(jwttoken.JWTToken, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(JWTToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -34,8 +32,8 @@ func GetJWTEmailClaim(c *gin.Context) {
 
 	if err != nil {
 		log.Printf("Error parsing token: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse jwt token","ok": false,})
-		return
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse jwt token", "ok": false})
+		return ""
 	}
 
 	// Check if the token is valid
@@ -44,8 +42,8 @@ func GetJWTEmailClaim(c *gin.Context) {
 		expirationTime, ok := claims["exp"].(float64)
 		if !ok {
 			log.Printf("Token does not contain 'exp' claim")
-			c.JSON(http.StatusBadRequest, gin.H{"error": "token does not contain 'exp' claim","ok": false,})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": "token does not contain 'exp' claim", "ok": false})
+			return ""
 		}
 
 		// Convert the expiration time to a Time value
@@ -54,17 +52,15 @@ func GetJWTEmailClaim(c *gin.Context) {
 		// Check if the token is expired
 		if time.Now().After(expiration) {
 			log.Printf("Token is expired")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token is expired","ok": false,})
-			return
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token is expired", "ok": false})
+			return ""
 		}
 
 		email := claims["sub"].(string)
-		c.JSON(http.StatusOK, gin.H{
-			"email":   email,
-			"ok": true,
-		})
+		return email
 	} else {
 		log.Printf("Token is not valid")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token","ok": false,})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token", "ok": false})
+		return ""
 	}
 }

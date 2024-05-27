@@ -37,7 +37,7 @@ func main() {
 	router.GET("/api/v1/public/restaurants/all", controllers.GetRestaurants)
 
 	// admin routes
-	adminRoutes := router.Group("/api/v1/admin")
+	adminRoutes := router.Group("/api/v1/admin",controllers.CheckAdmin)
 	{
 		// user management
 		adminRoutes.GET("/users/all", controllers.GetUserList)

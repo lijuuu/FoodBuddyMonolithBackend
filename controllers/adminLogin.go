@@ -3,6 +3,7 @@ package controllers
 import (
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -35,9 +36,31 @@ func AdminLogin(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK,gin.H{
-		"admin":AdminLogin,
-		"ok":true,
+	c.JSON(http.StatusOK, gin.H{
+		"admin": AdminLogin,
+		"ok":    true,
 	})
 
+}
+
+func CheckAdmin(c *gin.Context) {
+	email := utils.GetJWTEmailClaim(c)
+
+	var AdminLogin model.Admin
+	if err := database.DB.Where("email = ?", email).First(&AdminLogin).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "the email doesnt exist in database, unauthorized user",
+			"ok":    false,
+		})
+		c.Abort()
+		return
+	}
+
+	
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "user is an admin",
+		"ok":    true,
+	})
+	c.Next()
 }

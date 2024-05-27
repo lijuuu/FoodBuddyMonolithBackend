@@ -63,6 +63,12 @@ func AddProduct(c *gin.Context) {
 		})
 		return
 	}
+
+
+	if ok:=validate(product,c);!ok{
+		return
+	}
+
 	product.ID = 0
 
 	// Check if the restaurant ID is correct and present in the database
