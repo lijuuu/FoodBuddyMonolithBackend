@@ -573,7 +573,6 @@ func VerifyJWT(c *gin.Context, useremail string) bool {
 		})
 		return false
 	}
-	return true
 }
 
 func EmailFromUserID(UserID uint) (string, bool) {
