@@ -230,7 +230,8 @@ func DeleteUserAddress(c *gin.Context) {
 		return
 	}
 
-	//check if the user is not impersonating other users through jwt email and users email match..
+	//check if the user is not impersonating other users , 
+	//using jwt email and users email fo a match
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
