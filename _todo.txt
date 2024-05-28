@@ -1,0 +1,6 @@
+may 29
+
+create otp table if necessary
+make admin,rest model with otp or create a otp table with entityID and role combo with otp, verified status and otp expiry //refactor code 
+do the same with verify otp ,make it dynamic to process requests from all of the role create admin route with no passwords only otp and sendotp method
+for restaurant create a login and signup route through email only...similar to user login via email logic
