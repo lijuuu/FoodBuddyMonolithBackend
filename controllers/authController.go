@@ -200,6 +200,7 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
+	
 	//checking verification status of the user ,
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
 	if user.VerificationStatus == model.VerificationStatusPending {
@@ -376,6 +377,7 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
 
 	mail := fmt.Sprintf("FoodBuddy OTP Verification\nThis is your Verification code: %d", otp)
 
+	//send the otp to the specified email
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(mail))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -388,7 +390,7 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
 	user := model.User{
 		ID:        userID,
 		OTP:       otp,
-		OTPexpiry: expiryTime, // Store the Unix timestamp directly
+		OTPexpiry: expiryTime,
 	}
 
 	tx := database.DB.Updates(&user)
@@ -397,12 +399,13 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
 			"error": "failed to save otp on database",
 			"ok":    false,
 		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "verification code sent to mail,verify to continue",
-			"ok":      true,
-		})
+		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "verification code sent to mail,verify to continue",
+		"ok":      true,
+	})
 }
 
 func VerifyOTP(c *gin.Context) {
