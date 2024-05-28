@@ -339,7 +339,7 @@ func EmailSignup(c *gin.Context) {
 	c.Next()
 }
 
-func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64,role string) {
+func SendOTP(c *gin.Context, entityID uint, to string, otpexpiry int64,role string) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	otp := r.Intn(900000) + 100000
@@ -382,7 +382,7 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64,role string
 	//role == user
 	case "user":
 	user := model.User{
-		ID:        userID,
+		ID:        entityID,
 		OTP:       otp,
 		OTPexpiry: expiryTime,
 	}
@@ -396,39 +396,39 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64,role string
 		return
 	}
 
-	//role == restaurant
-	case "restaurant":
-	user := model.User{
-		ID:        userID,
-		OTP:       otp,
-		OTPexpiry: expiryTime,
-	}
+	// //role == restaurant
+	// case "restaurant":
+	// restaurant := model.Restaurant{
+	// 	ID:        entityID,
+	// 	OTP:       otp,
+	// 	OTPexpiry: expiryTime,
+	// }
 
-	tx := database.DB.Updates(&user)
-	if tx.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"error": "failed to save otp on database",
-			"ok":    false,
-		})
-		return
-	}
+	// tx := database.DB.Updates(&restaurant)
+	// if tx.Error != nil {
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"error": "failed to save otp on database",
+	// 		"ok":    false,
+	// 	})
+	// 	return
+	// }
 
-	//role == admin
-	case "admin":
-	user := model.User{
-		ID:        userID,
-		OTP:       otp,
-		OTPexpiry: expiryTime,
-	}
+	// //role == admin
+	// case "admin":
+	// admin := model.Admin{
+	// 	ID:        entityID,
+	// 	OTP:       otp,
+	// 	OTPexpiry: expiryTime,
+	// }
 
-	tx := database.DB.Updates(&user)
-	if tx.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"error": "failed to save otp on database",
-			"ok":    false,
-		})
-		return
-	}
+	// tx := database.DB.Updates(&admin)
+	// if tx.Error != nil {
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"error": "failed to save otp on database",
+	// 		"ok":    false,
+	// 	})
+	// 	return
+	// }
 	}
 
 	c.JSON(http.StatusOK, gin.H{
