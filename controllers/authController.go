@@ -204,7 +204,7 @@ func EmailLogin(c *gin.Context) {
 	//checking verification status of the user ,
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
 	if user.VerificationStatus == model.VerificationStatusPending {
-		SendOTP(c, user.ID, user.Email, user.OTPexpiry)
+		SendOTP(c, user.ID, user.Email, user.OTPexpiry,model.UserRole)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Error": "email verification status is pending, please verify via email verification code",
 			"ok":    false,
@@ -339,17 +339,7 @@ func EmailSignup(c *gin.Context) {
 	c.Next()
 }
 
-// removing cookie "authorization"
-func Logout(c *gin.Context) {
-	utils.RemoveCookies(c)
-	c.JSON(http.StatusOK, gin.H{
-		"message": "successfully logged out",
-		"ok":      true,
-	})
-	c.Next()
-}
-
-func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
+func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64,role string) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	otp := r.Intn(900000) + 100000
@@ -387,6 +377,10 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
 		return
 	}
 
+	switch role {
+
+	//role == user
+	case "user":
 	user := model.User{
 		ID:        userID,
 		OTP:       otp,
@@ -400,6 +394,41 @@ func SendOTP(c *gin.Context, userID uint, to string, otpexpiry int64) {
 			"ok":    false,
 		})
 		return
+	}
+
+	//role == restaurant
+	case "restaurant":
+	user := model.User{
+		ID:        userID,
+		OTP:       otp,
+		OTPexpiry: expiryTime,
+	}
+
+	tx := database.DB.Updates(&user)
+	if tx.Error != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"error": "failed to save otp on database",
+			"ok":    false,
+		})
+		return
+	}
+
+	//role == admin
+	case "admin":
+	user := model.User{
+		ID:        userID,
+		OTP:       otp,
+		OTPexpiry: expiryTime,
+	}
+
+	tx := database.DB.Updates(&user)
+	if tx.Error != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"error": "failed to save otp on database",
+			"ok":    false,
+		})
+		return
+	}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -597,4 +626,14 @@ func IsAdmin(email string) bool {
 	}
 
 	return true
+}
+
+// removing cookie "authorization"
+func Logout(c *gin.Context) {
+	utils.RemoveCookies(c)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "successfully logged out",
+		"ok":      true,
+	})
+	c.Next()
 }
