@@ -9,6 +9,9 @@ const (
 	GoogleSSOMethod            = "googlesso"
 	VerificationStatusVerified = "verified"
 	VerificationStatusPending  = "pending"
+	UserRole = "user"
+	AdminRole = "admin"
+	RestaurantRole = "restaurant"
 )
 
 type EnvVariables struct {

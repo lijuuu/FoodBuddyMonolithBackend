@@ -106,3 +106,6 @@ func main() {
 //request and reponse for all the endpoints in the postman
 //add validation 
 //error in google  //solved --changed googleclient api and secret
+
+//change the way sendotp fn works....make it dynamic to process on user and restaurants as well
+//restaurant routes
