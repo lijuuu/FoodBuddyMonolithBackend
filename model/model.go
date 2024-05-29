@@ -9,9 +9,9 @@ const (
 	GoogleSSOMethod            = "googlesso"
 	VerificationStatusVerified = "verified"
 	VerificationStatusPending  = "pending"
-	UserRole = "user"
-	AdminRole = "admin"
-	RestaurantRole = "restaurant"
+	UserRole                   = "user"
+	AdminRole                  = "admin"
+	RestaurantRole             = "restaurant"
 )
 
 type EnvVariables struct {
@@ -26,8 +26,7 @@ type EnvVariables struct {
 	CloudinarySecretKey string
 }
 
-
-type Admin struct{
+type Admin struct {
 	gorm.Model
 	Email string `validate:"required,email"`
 }
@@ -59,6 +58,13 @@ type GoogleResponse struct {
 	Locale        string `json:"locale"`
 }
 
+type OTPTable struct {
+	email              string `validate:"required,email"`
+	OTP                int
+	OTPexpiry          int64
+	VerificationStatus string `gorm:"column:verification_status;type:varchar(255)" validate:"required" json:"verification_status"`
+}
+
 type LoginForm struct {
 	Email    string `form:"email" validate:"required,email" json:"email"`
 	Password string `form:"password" validate:"required" json:"password"`
@@ -66,7 +72,7 @@ type LoginForm struct {
 
 type Category struct {
 	gorm.Model
-	ID          uint      
+	ID          uint
 	Name        string    `validate:"required" json:"name"`
 	Description string    `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string    `gorm:"column:image_url" validate:"required" json:"image_url"`
@@ -92,7 +98,7 @@ type Product struct {
 
 type Restaurant struct {
 	gorm.Model
-	ID          uint 
+	ID          uint
 	Name        string `validate:"required" json:"name"`
 	Description string `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
@@ -111,6 +117,6 @@ type Address struct {
 	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
 	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`
 	City         string `validate:"required" json:"city" gorm:"column:city"`
-	State         string `validate:"required" json:"state" gorm:"column:state"`
+	State        string `validate:"required" json:"state" gorm:"column:state"`
 	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
 }
