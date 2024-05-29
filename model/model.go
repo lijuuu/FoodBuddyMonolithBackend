@@ -41,10 +41,7 @@ type User struct {
 	HashedPassword     string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
 	Salt               string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
 	LoginMethod        string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
-	VerificationStatus string `gorm:"column:verification_status;type:varchar(255)" validate:"required" json:"verification_status"`
 	Blocked            bool   `gorm:"column:blocked;type:bool" json:"blocked"`
-	OTP                int    `gorm:"column:otp;type:int" json:"otp"`
-	OTPexpiry          int64  `gorm:"column:otp_expiry" json:"otp_expiry"`
 }
 
 type GoogleResponse struct {
@@ -59,10 +56,16 @@ type GoogleResponse struct {
 }
 
 type OTPTable struct {
-	email              string `validate:"required,email"`
-	OTP                int
-	OTPexpiry          int64
-	VerificationStatus string `gorm:"column:verification_status;type:varchar(255)" validate:"required" json:"verification_status"`
+	Email              string `validate:"required,email" gorm:"type:varchar(255);unique_index"`
+	Role               string  
+	OTP                int 
+	OTPExpiry          int64
+	VerificationStatus string `gorm:"type:varchar(255)"`
+}
+
+type OTPVerification struct{
+	Email string
+	OTP int
 }
 
 type LoginForm struct {
