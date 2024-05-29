@@ -132,7 +132,6 @@ func GoogleHandleCallback(c *gin.Context) {
 	}
 
 	// Return success response
-	fmt.Println("google signup done")
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "Logged in successfully",
 		"user":     existingUser,
@@ -200,11 +199,16 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	
 	//checking verification status of the user ,
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
-	if user.VerificationStatus == model.VerificationStatusPending {
-		SendOTP(c, user.ID, user.Email, user.OTPexpiry,model.UserRole)
+	var OTPtable model.OTPTable
+
+	if err := database.DB.Where("email = ?", user.Email).Find(&OTPtable).Error; err != nil {
+		return
+	}
+
+	if OTPtable.VerificationStatus == model.VerificationStatusPending {
+		SendOTP(c, user.ID, user.Email, OTPtable.OTPexpiry, model.UserRole)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Error": "email verification status is pending, please verify via email verification code",
 			"ok":    false,
@@ -330,6 +334,16 @@ func EmailSignup(c *gin.Context) {
 	// 	})
 	// }
 
+	//update otp on the otp table along with user email, role, verification status
+	otpTableInfo := model.OTPTable{
+		email:              User.Email,
+		VerificationStatus: model.VerificationStatusPending,
+	}
+
+	if err := database.DB.Create(&otpTableInfo).Error; err != nil {
+
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		// "jwttoken":tokenstring,
 		"message": "signup is successfull, login and complete your otp verification",
@@ -339,7 +353,7 @@ func EmailSignup(c *gin.Context) {
 	c.Next()
 }
 
-func SendOTP(c *gin.Context, entityID uint, to string, otpexpiry int64,role string) {
+func SendOTP(c *gin.Context, entityID uint, to string, otpexpiry int64, role string) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	otp := r.Intn(900000) + 100000
@@ -381,54 +395,54 @@ func SendOTP(c *gin.Context, entityID uint, to string, otpexpiry int64,role stri
 
 	//role == user
 	case "user":
-	user := model.User{
-		ID:        entityID,
-		OTP:       otp,
-		OTPexpiry: expiryTime,
-	}
+		user := model.User{
+			ID:        entityID,
+			OTP:       otp,
+			OTPexpiry: expiryTime,
+		}
 
-	tx := database.DB.Updates(&user)
-	if tx.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"error": "failed to save otp on database",
-			"ok":    false,
-		})
-		return
-	}
+		tx := database.DB.Updates(&user)
+		if tx.Error != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"error": "failed to save otp on database",
+				"ok":    false,
+			})
+			return
+		}
 
-	// //role == restaurant
-	// case "restaurant":
-	// restaurant := model.Restaurant{
-	// 	ID:        entityID,
-	// 	OTP:       otp,
-	// 	OTPexpiry: expiryTime,
-	// }
+		// //role == restaurant
+		// case "restaurant":
+		// restaurant := model.Restaurant{
+		// 	ID:        entityID,
+		// 	OTP:       otp,
+		// 	OTPexpiry: expiryTime,
+		// }
 
-	// tx := database.DB.Updates(&restaurant)
-	// if tx.Error != nil {
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"error": "failed to save otp on database",
-	// 		"ok":    false,
-	// 	})
-	// 	return
-	// }
+		// tx := database.DB.Updates(&restaurant)
+		// if tx.Error != nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"error": "failed to save otp on database",
+		// 		"ok":    false,
+		// 	})
+		// 	return
+		// }
 
-	// //role == admin
-	// case "admin":
-	// admin := model.Admin{
-	// 	ID:        entityID,
-	// 	OTP:       otp,
-	// 	OTPexpiry: expiryTime,
-	// }
+		// //role == admin
+		// case "admin":
+		// admin := model.Admin{
+		// 	ID:        entityID,
+		// 	OTP:       otp,
+		// 	OTPexpiry: expiryTime,
+		// }
 
-	// tx := database.DB.Updates(&admin)
-	// if tx.Error != nil {
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"error": "failed to save otp on database",
-	// 		"ok":    false,
-	// 	})
-	// 	return
-	// }
+		// tx := database.DB.Updates(&admin)
+		// if tx.Error != nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"error": "failed to save otp on database",
+		// 		"ok":    false,
+		// 	})
+		// 	return
+		// }
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -490,7 +504,7 @@ func VerifyOTP(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	user.VerificationStatus = model.VerificationStatusVerified
 
 	tx = database.DB.Updates(&user)
