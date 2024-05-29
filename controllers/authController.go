@@ -490,8 +490,7 @@ func VerifyOTP(c *gin.Context) {
 		})
 		return
 	}
-
-	// Correctly placed inside the if block to ensure it only executes if the OTP is correct
+	
 	user.VerificationStatus = model.VerificationStatusVerified
 
 	tx = database.DB.Updates(&user)
