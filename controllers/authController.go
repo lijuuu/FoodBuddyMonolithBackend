@@ -422,7 +422,7 @@ func EmailLogin(c *gin.Context) {
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
 	var OTPtable model.OTPTable
 
-	if err := database.DB.Where("email = ? AND role = ?", OTPtable.Email, model.UserRole).Find(&OTPtable).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role = ?", user.Email, model.UserRole).First(&OTPtable).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to process otp verification",
@@ -434,14 +434,14 @@ func EmailLogin(c *gin.Context) {
 
 	if OTPtable.VerificationStatus != model.VerificationStatusVerified {
 		err := SendOTP(c, user.Email, OTPtable.OTPExpiry, model.UserRole)
-		c.JSON(http.StatusTooManyRequests, gin.H{
-			"status":     false,
-			"message":    err,
-			"error_code": http.StatusTooManyRequests,
-			"data": gin.H{
-				"user": user,
-			},
-		})
+		if err !=nil {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"status":     false,
+				"message":    err.Error(),
+				"error_code": http.StatusTooManyRequests,
+				"data": gin.H{},
+			})
+		}
 		return
 	}
 
@@ -529,9 +529,9 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 
 func VerifyOTP(c *gin.Context) {
 	///welcome?firstname=Jane&lastname=Doe
-	entityRole := c.Query("role")
-	entityEmail := c.Query("email")
-	entityOTP,_ := strconv.Atoi(c.Query("otp"))
+	entityRole := c.Param("role")
+	entityEmail := c.Param("email")
+	entityOTP, _ := strconv.Atoi(c.Param("otp"))
 
 	if entityRole == "" || entityEmail == "" || entityOTP == 0{
 		c.JSON(http.StatusBadRequest, gin.H{
