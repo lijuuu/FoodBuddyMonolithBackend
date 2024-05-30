@@ -11,36 +11,46 @@ import (
 
 func GetCategoryList(c *gin.Context) {
 	var category []model.Category
-	
 
 	tx := database.DB.Select("*").Find(&category)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to retrieve data from the database, or the data doesn't exists",
+			"status":     false,
+			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"categorylist": category,
-		"ok":           true,
+	c.JSON(http.StatusNotFound, gin.H{
+		"status":  true,
+		"message": "category list is fetched successfully",
+		"data": gin.H{
+			"categorylist": category,
+		},
 	})
 }
 
 func GetCategoryProductList(c *gin.Context) {
-    var categories []model.Category
-    if err := database.DB.Preload("Products").Find(&categories).Error; err!= nil {
-        c.JSON(http.StatusNotFound, gin.H{
-            "error": "failed to retrieve categories",
-            "ok":    false,
-        })
-        return
-    }
+	var categories []model.Category
+	if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "categorylist": categories,
-        "ok":          true,
-    })
+	c.JSON(http.StatusNotFound, gin.H{
+		"status":  true,
+		"message": "category list is fetched successfully",
+		"data": gin.H{
+			"categorylist": categories,
+		},
+	})
 }
 
 func AddCategory(c *gin.Context) {
@@ -49,28 +59,44 @@ func AddCategory(c *gin.Context) {
 	var existingcategory model.Category
 
 	if err := c.BindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to process incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	//validate the struct body
-	if ok:= validate(category,c);!ok{
-       return
+	if err := validate(category); err != nil {
+		//add json response
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to validate category information",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
+		return
 	}
 
 	// Check if the category is already present
 	if err := database.DB.Where("name =?", category.Name).Find(&existingcategory).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "error while checking category name",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch information for possible category name match",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if category.Name == existingcategory.Name {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "category already exists",
-			"ok":    false,
+			"status":     false,
+			"message":    "category already exists",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -78,15 +104,20 @@ func AddCategory(c *gin.Context) {
 	category.ID = 0
 	if err := database.DB.Create(&category); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "unable to add new category, possibly server error ",
-			"errordetails": err,
-			"ok":           false,
+			"status":     false,
+			"message":    "unable to add new category, server error ",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
+		
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "successfully added a new catergory",
-		"ok":      true,
+		"status":     true,
+		"message":    "successully added a new category",
+		"data":       gin.H{
+			"category":category,
+		},
 	})
 }
 func EditCategory(c *gin.Context) {
@@ -96,41 +127,51 @@ func EditCategory(c *gin.Context) {
 
 	if err := c.BindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "error while binding json",
-			"ok":    true,
+			"status":     false,
+			"message":    "failed to process incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.First(&existingcategory, category.ID).Error; err != nil {
+
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to fetch category details from the database",
-			"ok":    true,
+			"status":     false,
+			"message":    "failed to fetch category details from the database",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.Where("name =?", category.Name).Find(&existingcategory).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "error while checking category name",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch category details via category name",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
-   category.Name = existingcategory.Name 
+	category.Name = existingcategory.Name
 
 	if err := database.DB.Updates(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to update category",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to update category details",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "category updated successfully",
-		"ok":      true,
+		"status":     true,
+		"message":    "successfully updated category",
+		"data":       gin.H{},
 	})
 }
 
@@ -143,30 +184,36 @@ func DeleteCategory(c *gin.Context) {
 	categoryID, err := strconv.Atoi(catergoryIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid category ID",
-			"ok":    false,
+			"status":     false,
+			"message":    "invalid category ID",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.First(&category, categoryID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "category is not present on the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to fetch category from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.Delete(&category, categoryID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "unable to delete the category from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to delete category from the database",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "successfully  deleted the category",
-		"ok":      true,
+		"status":     true,
+		"message":    "Successfully deleted category from the database",
 	})
 }

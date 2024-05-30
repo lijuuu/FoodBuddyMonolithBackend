@@ -48,8 +48,10 @@ func CheckAdmin(c *gin.Context) {
 	var AdminLogin model.Admin
 	if err := database.DB.Where("email = ?", email).First(&AdminLogin).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "the email doesnt exist in database, unauthorized user",
-			"ok":    false,
+			"status":     false,
+			"message":    "access denied, request is unauthorized",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		c.Abort()
 		return
@@ -57,8 +59,8 @@ func CheckAdmin(c *gin.Context) {
 
 	
 	c.JSON(http.StatusOK, gin.H{
-		"message": "user is an admin",
-		"ok":    true,
+		"status":     true,
+		"message":    "authorized request, proceed to login",
 	})
 	c.Next()
 }

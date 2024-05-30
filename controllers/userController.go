@@ -11,18 +11,24 @@ import (
 )
 
 func GetUserList(c *gin.Context) {
-	var user []model.User
+	var users []model.User
 
-	tx := database.DB.Select("*").Find(&user)
+	tx := database.DB.Select("*").Find(&users)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to retrieve data from the database, or the data doesn't exists",
+			"status":     false,
+			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
-		"userlist": user,
+		"status":  true,
+		"message": "successfully retrieved user informations",
+		"data": gin.H{
+			"users": users,
+		},
 	})
 }
 
@@ -31,22 +37,31 @@ func GetBlockedUserList(c *gin.Context) {
 
 	tx := database.DB.Where("deleted_at IS NULL AND blocked =?", true).Find(&blockedUsers)
 	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to retrieve data from the database, or the data doesn't exists", "ok": false,
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if len(blockedUsers) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"message": "no blocked users found", "ok": false,
+			"status":     false,
+			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"blockedUserList": blockedUsers,
-		"ok":              true,
+		"status":  true,
+		"message": "successfully retrieved blocked user's data",
+		"data": gin.H{
+			"blockedusers": blockedUsers,
+		},
 	})
 }
 
@@ -58,25 +73,31 @@ func BlockUser(c *gin.Context) {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user ID",
-			"ok":    false,
+			"status":     false,
+			"message":    "invalid user ID",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.First(&user, userId).Error; err != nil {
+
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "User not found",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to fetch user information",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if user.Blocked {
 		c.JSON(http.StatusAlreadyReported, gin.H{
-			"message": "user is already blocked",
-			"user":    user,
-			"ok":      true,
+			"status":     false,
+			"message":    "user is already blocked",
+			"error_code": http.StatusAlreadyReported,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -85,14 +106,17 @@ func BlockUser(c *gin.Context) {
 	fmt.Println(user)
 	tx := database.DB.Updates(&user)
 	if tx.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to change the block status ",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to change the block status ",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "user is blocked", "user": user, "ok": true,
+		"status":  false,
+		"message": "successfully blocked the user",
 	})
 }
 
@@ -104,25 +128,30 @@ func UnblockUser(c *gin.Context) {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user ID",
-			"ok":    false,
+			"status":     false,
+			"message":    "invalid user ID",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if err := database.DB.First(&user, userId).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "User not found",
-			"ok":    false,
+			"status":     false,
+			"message":    "User not found",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if !user.Blocked {
 		c.JSON(http.StatusAlreadyReported, gin.H{
-			"message": "user is already unblocked",
-			"user":    user,
-			"ok":      true,
+			"status":     false,
+			"message":    "user is already unblocked",
+			"error_code": http.StatusAlreadyReported,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -131,14 +160,17 @@ func UnblockUser(c *gin.Context) {
 	fmt.Println(user)
 	tx := database.DB.Model(&user).UpdateColumn("blocked", false)
 	if tx.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to change the unblock status",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to change the unblock status",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "user is unblocked", "user": user, "ok": true,
+		"status":  true,
+		"message": "user is succefully blocked",
 	})
 }
 
@@ -148,8 +180,10 @@ func AddUserAddress(c *gin.Context) {
 	//bind the json to the struct
 	if err := c.BindJSON(&UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to bind the incoming request",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to bind the incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -158,15 +192,19 @@ func AddUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(UserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get user email from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to get user email from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email); !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "unauthorized user",
-			"ok":    false,
+	if err := VerifyJWT(c, email); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized user",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -175,7 +213,13 @@ func AddUserAddress(c *gin.Context) {
 	UserAddress.AddressID = 0
 
 	//validating the useraddress for required,number tag etc....
-	if ok := validate(UserAddress, c); !ok {
+	if errs := validate(UserAddress); errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    errs,
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
@@ -183,8 +227,10 @@ func AddUserAddress(c *gin.Context) {
 	var userinfo model.User
 	if err := database.DB.First(&userinfo, UserAddress.UserID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "User not found",
-			"ok":    false,
+			"status":     false,
+			"message":    "User not found",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -193,17 +239,21 @@ func AddUserAddress(c *gin.Context) {
 	var UserAddresses []model.Address
 	if err := database.DB.Where("user_id = ?", UserAddress.UserID).Find(&UserAddresses).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to retrieve the existing user addresses from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to retrieve the existing user addresses from the database",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	//check if the user already has 3 address...3 is the limit
 	if len(UserAddresses) >= 3 {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "user already have three addresses, please delete or edit the existing addresses",
-			"ok":    false,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "user already have three addresses, please delete or edit the existing addresses",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -211,16 +261,21 @@ func AddUserAddress(c *gin.Context) {
 	//create the address, provide address_id similar to serial numbers...no 1,2,3 for addresses based on user_id
 	if err := database.DB.Create(&UserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create the address on the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to create the address on the database",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	//return the addresses of the particular user
-	c.JSON(http.StatusOK, gin.H{
-		"useraddresses": UserAddress,
-		"ok":            true,
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"status":  true,
+		"message": "successfully added new address",
+		"data": gin.H{
+			"address": UserAddresses,
+		},
 	})
 }
 
@@ -231,8 +286,10 @@ func GetUserAddress(c *gin.Context) {
 	UserID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid userid format",
-			"ok":    true,
+			"status":     false,
+			"message":    "failed to process the request data",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -241,8 +298,10 @@ func GetUserAddress(c *gin.Context) {
 	var UserAddresses []model.Address
 	if err := database.DB.Where("user_id = ?", UserID).Find(&UserAddresses).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get informations from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to get informations from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -251,31 +310,42 @@ func GetUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(uint(UserID))
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get user email from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to get user email from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email); !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "unauthorized user",
-			"ok":    false,
+	if err := VerifyJWT(c, email); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized user",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	//check if there's any address related to the user
 	if len(UserAddresses) == 0 {
+
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "no addresses related to the userid",
+			"status":     false,
+			"message":    "no addresses related to the userid",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	//return the addresses
 	c.JSON(http.StatusOK, gin.H{
-		"useraddress": UserAddresses,
-		"ok":          true,
+		"status":  true,
+		"message": "successfully retrieved user address",
+		"data": gin.H{
+			"addresses": UserAddresses,
+		},
 	})
 }
 
@@ -284,9 +354,12 @@ func EditUserAddress(c *gin.Context) {
 
 	// Bind the incoming JSON to the updateUserAddress struct
 	if err := c.BindJSON(&updateUserAddress); err != nil {
+
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to bind the incoming request",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to bind the incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -294,9 +367,12 @@ func EditUserAddress(c *gin.Context) {
 	// Retrieve the existing UserAddress record
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", updateUserAddress.UserID, updateUserAddress.AddressID).First(&existingUserAddress).Error; err != nil {
+
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "address not found",
-			"ok":    false,
+			"status":     false,
+			"message":    "address not found",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -305,15 +381,20 @@ func EditUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get user email from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to get user email from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email); !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "unauthorized user",
-			"ok":    false,
+	if err := VerifyJWT(c, email); err != nil {
+
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized user",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -329,15 +410,17 @@ func EditUserAddress(c *gin.Context) {
 	// Save the updated record back to the database
 	if err := database.DB.Updates(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to update the address",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to update the address",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
 		"message": "address updated successfully",
-		"ok":      true,
 	})
 }
 
@@ -347,8 +430,10 @@ func DeleteUserAddress(c *gin.Context) {
 	// Bind the incoming JSON to the updateUserAddress struct
 	if err := c.BindJSON(&AddressInfo); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "failed to bind the incoming request",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to bind the incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -357,43 +442,52 @@ func DeleteUserAddress(c *gin.Context) {
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "address not found",
-			"ok":    false,
+			"status":     false,
+			"message":    "address not found",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	//check if the user is not impersonating other users , 
+	//check if the user is not impersonating other users ,
 	//using jwt email and users email fo a match
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "failed to get user email from the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to get user email from the database",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
 		})
 		return
 	}
-	if ok := VerifyJWT(c, email); !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "unauthorized user",
-			"ok":    false,
+	if errs := VerifyJWT(c, email); errs != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized user",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
+
 		return
 	}
 
 	//delete the user address
 	if err := database.DB.Delete(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to delete the address",
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to delete the address",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	//return the response
 	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
 		"message": "address deleted successfully",
-		"ok":      true,
 	})
 
 }

@@ -21,29 +21,29 @@ func main() {
 
 	// authentication routes
 	// router.POST("/api/v1/adminlogin", controllers.AdminLogin)
-	router.POST("/api/v1/user/emaillogin", controllers.EmailLogin)
-	router.POST("/api/v1/user/emailsignup", controllers.EmailSignup)
-	router.POST("/api/v1/user/verifyotp", controllers.VerifyOTP)
+	router.POST("/api/v1/user/emaillogin", controllers.EmailLogin) // 
+	router.POST("/api/v1/user/emailsignup", controllers.EmailSignup) //
+	router.POST("/api/v1/user/verifyotp/:role:/:email/:otp", controllers.VerifyOTP) // 
 
 	// social login routes
-	router.GET("/api/v1/googlesso", controllers.GoogleHandleLogin)
-	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback)
+	router.GET("/api/v1/googlesso", controllers.GoogleHandleLogin) //
+	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback) //
 
 	// public routes for viewing categories, products, and restaurants
-	router.GET("/api/v1/public/categories/all", controllers.GetCategoryList)
-	router.GET("/api/v1/public/categories/products/all", controllers.GetCategoryProductList)
-	router.GET("/api/v1/public/products/all", controllers.GetProductList)
-	router.GET("/api/v1/public/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID)
-	router.GET("/api/v1/public/restaurants/all", controllers.GetRestaurants)
+	router.GET("/api/v1/public/categories/all", controllers.GetCategoryList) //
+	router.GET("/api/v1/public/categories/products/all", controllers.GetCategoryProductList) //
+	router.GET("/api/v1/public/products/all", controllers.GetProductList) //
+	router.GET("/api/v1/public/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID) //
+	router.GET("/api/v1/public/restaurants/all", controllers.GetRestaurants) //
 
 	// admin routes with check admin middleware
-	adminRoutes := router.Group("/api/v1/admin",controllers.CheckAdmin)
+	adminRoutes := router.Group("/api/v1/admin",controllers.CheckAdmin) // 
 	{
 		// user management
-		adminRoutes.GET("/users/all", controllers.GetUserList)
-		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList)
-		adminRoutes.GET("/users/block/:userid", controllers.BlockUser)
-		adminRoutes.GET("/users/unblock/:userid", controllers.UnblockUser)
+		adminRoutes.GET("/users/all", controllers.GetUserList) // 
+		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList) //
+		adminRoutes.GET("/users/block/:userid", controllers.BlockUser) //
+		adminRoutes.GET("/users/unblock/:userid", controllers.UnblockUser) //
 
 		// category management
 		adminRoutes.GET("/categories/all", controllers.GetCategoryList)
@@ -74,10 +74,10 @@ func main() {
 	router.POST("/api/v1/user/products/favourite/delete", controllers.RemoveFavouriteProduct)
 
 	// user address routes
-	router.POST("/api/v1/user/address/add", controllers.AddUserAddress)
-	router.GET("/api/v1/user/address/:userid", controllers.GetUserAddress)
-	router.POST("/api/v1/user/address/edit", controllers.EditUserAddress)
-	router.POST("/api/v1/user/address/delete", controllers.DeleteUserAddress)
+	router.POST("/api/v1/user/address/add", controllers.AddUserAddress) // 
+	router.GET("/api/v1/user/address/:userid", controllers.GetUserAddress) // 
+	router.POST("/api/v1/user/address/edit", controllers.EditUserAddress) // 
+	router.POST("/api/v1/user/address/delete", controllers.DeleteUserAddress) //
 
 	// image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
