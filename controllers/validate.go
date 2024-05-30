@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	"net/http"
+	"errors"
+	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
-func validate(value interface{}, c *gin.Context) bool {
+func validate(value interface{}) error {
 	var translator = map[string]string{
 		"Name_required":            "Please enter  Name",
 		"Password_required":        "Please enter  Password",
@@ -32,12 +32,7 @@ func validate(value interface{}, c *gin.Context) bool {
 			}
 			errs = append(errs, errMsg)
 		}
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": errs,
-			"ok":    false,
-		})
-		return false
+		return errors.New(strings.Join(errs, ", "))
 	}
-	return true
+	return nil
 }

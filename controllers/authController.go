@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
@@ -11,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/smtp"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -43,14 +45,24 @@ func GoogleHandleCallback(c *gin.Context) {
 
 	//check for code defined on googlehandlelogin still exists
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing code parameter", "ok": false})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "missing code parameter",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	//exchange code for token, code is exchanged to make sure the state is same
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange token", "ok": false})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to exchange token",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
@@ -58,7 +70,12 @@ func GoogleHandleCallback(c *gin.Context) {
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
 		fmt.Println("google signup done")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info", "ok": false})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to get user information",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
 		return
 	}
 	defer response.Body.Close()
@@ -66,7 +83,12 @@ func GoogleHandleCallback(c *gin.Context) {
 	//read the content of the reponse.body
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read user info", "ok": false})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to read user information",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
 		return
 	}
 
@@ -74,7 +96,12 @@ func GoogleHandleCallback(c *gin.Context) {
 	var User model.GoogleResponse
 	err = json.Unmarshal(content, &User)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse user info", "ok": false})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to parse user information",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
 		return
 	}
 
@@ -98,45 +125,69 @@ func GoogleHandleCallback(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			// Create a new user
 			if err := database.DB.Create(&newUser).Error; err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create user using google signup method", "ok": false})
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":     false,
+					"message":    "failed to create user through google sso",
+					"error_code": http.StatusInternalServerError,
+					"data":       gin.H{},
+				})
 				return
 			}
 		} else {
 			// Handle case where user already exists but not found due to other errors
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error while fetching user", "ok": false})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "failed to fetch user information",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
+			})
 			return
 		}
 	}
 
 	// User already exists, check login method
 	if existingUser.LoginMethod == model.EmailLoginMethod {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists, please use email for login", "ok": false})
+		c.JSON(http.StatusSeeOther, gin.H{
+			"status":     false,
+			"message":    "please login through email method",
+			"error_code": http.StatusSeeOther,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	//check is the user is blocked by the admin
 	if existingUser.Blocked {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user is restricted from accessing, blocked by the administrator", "ok": false})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "user is unauthorized to access",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	// Generate JWT and set cookie within GenerateJWT
-	tokenstring := GenerateJWT(c, newUser.Email)
-	if tokenstring == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "jwt token is empty please try again",
-			"ok":    false,
+	tokenstring, err := GenerateJWT(c, newUser.Email)
+	if tokenstring == "" || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "failed to create authorization token",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	// Return success response
 	c.JSON(http.StatusOK, gin.H{
-		"message":  "Logged in successfully",
-		"user":     existingUser,
-		"jwttoken": tokenstring,
-		"ok":       true,
-	})
+		"status":     true,
+		"message":    "login is successful",
+		"data":       gin.H{
+			"user":User,
+			"token":tokenstring,
+		},
+	})  
 
 }
 
@@ -154,20 +205,33 @@ func EmailSignup(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "ok": false})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to process the incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
-	ok := validate(body, c)
-	if !ok {
+	err := validate(body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    err,
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	//check if the password and the confirm password is correct
 	if body.Password != body.ConfirmPassword {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "password is not a match",
-			"ok":    false,
+			"status":     false,
+			"message":    "passwords doesn't match",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -180,9 +244,11 @@ func EmailSignup(c *gin.Context) {
 	//hash the password
 	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to process the incoming request",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -201,8 +267,10 @@ func EmailSignup(c *gin.Context) {
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", body.Email).First(&User)
 	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": tx.Error,
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to retreive information from the database",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 
@@ -210,17 +278,21 @@ func EmailSignup(c *gin.Context) {
 		// User does not exist, proceed to create
 		tx = database.DB.Create(&User)
 		if tx.Error != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"error": tx.Error,
-				"ok":    false,
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "failed to create a new user",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
 			})
 			return
 		}
 	} else {
 		// User already exists
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "user already exists",
-			"ok":    false,
+			"status":     false,
+			"message":    "user already exists",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -243,15 +315,28 @@ func EmailSignup(c *gin.Context) {
 
 	if err := database.DB.Create(&otpTableInfo).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create otp table",
+			"status":     false,
+			"message":    "failed to process otp verification process",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		// "jwttoken":tokenstring,
-		"message": "signup is successfull, login and complete your otp verification",
-		"user":    User,
-		"ok":      true,
+		"status":     true,
+		"message":    "Email login successful, please login to complete your otp verification",
+		"error_code": http.StatusOK,
+		"data": gin.H{
+			"user": gin.H{
+				"name":         User.Name,
+				"email":        User.Email,
+				"phone_number": User.PhoneNumber,
+				"picture":      User.Picture,
+				"login_method": User.LoginMethod,
+				"block_status": User.Blocked,
+			},
+		},
 	})
 	c.Next()
 }
@@ -261,13 +346,24 @@ func EmailLogin(c *gin.Context) {
 
 	//get the json from the request
 	if err := c.BindJSON(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to process the incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
 	//validate the content of the json
-	ok := validate(form, c)
-	if !ok {
+	err := validate(form)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    err,
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
 		return
 	}
 
@@ -276,8 +372,10 @@ func EmailLogin(c *gin.Context) {
 	tx := database.DB.Where("email =? AND deleted_at IS NULL", form.Email).First(&user)
 	if tx.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid credentials or user doesn't exist on the database",
-			"ok":    false,
+			"status":     false,
+			"message":    "invalid email or password",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -285,8 +383,10 @@ func EmailLogin(c *gin.Context) {
 	//check if the login methods are the same as email, if google prompt to use google login
 	if user.LoginMethod != model.EmailLoginMethod {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "please login through google",
-			"ok":    false,
+			"status":     false,
+			"message":    "email uses another method for logging in, use google sso",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -294,8 +394,10 @@ func EmailLogin(c *gin.Context) {
 	//check is the user is blocked by the admin
 	if user.Blocked {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user is restricted from accessing, blocked by the administrator",
-			"ok":    false,
+			"status":     false,
+			"message":    "user is not authorized to access",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -304,12 +406,14 @@ func EmailLogin(c *gin.Context) {
 	saltedPassword := user.Salt + form.Password
 
 	//get the hash and compare it with password from body
-	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(saltedPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(saltedPassword))
 	if err != nil {
 		//passwords do not match
 		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "credentials are wrong",
-			"ok":    false,
+			"status":     false,
+			"message":    "invalid email or password",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -318,42 +422,63 @@ func EmailLogin(c *gin.Context) {
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
 	var OTPtable model.OTPTable
 
-	if err := database.DB.Where("email = ? AND role = ?", OTPtable.Email,model.UserRole).Find(&OTPtable).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role = ?", OTPtable.Email, model.UserRole).Find(&OTPtable).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to process otp verification",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
 		return
 	}
 
-	if OTPtable.VerificationStatus == model.VerificationStatusPending {
-		SendOTP(c, user.Email, OTPtable.OTPExpiry, model.UserRole)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "email verification status is pending, please verify via email verification code",
-			"ok":    false,
+	if OTPtable.VerificationStatus != model.VerificationStatusVerified {
+		err := SendOTP(c, user.Email, OTPtable.OTPExpiry, model.UserRole)
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"status":     false,
+			"message":    err,
+			"error_code": http.StatusTooManyRequests,
+			"data": gin.H{
+				"user": user,
+			},
 		})
 		return
 	}
 
 	//generate the jwt token and set it in cookie using generatejwt fn,
-	tokenstring := GenerateJWT(c, user.Email)
+	tokenstring, err := GenerateJWT(c, user.Email)
 
-	if tokenstring == "" {
+	if tokenstring == "" || err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "jwt token is empty please try again",
-			"ok":    false,
+			"status":     false,
+			"message":    "Failed to create JWT token due to an internal server error.Try again",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	// Return success response
 	c.JSON(http.StatusOK, gin.H{
-		"message":  "logged in successfully",
-		"user":     user,
-		"jwttoken": tokenstring,
-		"ok":       true,
+		"status":     true,
+		"message":    "Email login successful.",
+		"error_code": http.StatusOK,
+		"data": gin.H{
+			"user": gin.H{
+				"name":         user.Name,
+				"email":        user.Email,
+				"phone_number": user.PhoneNumber,
+				"picture":      user.Picture,
+				"login_method": user.LoginMethod,
+				"block_status": user.Blocked,
+			},
+		},
 	})
 
 	c.Next()
 
 }
-func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) {
+func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	otp := r.Intn(900000) + 100000
@@ -363,132 +488,145 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) {
 	if otpexpiry > 0 && now < otpexpiry {
 		// OTP is still valid, respond with a message and do not send a new OTP
 		//send back tim left before trying another one
-		timeLeft := otpexpiry-now
-		str:= fmt.Sprintf("OTP is still valid. wait before sending another request, %v seconds left",int(timeLeft))
-		c.JSON(http.StatusOK, gin.H{
-			"error": str,
-			"ok":    false,
-		})
-		return
+		timeLeft := otpexpiry - now
+		str := fmt.Sprintf("OTP is still valid. wait before sending another request, %v seconds left", int(timeLeft))
+
+		return errors.New(str)
 	}
 
-	// Proceed to send a new OTP if the previous one has expired or if no otpexpiry was provided
 	// Set expiryTime as 10 minutes from now
 	expiryTime := now + 10*60 // 10 minutes in seconds
 
-	fmt.Printf("Sending mail because OTP has expired: %v\n", expiryTime)
+	// fmt.Printf("Sending mail because OTP has expired: %v\n", expiryTime)
 
 	from := "foodbuddycode@gmail.com"
 	appPassword := "emdnwucohpvcoyin"
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-
-	mail := fmt.Sprintf("FoodBuddy OTP Verification\nThis is your Verification code: %d", otp)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/user/verifyotp/%v/%v/%v",role,to,otp)
+	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v",url)
 
 	//send the otp to the specified email
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(mail))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "sending otp failed",
-			"ok":    false,
-		})
-		return
+		return errors.New("failed to send otp")
 	}
 
 	//update the otp and expiry
 	otpTableInfo := model.OTPTable{
-		Email: to,
-		Role:  role,
-		OTP:   otp,
-		OTPExpiry: expiryTime,
+		Email:              to,
+		Role:               role,
+		OTP:                otp,
+		OTPExpiry:          expiryTime,
 		VerificationStatus: model.VerificationStatusPending, //already metioned during signup
 	}
 
-	if err:= database.DB.Where("email = ?",otpTableInfo.Email).Updates(&otpTableInfo).Error;err!=nil{
-		c.JSON(http.StatusInternalServerError,gin.H{
-			"error":err,
-		})
-		return // return an error, 
+	if err := database.DB.Where("email = ?", otpTableInfo.Email).Updates(&otpTableInfo).Error; err != nil {
+		return errors.New("failed to get information using email")
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "verification code sent to mail,verify to continue",
-		"ok":      true,
-	})
+	return nil
 }
 
 func VerifyOTP(c *gin.Context) {
-    ///welcome?firstname=Jane&lastname=Doe
+	///welcome?firstname=Jane&lastname=Doe
 	entityRole := c.Query("role")
-	var incomingRequest model.OTPVerification
-	var otpTableInfo model.OTPTable
+	entityEmail := c.Query("email")
+	entityOTP,_ := strconv.Atoi(c.Query("otp"))
 
-	if err := c.BindJSON(&incomingRequest); err != nil {
+	if entityRole == "" || entityEmail == "" || entityOTP == 0{
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-			"ok":    false,
+			"status":     false,
+			"message":    "failed to process incoming request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
-		return
 	}
 
-	tx := database.DB.Where("email = ? AND role = ?", incomingRequest.Email,entityRole).First(&otpTableInfo)
+	var otpTableInfo model.OTPTable
+
+	// var incomingRequest model.OTPVerification
+	// if err := c.BindJSON(&incomingRequest); err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"status":     false,
+	// 		"message":    "failed to process incoming request",
+	// 		"error_code": http.StatusBadRequest,
+	// 		"data":       gin.H{},
+	// 	})
+	// 	return
+	// }
+
+	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&otpTableInfo)
 	if tx.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "user not found",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve user information",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if otpTableInfo.VerificationStatus == model.VerificationStatusVerified {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "user already verified",
-			"ok":    false,
+		c.JSON(http.StatusAlreadyReported, gin.H{
+			"status":     false,
+			"message":    "user is already verified",
+			"error_code": http.StatusAlreadyReported,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if otpTableInfo.OTP == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "login before verifying otp",
-			"ok":    false,
+		c.JSON(http.StatusAlreadyReported, gin.H{
+			"status":     false,
+			"message":    "please login once again to verify your otp",
+			"error_code": http.StatusAlreadyReported,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if otpTableInfo.OTPExpiry < time.Now().Unix() {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "otp expired",
-			"ok":    false,
+			"status":     false,
+			"message":    "otp has expired ,please login once again to verify your otp",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	if otpTableInfo.OTP != incomingRequest.OTP {
+	if otpTableInfo.OTP != entityOTP {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid otp",
-			"ok":    false,
+			"status":     false,
+			"message":    "otp is invalid ,please login once again to verify your otp",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	otpTableInfo.VerificationStatus = model.VerificationStatusVerified
 
-	tx = database.DB.Where("email = ? AND role = ?", incomingRequest.Email,entityRole).Updates(&otpTableInfo)
+	tx = database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).Updates(&otpTableInfo)
 	if tx.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "otp verification failed",
-			"ok":    false,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to verify otp, please try again",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "otp verified successfully",
-		"entity":    otpTableInfo,
-		"ok":      true,
+		"status":     true,
+		"message":    "OTP verification is Successful",
+		"error_code": http.StatusOK,
+		"data":       gin.H{},
 	})
 }
 
-func GenerateJWT(c *gin.Context, email string) string {
+func GenerateJWT(c *gin.Context, email string) (string, error) {
 	//generate token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": email,
@@ -497,30 +635,23 @@ func GenerateJWT(c *gin.Context, email string) string {
 
 	//sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString([]byte(utils.GetEnvVariables().JWTSecret))
-
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "error while generating jwt ",
-		})
-		return ""
+		return "", err
 	}
 
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
-	return tokenString
+	return tokenString, nil
 }
 
-func VerifyJWT(c *gin.Context, useremail string) bool {
+func VerifyJWT(c *gin.Context, useremail string) error {
 	utils.NoCache(c)
 
 	// Attempt to retrieve the JWT token from the cookie
 	tokenString, err := c.Cookie("Authorization")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "no JWT token found in the cookie",
-			"ok":    false,
-		})
-		return false
+		
+		return errors.New("No Authorization token found in the cookie")
 	}
 
 	// Decode and validate the token
@@ -532,57 +663,32 @@ func VerifyJWT(c *gin.Context, useremail string) bool {
 	})
 
 	if err != nil {
-		errstr := fmt.Sprintf("internal server error occurred while parsing the JWT token : /n %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": errstr,
-			"ok":    false,
-		})
-		return false
+		return errors.New("internal server error occurred while parsing the JWT token ")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		// Check if the token is expired
 		if claimsExpiration, ok := claims["exp"].(float64); ok && claimsExpiration < float64(time.Now().Unix()) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "JWT token expired, please log in again",
-				"ok":    false,
-			})
-			return false
+			return errors.New("Authorization token is expired please log in again")
 		}
 
 		// Retrieve the user associated with the token
 		var user model.User
 		tx := database.DB.FirstOrInit(&user, "email =?", claims["sub"])
 		if tx.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "failed to retrieve user information from the database",
-				"ok":    false,
-			})
-			return false
+			return errors.New("failed to process user information")
 		}
 		ok := IsAdmin(user.Email)
 
 		if useremail != user.Email || !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "unauthorized user",
-				"ok":    false,
-			})
-			return false
+			return errors.New("unauthorized use of authorizatioin token")
 		}
 
 		// If we reach this point, the JWT is valid and the user is authenticated
-		c.JSON(http.StatusAccepted, gin.H{
-			"message": "jwt is a valid one, proceed to login",
-			"ok":      true,
-		})
-		return true
+		return nil
 
 	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "internal server error occurred while parsing the JWT token",
-			"ok":    false,
-		})
-		return false
+		return errors.New("internal server error occurred while parsing the JWT token ")
 	}
 }
 
