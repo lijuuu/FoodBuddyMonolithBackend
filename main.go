@@ -51,22 +51,26 @@ func main() {
 		adminRoutes.POST("/categories/add", controllers.AddCategory)
 		adminRoutes.POST("/categories/edit", controllers.EditCategory)
 		adminRoutes.GET("/categories/delete/:categoryid", controllers.DeleteCategory)
-
-		// restaurant management
-		adminRoutes.GET("/restaurants/all", controllers.GetRestaurants)
-		adminRoutes.POST("/restaurants/add", controllers.AddRestaurant)
-		adminRoutes.POST("/restaurants/edit", controllers.EditRestaurant)
-		adminRoutes.GET("/restaurants/delete/:restaurantid", controllers.DeleteRestaurant)
-		adminRoutes.GET("/restaurants/block/:restaurantid", controllers.BlockRestaurant)
-		adminRoutes.GET("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
-
-		// product management
-		adminRoutes.GET("/products/all", controllers.GetProductList)
-		adminRoutes.GET("/products/restaurants/:restaurantid", controllers.GetProductsByRestaurantID)
-		adminRoutes.POST("/products/add", controllers.AddProduct)
-		adminRoutes.POST("/products/edit", controllers.EditProduct)
-		adminRoutes.GET("/products/delete/:productid", controllers.DeleteProduct)
 	}
+
+	restaurantRoutes := router.Group("/api/v1/restaurants")
+	{
+		// Restaurant Management
+		restaurantRoutes.GET("/all", controllers.GetRestaurants)
+		restaurantRoutes.POST("/add", controllers.AddRestaurant)
+		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
+		restaurantRoutes.GET("/delete/:restaurantid", controllers.DeleteRestaurant)
+		restaurantRoutes.GET("/block/:restaurantid", controllers.BlockRestaurant)
+		restaurantRoutes.GET("/unblock/:restaurantid", controllers.UnblockRestaurant)
+	
+		// Product Management
+		restaurantRoutes.GET("/products/all", controllers.GetProductList)
+		restaurantRoutes.GET("/products/:restaurantid", controllers.GetProductsByRestaurantID)
+		restaurantRoutes.POST("/products/add", controllers.AddProduct)
+		restaurantRoutes.POST("/products/edit", controllers.EditProduct)
+		restaurantRoutes.GET("/products/delete/:productid", controllers.DeleteProduct)
+	}
+	
 
 	// user favorite products routes
 	router.GET("/api/v1/user/products/favourite/:userid", controllers.GetFavouriteProductByUserID)
