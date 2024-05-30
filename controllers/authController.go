@@ -168,7 +168,7 @@ func GoogleHandleCallback(c *gin.Context) {
 	}
 
 	// Generate JWT and set cookie within GenerateJWT
-	tokenstring, err := GenerateJWT(c, newUser.Email)
+	tokenstring, err := GenerateJWT(c, newUser.Email,model.UserRole)
 	if tokenstring == "" || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
@@ -307,13 +307,13 @@ func EmailSignup(c *gin.Context) {
 	// }
 
 	//update otp on the otp table along with user email, role, verification status
-	otpTableInfo := model.OTPTable{
+	VerificationTable := model.VerificationTable{
 		Email:              User.Email,
 		Role:               model.UserRole,
 		VerificationStatus: model.VerificationStatusPending,
 	}
 
-	if err := database.DB.Create(&otpTableInfo).Error; err != nil {
+	if err := database.DB.Create(&VerificationTable).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to process otp verification process",
@@ -420,9 +420,9 @@ func EmailLogin(c *gin.Context) {
 
 	//checking verification status of the user ,
 	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
-	var OTPtable model.OTPTable
+	var VerificationTable model.VerificationTable
 
-	if err := database.DB.Where("email = ? AND role = ?", user.Email, model.UserRole).First(&OTPtable).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role = ?", user.Email, model.UserRole).First(&VerificationTable).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to process otp verification",
@@ -432,8 +432,8 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
-	if OTPtable.VerificationStatus != model.VerificationStatusVerified {
-		err := SendOTP(c, user.Email, OTPtable.OTPExpiry, model.UserRole)
+	if VerificationTable.VerificationStatus != model.VerificationStatusVerified {
+		err := SendOTP(c, user.Email, VerificationTable.OTPExpiry, model.UserRole)
 		if err !=nil {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"status":     false,
@@ -446,7 +446,7 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	//generate the jwt token and set it in cookie using generatejwt fn,
-	tokenstring, err := GenerateJWT(c, user.Email)
+	tokenstring, err := GenerateJWT(c, user.Email,model.UserRole)
 
 	if tokenstring == "" || err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -512,7 +512,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 	}
 
 	//update the otp and expiry
-	otpTableInfo := model.OTPTable{
+	VerificationTable := model.VerificationTable{
 		Email:              to,
 		Role:               role,
 		OTP:                otp,
@@ -520,7 +520,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 		VerificationStatus: model.VerificationStatusPending, //already metioned during signup
 	}
 
-	if err := database.DB.Where("email = ?", otpTableInfo.Email).Updates(&otpTableInfo).Error; err != nil {
+	if err := database.DB.Where("email = ?", VerificationTable.Email).Updates(&VerificationTable).Error; err != nil {
 		return errors.New("failed to get information using email")
 	}
 
@@ -542,7 +542,7 @@ func VerifyOTP(c *gin.Context) {
 		})
 	}
 
-	var otpTableInfo model.OTPTable
+	var VerificationTable model.VerificationTable
 
 	// var incomingRequest model.OTPVerification
 	// if err := c.BindJSON(&incomingRequest); err != nil {
@@ -555,7 +555,7 @@ func VerifyOTP(c *gin.Context) {
 	// 	return
 	// }
 
-	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&otpTableInfo)
+	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&VerificationTable)
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -566,7 +566,7 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if otpTableInfo.VerificationStatus == model.VerificationStatusVerified {
+	if VerificationTable.VerificationStatus == model.VerificationStatusVerified {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    "user is already verified",
@@ -576,7 +576,7 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if otpTableInfo.OTP == 0 {
+	if VerificationTable.OTP == 0 {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    "please login once again to verify your otp",
@@ -586,7 +586,7 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if otpTableInfo.OTPExpiry < time.Now().Unix() {
+	if VerificationTable.OTPExpiry < time.Now().Unix() {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "otp has expired ,please login once again to verify your otp",
@@ -596,7 +596,7 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if otpTableInfo.OTP != entityOTP {
+	if VerificationTable.OTP != entityOTP {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "otp is invalid ,please login once again to verify your otp",
@@ -606,9 +606,9 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	otpTableInfo.VerificationStatus = model.VerificationStatusVerified
+	VerificationTable.VerificationStatus = model.VerificationStatusVerified
 
-	tx = database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).Updates(&otpTableInfo)
+	tx = database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).Updates(&VerificationTable)
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -626,10 +626,11 @@ func VerifyOTP(c *gin.Context) {
 	})
 }
 
-func GenerateJWT(c *gin.Context, email string) (string, error) {
+func GenerateJWT(c *gin.Context, email string,role string) (string, error) {
 	//generate token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": email,
+		"email": email,
+		"role":role,
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
 	})
 
@@ -644,14 +645,13 @@ func GenerateJWT(c *gin.Context, email string) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyJWT(c *gin.Context, useremail string) error {
+func VerifyJWT(c *gin.Context, role string, useremail string) error {
 	utils.NoCache(c)
 
 	// Attempt to retrieve the JWT token from the cookie
 	tokenString, err := c.Cookie("Authorization")
 	if err != nil {
-		
-		return errors.New("No Authorization token found in the cookie")
+		return errors.New("no authorization token found in the cookie")
 	}
 
 	// Decode and validate the token
@@ -663,33 +663,43 @@ func VerifyJWT(c *gin.Context, useremail string) error {
 	})
 
 	if err != nil {
-		return errors.New("internal server error occurred while parsing the JWT token ")
+		return errors.New("internal server error occurred while parsing the JWT token")
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		// Check if the token is expired
-		if claimsExpiration, ok := claims["exp"].(float64); ok && claimsExpiration < float64(time.Now().Unix()) {
-			return errors.New("Authorization token is expired please log in again")
-		}
-
-		// Retrieve the user associated with the token
-		var user model.User
-		tx := database.DB.FirstOrInit(&user, "email =?", claims["sub"])
-		if tx.Error != nil {
-			return errors.New("failed to process user information")
-		}
-		ok := IsAdmin(user.Email)
-
-		if useremail != user.Email || !ok {
-			return errors.New("unauthorized use of authorizatioin token")
-		}
-
-		// If we reach this point, the JWT is valid and the user is authenticated
-		return nil
-
-	} else {
-		return errors.New("internal server error occurred while parsing the JWT token ")
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return errors.New("internal server error occurred while parsing the JWT token")
 	}
+
+	// Check if the token is expired
+	if claimsExpiration, ok := claims["exp"].(float64); ok && claimsExpiration < float64(time.Now().Unix()) {
+		return errors.New("authorization token is expired please log in again")
+	}
+
+	// Retrieve the user associated with the token
+	email, ok := claims["email"].(string)
+	if !ok {
+		return errors.New("invalid email claim in token")
+	}
+
+	tokenRole, ok := claims["role"].(string)
+	if !ok {
+		return errors.New("invalid role claim in token")
+	}
+
+	// Ensure the token role matches the passed role parameter
+	if tokenRole != role {
+		return errors.New("role mismatch")
+	}
+
+	var VerificationTable model.VerificationTable
+	tx := database.DB.Where("email = ? AND role = ?", email, role).First(&VerificationTable)
+	if tx.Error != nil {
+		return errors.New("failed to process user information")
+	}
+
+	// If we reach this point, the JWT is valid and the user is authenticated
+	return nil
 }
 
 func EmailFromUserID(UserID uint) (string, bool) {
