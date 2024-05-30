@@ -199,7 +199,7 @@ func AddUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if err := VerifyJWT(c, email); err != nil {
+	if err := VerifyJWT(c, model.UserRole,email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
@@ -317,7 +317,7 @@ func GetUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if err := VerifyJWT(c, email); err != nil {
+	if err := VerifyJWT(c, model.UserRole,email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
@@ -388,7 +388,7 @@ func EditUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if err := VerifyJWT(c, email); err != nil {
+	if err := VerifyJWT(c, model.UserRole,email); err != nil {
 
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
@@ -462,7 +462,7 @@ func DeleteUserAddress(c *gin.Context) {
 		})
 		return
 	}
-	if errs := VerifyJWT(c, email); errs != nil {
+	if errs := VerifyJWT(c, model.UserRole,email); errs != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
@@ -489,5 +489,4 @@ func DeleteUserAddress(c *gin.Context) {
 		"status":  true,
 		"message": "address deleted successfully",
 	})
-
 }

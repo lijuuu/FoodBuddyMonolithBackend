@@ -55,17 +55,12 @@ type GoogleResponse struct {
 	Locale        string `json:"locale"`
 }
 
-type OTPTable struct {
+type VerificationTable struct {
 	Email              string `validate:"required,email" gorm:"type:varchar(255);unique_index"`
 	Role               string  
 	OTP                int 
 	OTPExpiry          int64
 	VerificationStatus string `gorm:"type:varchar(255)"`
-}
-
-type OTPVerification struct{
-	Email string
-	OTP int
 }
 
 type LoginForm struct {

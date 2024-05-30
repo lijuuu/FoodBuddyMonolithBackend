@@ -293,7 +293,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 		return
 	}
 	fmt.Println(email)
-	if err := VerifyJWT(c, email); err != nil {
+	if err := VerifyJWT(c, model.RestaurantRole,email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
@@ -350,7 +350,7 @@ func AddFavouriteProduct(c *gin.Context) {
 		})
 		return
 	}
-	if err := VerifyJWT(c, email); err!=nil {
+	if err := VerifyJWT(c,model.RestaurantRole, email); err!=nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized user",
@@ -454,7 +454,7 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		})
 		return
 	}
-	if err := VerifyJWT(c, email); err!= nil {
+	if err := VerifyJWT(c, model.RestaurantRole,email); err!= nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized user",
