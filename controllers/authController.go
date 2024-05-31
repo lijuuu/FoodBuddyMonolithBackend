@@ -218,7 +218,7 @@ func EmailSignup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    err,
+			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
@@ -297,15 +297,6 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
-	// //Generating JWT to access the home page //using verification otp ,reason for commenting the code
-	// tokenstring  := GenerateJWT(c, body.Email)
-
-	// if tokenstring == ""{
-	// 	c.JSON(http.StatusInternalServerError,gin.H{
-	// 		"Error":"not able to generate jwt token",
-	// 	})
-	// }
-
 	//update otp on the otp table along with user email, role, verification status
 	VerificationTable := model.VerificationTable{
 		Email:              User.Email,
@@ -360,7 +351,7 @@ func EmailLogin(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    err,
+			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
@@ -482,7 +473,6 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	otp := r.Intn(900000) + 100000
-
 	// Check if the provided otpexpiry has already passed
 	now := time.Now().Unix()
 	if otpexpiry > 0 && now < otpexpiry {
@@ -494,6 +484,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 		return errors.New(str)
 	}
 
+
 	// Set expiryTime as 10 minutes from now
 	expiryTime := now + 10*60 // 10 minutes in seconds
 
@@ -502,7 +493,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 	from := "foodbuddycode@gmail.com"
 	appPassword := "emdnwucohpvcoyin"
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/user/verifyotp/%v/%v/%v",role,to,otp)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/verifyotp/%v/%v/%v",role,to,otp)
 	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v",url)
 
 	//send the otp to the specified email
@@ -517,10 +508,10 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 		Role:               role,
 		OTP:                otp,
 		OTPExpiry:          expiryTime,
-		VerificationStatus: model.VerificationStatusPending, //already metioned during signup
+		VerificationStatus: model.VerificationStatusPending, //already metioned during signup //mentioning it sprtly for all routes as well
 	}
 
-	if err := database.DB.Where("email = ?", VerificationTable.Email).Updates(&VerificationTable).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role = ?", VerificationTable.Email,role).Updates(&VerificationTable).Error; err != nil {
 		return errors.New("failed to get information using email")
 	}
 
@@ -540,20 +531,11 @@ func VerifyOTP(c *gin.Context) {
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
+		return
 	}
 
 	var VerificationTable model.VerificationTable
 
-	// var incomingRequest model.OTPVerification
-	// if err := c.BindJSON(&incomingRequest); err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"status":     false,
-	// 		"message":    "failed to process incoming request",
-	// 		"error_code": http.StatusBadRequest,
-	// 		"data":       gin.H{},
-	// 	})
-	// 	return
-	// }
 
 	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&VerificationTable)
 	if tx.Error != nil {
@@ -566,8 +548,9 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
+
 	if VerificationTable.VerificationStatus == model.VerificationStatusVerified {
-		c.JSON(http.StatusAlreadyReported, gin.H{
+		c.JSON(http.StatusIMUsed, gin.H{
 			"status":     false,
 			"message":    "user is already verified",
 			"error_code": http.StatusAlreadyReported,
@@ -618,11 +601,27 @@ func VerifyOTP(c *gin.Context) {
 		})
 		return
 	}
+	var token string
+	var err error
+	if entityRole == model.AdminRole{
+        token,err = GenerateJWT(c,entityEmail,model.AdminRole)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "failed to generate token, please try again",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
+			})
+			return
+		}
+    }
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"message":    "OTP verification is Successful",
-		"error_code": http.StatusOK,
-		"data":       gin.H{},
+	    "data":gin.H{
+			"token":token,
+		},
 	})
 }
 
