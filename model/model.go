@@ -33,15 +33,15 @@ type Admin struct {
 
 type User struct {
 	gorm.Model
-	ID                 uint   `validate:"required"`
-	Name               string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
-	Email              string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber        string `gorm:"column:email;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
-	Picture            string `gorm:"column:picture;type:text" json:"picture"`
-	HashedPassword     string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
-	Salt               string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
-	LoginMethod        string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
-	Blocked            bool   `gorm:"column:blocked;type:bool" json:"blocked"`
+	ID             uint   `validate:"required"`
+	Name           string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
+	Email          string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
+	PhoneNumber    string `gorm:"column:email;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	Picture        string `gorm:"column:picture;type:text" json:"picture"`
+	HashedPassword string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
+	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
+	LoginMethod    string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
+	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
 }
 
 type GoogleResponse struct {
@@ -57,8 +57,8 @@ type GoogleResponse struct {
 
 type VerificationTable struct {
 	Email              string `validate:"required,email" gorm:"type:varchar(255);unique_index"`
-	Role               string  
-	OTP                int 
+	Role               string
+	OTP                int
 	OTPExpiry          int64
 	VerificationStatus string `gorm:"type:varchar(255)"`
 }
@@ -77,8 +77,6 @@ type Category struct {
 	Products    []Product `gorm:"foreignKey:CategoryID"`
 }
 
-type ImageSlice []string
-
 type Product struct {
 	gorm.Model
 	ID           uint   `json:"product_id"`
@@ -96,11 +94,23 @@ type Product struct {
 
 type Restaurant struct {
 	gorm.Model
-	ID          uint
-	Name        string `validate:"required" json:"name"`
-	Description string `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL    string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Blocked     bool
+	ID                 uint
+	Name               string `validate:"required" json:"name"`
+	Description        string `gorm:"column:description" validate:"required" json:"description"`
+	Address            string
+	Email              string
+	PhoneNumber        string
+	ImageURL           string `gorm:"column:image_url" validate:"required" json:"image_url"`
+	CertificateURL     string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
+	VerificationStatus string
+	Blocked            bool
+	Salt               string
+	HashedPassword     string
+}
+
+type RestaurantLogin struct {
+	Email   string `validate:"required,email"`
+	Password string `validate:"required"`
 }
 
 type FavouriteProduct struct {

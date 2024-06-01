@@ -19,17 +19,14 @@ func init() {
 
 func main() {
 	router := gin.Default()
-
 	router.LoadHTMLGlob("templates/*")
 	router.Use(controllers.RateLimitMiddleware())
-	router.GET("/ping",func(c *gin.Context) {
-		c.JSON(200,gin.H{
-			"message":"hello, its working",
+	router.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "hello, its working",
 		})
 	})
-
 	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
 	// authentication routes
 	// router.POST("/api/v1/adminlogin", controllers.AdminLogin)
 	router.POST("/api/v1/user/emaillogin", controllers.EmailLogin)
@@ -69,7 +66,7 @@ func main() {
 	{
 		// Restaurant Management
 		restaurantRoutes.GET("/all", controllers.GetRestaurants)
-		restaurantRoutes.POST("/add", controllers.AddRestaurant)
+		restaurantRoutes.POST("/add", controllers.RestaurantSignup)
 		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
 		restaurantRoutes.GET("/delete/:restaurantid", controllers.DeleteRestaurant)
 		restaurantRoutes.GET("/block/:restaurantid", controllers.BlockRestaurant)
@@ -102,7 +99,6 @@ func main() {
 	router.GET("/api/v1/logout", controllers.Logout)
 
 	router.Run(":8080")
-
 }
 
 // /controllers
