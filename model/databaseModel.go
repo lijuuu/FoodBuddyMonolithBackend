@@ -95,11 +95,6 @@ type Restaurant struct {
 }
 
 
-type RestaurantLogin struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
-}
-
 type FavouriteProduct struct {
 	UserID    uint `validate:"required"`
 	ProductID uint `validate:"required"`

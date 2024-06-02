@@ -12,9 +12,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// RestaurantSignup godoc
+// @Summary Restaurant signup
+// @Description Signup a new restaurant
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param RestaurantSignup body model.RestaurantSignupRequest true "Restaurant Signup"
+// @Success 200 {object} model.SuccessResponse
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /api/v1/auth/restaurant/signup [post]
 func RestaurantSignup(c *gin.Context) {
 	// bind json to struct
-	var restaurantSignup model.RestaurantSignup
+	var restaurantSignup model.RestaurantSignupRequest
 	if err := c.BindJSON(&restaurantSignup); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
@@ -132,10 +143,22 @@ func RestaurantSignup(c *gin.Context) {
 		},
 	})
 }
-// login
+
+// RestaurantLogin godoc
+// @Summary Restaurant login
+// @Description Login a restaurant
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param RestaurantLogin body model.RestaurantLoginRequest true "Restaurant Login"
+// @Success 200 {object} model.SuccessResponse
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 401 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /api/v1/auth/restaurant/login [post]
 func RestaurantLogin(c *gin.Context) {
 	// Get struct
-	var restaurantLogin model.RestaurantLogin
+	var restaurantLogin model.RestaurantLoginRequest
 	var existingRestaurant model.Restaurant
 
 	if err := c.BindJSON(&restaurantLogin); err != nil {
@@ -171,7 +194,7 @@ func RestaurantLogin(c *gin.Context) {
 	}
 
 	// Check block and admin verification status
-	if existingRestaurant.Blocked  {
+	if existingRestaurant.Blocked {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "Restaurant not authorized to access the route",
@@ -255,9 +278,13 @@ func RestaurantLogin(c *gin.Context) {
 
 func CheckRestaurant(c *gin.Context) {
 	email := utils.GetJWTEmailClaim(c)
+	if email == "" {
+		c.Abort()
+		return
+	}
 
 	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "access denied, request is unauthorized",
 			"error_code": http.StatusUnauthorized,
@@ -296,6 +323,16 @@ func EditRestaurant(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
+		return
+	}
+
+	if err := validate(restaurant); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})

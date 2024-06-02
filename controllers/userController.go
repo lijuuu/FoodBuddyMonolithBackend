@@ -192,6 +192,16 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 
+	if err:= validate(UserAddress);err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    err,
+			"error_code": http.StatusBadRequest,
+			"data":       gin.H{},
+		})
+		return
+	}
+
 	//checking the user sending is performing in his/her account..
 	email, ok := EmailFromUserID(UserAddress.UserID)
 	if !ok {

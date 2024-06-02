@@ -14,6 +14,7 @@ import (
 func CheckAdmin(c *gin.Context) {
 	email := utils.GetJWTEmailClaim(c)
 
+
 	if err := VerifyJWT(c, model.AdminRole, email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
@@ -30,7 +31,7 @@ func CheckAdmin(c *gin.Context) {
 // AdminLogin godoc
 // @Summary Admin login
 // @Description Login an admin using email
-// @Tags admin
+// @Tags authentication
 // @Accept json
 // @Produce json
 // @Param AdminLogin body model.AdminLoginRequest true "Admin Login"

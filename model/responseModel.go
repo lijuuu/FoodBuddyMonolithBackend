@@ -17,7 +17,6 @@ type SuccessResponse struct {
 }
 
 type ErrorResponse struct {
-	Status    bool   `json:"status"`
-	Message   string `json:"message"`
-	ErrorCode int    `json:"error_code"`
+	Status  bool        `json:"status" example:"false"`
+	Message string      `json:"message" example:"Error message"`
 }

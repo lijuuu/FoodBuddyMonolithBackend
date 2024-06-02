@@ -1,11 +1,18 @@
 package model
 
-type LoginForm struct {
+type EmailSignupRequest struct {
+	Name            string `validate:"required" json:"name"`
+	Email           string `validate:"required,email" json:"email"`
+	Password        string `validate:"required" json:"password"`
+	ConfirmPassword string `validate:"required" json:"confirmpassword"`
+}
+
+type EmailLoginRequest struct {
 	Email    string `form:"email" validate:"required,email" json:"email"`
 	Password string `form:"password" validate:"required" json:"password"`
 }
 
-type RestaurantSignup struct {
+type RestaurantSignupRequest struct {
 	Name           string `validate:"required" json:"name"`
 	Description    string `gorm:"column:description" validate:"required" json:"description"`
 	Address        string `gorm:"column:address" validate:"required" json:"address"`
@@ -14,6 +21,10 @@ type RestaurantSignup struct {
 	PhoneNumber    string `gorm:"column:phone_number" validate:"required" json:"phone_number"`
 	ImageURL       string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
+}
+type RestaurantLoginRequest struct {
+	Email    string `validate:"required,email"`
+	Password string `validate:"required"`
 }
 
 type AdminLoginRequest struct {

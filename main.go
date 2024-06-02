@@ -18,13 +18,9 @@ func init() {
 	database.AutoMigrate()
 }
 
-// @title Go + Gin Todo API
+// @title FoodBuddy API
 // @version 1.0
-// @description This is a sample server todo server. You can visit the GitHub repository at https://github.com/LordGhostX/swag-gin-demo
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
+// @description Documentation
 
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
@@ -54,7 +50,7 @@ func main() {
 
 	// Social login routes
 	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin)
-	router.GET("/api/v1/auth/google/callback", controllers.GoogleHandleCallback)
+	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback)
 
 	// Restaurant authentication routes
 	router.POST("/api/v1/auth/restaurant/signup", controllers.RestaurantSignup)
@@ -67,10 +63,10 @@ func main() {
 
 	// Public routes for viewing categories, products, and restaurants
 	router.GET("/api/v1/public/categories", controllers.GetCategoryList)
-	router.GET("/api/v1/public/categories/:categoryid/products", controllers.GetCategoryProductList)
+	router.GET("/api/v1/public/categories/products/:categoryid", controllers.GetCategoryProductList)
 	router.GET("/api/v1/public/products", controllers.GetProductList)
 	router.GET("/api/v1/public/restaurants", controllers.GetRestaurants)
-	router.GET("/api/v1/public/restaurants/:restaurantid/products", controllers.GetProductsByRestaurantID)
+	router.GET("/api/v1/public/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID)
 
 	// Admin routes with admin middleware
 	adminRoutes := router.Group("/api/v1/admin")
@@ -84,21 +80,21 @@ func main() {
 
 		// Category management
 		adminRoutes.GET("/categories", controllers.GetCategoryList)
-		adminRoutes.POST("/categories", controllers.AddCategory)
+		adminRoutes.POST("/categories/add", controllers.AddCategory)
 		adminRoutes.PUT("/categories/:categoryid", controllers.EditCategory)
 		adminRoutes.DELETE("/categories/:categoryid", controllers.DeleteCategory)
 
 		// Restaurant management
 		adminRoutes.GET("/restaurants", controllers.GetRestaurants)
-		adminRoutes.PUT("/restaurants/:restaurantid", controllers.EditRestaurant)
+		adminRoutes.POST("/restaurant/edit", controllers.EditRestaurant)
 		adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
 		adminRoutes.POST("/restaurants/block/:restaurantid", controllers.BlockRestaurant)
 		adminRoutes.POST("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
 
 		// Product management
 		adminRoutes.GET("/products", controllers.GetProductList)
-		adminRoutes.POST("/products", controllers.AddProduct)
-		adminRoutes.PUT("/products/:productid", controllers.EditProduct)
+		adminRoutes.POST("/products/add", controllers.AddProduct)
+		adminRoutes.POST("/products/:productid", controllers.EditProduct)
 		adminRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
 	}
 
@@ -106,25 +102,22 @@ func main() {
 	restaurantRoutes := router.Group("/api/v1/restaurant")
 	restaurantRoutes.Use(controllers.CheckRestaurant)
 	{
-		// Restaurant-specific management
-		restaurantRoutes.PUT("/profile", controllers.EditRestaurant)
-		// Product management
-		restaurantRoutes.GET("/products", controllers.GetProductList)
-		restaurantRoutes.POST("/products", controllers.AddProduct)
-		restaurantRoutes.PUT("/products/:productid", controllers.EditProduct)
+		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
+		restaurantRoutes.POST("/products/add", controllers.AddProduct)
+		restaurantRoutes.POST("/products/:productid", controllers.EditProduct)
 		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
 	}
 
 	// User favorite products routes
-	router.GET("/api/v1/user/:userid/favorites", controllers.GetFavouriteProductByUserID)
-	router.POST("/api/v1/user/:userid/favorites", controllers.AddFavouriteProduct)
-	router.DELETE("/api/v1/user/:userid/favorites", controllers.RemoveFavouriteProduct)
+	router.GET("/api/v1/userfavorites/:userid", controllers.GetFavouriteProductByUserID)
+	router.POST("/api/v1/userfavorites/:userid", controllers.AddFavouriteProduct)
+	router.DELETE("/api/v1/user/userfavorites/:userid", controllers.RemoveFavouriteProduct)
 
 	// User address routes
-	router.POST("/api/v1/user/:userid/address", controllers.AddUserAddress)
-	router.GET("/api/v1/user/:userid/address", controllers.GetUserAddress)
-	router.PUT("/api/v1/user/:userid/address/:addressid", controllers.EditUserAddress)
-	router.DELETE("/api/v1/user/:userid/address/:addressid", controllers.DeleteUserAddress)
+	router.POST("/api/v1/user/address/add", controllers.AddUserAddress)
+	router.GET("/api/v1/user/address/:userid", controllers.GetUserAddress)
+	router.PUT("/api/v1/user/address/edit", controllers.EditUserAddress)
+	router.DELETE("/api/v1/user/address", controllers.DeleteUserAddress)
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
