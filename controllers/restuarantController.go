@@ -3,80 +3,136 @@ package controllers
 import (
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func RestaurantSignup(c *gin.Context) {
-	// Bind JSON
-	var restaurant model.Restaurant
-	if err := c.BindJSON(&restaurant); err != nil {
+	// bind json to struct
+	var restaurantSignup model.RestaurantSignup
+	if err := c.BindJSON(&restaurantSignup); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   "invalid request data",
+			"status":     false,
+			"message":    "failed to process the request",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	// Validate the restaurant data
-	if err := validate(restaurant); err!= nil {
+	// validate input
+	if err := validate(&restaurantSignup); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   err,
+			"status":     false,
+			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	var existingRestaurant model.Restaurant
-	if err := database.DB.Where("name =?", restaurant.Name).Find(&existingRestaurant).Error; err != nil {
+	// check if email exists
+	var verification model.VerificationTable
+	tx := database.DB.Where("email = ? AND role = ?", restaurantSignup.Email, model.RestaurantRole).First(&verification)
+	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "error while checking restaurant name",
+			"status":     false,
+			"message":    "database error",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
-	}
-
-	if restaurant.Name == existingRestaurant.Name {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":    false,
-			"message":   "restaurant already exists",
+	} else if tx.Error == gorm.ErrRecordNotFound {
+		// create new entry in verification table
+		verification = model.VerificationTable{
+			Email:              restaurantSignup.Email,
+			Role:               model.RestaurantRole,
+			VerificationStatus: model.VerificationStatusPending,
+		}
+		tx = database.DB.Create(&verification)
+		if tx.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "failed to create restaurant verification entry",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
+			})
+			return
+		}
+	} else {
+		// email already exists
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "restaurant email already exists",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
-	// Set blocked as false
-	restaurant.Blocked = false
+	// generate salt and hash password
+	salt := utils.GenerateRandomString(7)
+	saltedPassword := salt + restaurantSignup.Password
+	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to process the request",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
+		return
+	}
 
-	// Add to db
+	// create restaurant record
+	restaurant := model.Restaurant{
+		Name:               restaurantSignup.Name,
+		Description:        restaurantSignup.Description,
+		Address:            restaurantSignup.Address,
+		Email:              restaurantSignup.Email,
+		PhoneNumber:        restaurantSignup.PhoneNumber,
+		ImageURL:           restaurantSignup.ImageURL,
+		CertificateURL:     restaurantSignup.CertificateURL,
+		VerificationStatus: model.VerificationStatusPending,
+		Blocked:            false,
+		Salt:               salt,
+		HashedPassword:     string(hash),
+	}
+
+	// save to database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to add restaurant to the database",
+			"status":     false,
+			"message":    "failed to save restaurant data",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
+	// respond with success
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "successfully added new restaurant",
-		"data":      gin.H{},
+		"status":  true,
+		"message": "restaurant signup successful",
+		"data": gin.H{
+			"name":                restaurant.Name,
+			"description":         restaurant.Description,
+			"address":             restaurant.Address,
+			"email":               restaurant.Email,
+			"phone_number":        restaurant.PhoneNumber,
+			"image_url":           restaurant.ImageURL,
+			"certificate_url":     restaurant.CertificateURL,
+			"verification_status": restaurant.VerificationStatus,
+			"blocked":             restaurant.Blocked,
+		},
 	})
 }
-
-//login
+// login
 func RestaurantLogin(c *gin.Context) {
 	// Get struct
 	var restaurantLogin model.RestaurantLogin
@@ -96,7 +152,7 @@ func RestaurantLogin(c *gin.Context) {
 	if err := validate(&restaurantLogin); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    err,
+			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
@@ -115,7 +171,7 @@ func RestaurantLogin(c *gin.Context) {
 	}
 
 	// Check block and admin verification status
-	if existingRestaurant.Blocked || existingRestaurant.VerificationStatus != model.VerificationStatusVerified {
+	if existingRestaurant.Blocked  {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "Restaurant not authorized to access the route",
@@ -151,18 +207,25 @@ func RestaurantLogin(c *gin.Context) {
 
 	if verificationTable.VerificationStatus != model.VerificationStatusVerified {
 		if err := SendOTP(c, restaurantLogin.Email, verificationTable.OTPExpiry, model.RestaurantRole); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusAlreadyReported, gin.H{
 				"status":     false,
-				"message":    "Failed to send email verification email",
-				"error_code": http.StatusInternalServerError,
+				"message":    err.Error(),
+				"error_code": http.StatusAlreadyReported,
 				"data":       gin.H{},
 			})
 			return
 		}
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "Please verify your email to continue",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
+		})
+		return
 	}
 
-	token,err := GenerateJWT(c,existingRestaurant.Email,model.RestaurantRole)
-	if err != nil{
+	token, err := GenerateJWT(c, existingRestaurant.Email, model.RestaurantRole)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "Failed to generate token",
@@ -186,52 +249,43 @@ func RestaurantLogin(c *gin.Context) {
 			"CertificateURL":     existingRestaurant.CertificateURL,
 			"VerificationStatus": existingRestaurant.VerificationStatus,
 		},
-		"token":token,
+		"token": token,
 	})
 }
 
+func CheckRestaurant(c *gin.Context) {
+	email := utils.GetJWTEmailClaim(c)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "access denied, request is unauthorized",
+			"error_code": http.StatusUnauthorized,
+			"data":       gin.H{},
+		})
+		c.Abort()
+		return
+	}
+	c.Next()
+}
 
 func GetRestaurants(c *gin.Context) {
 	var restaurants []model.Restaurant
 	// Search db and get all
 	if err := database.DB.Select("*").Find(&restaurants).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to retrieve data from the database",
+			"status":     false,
+			"message":    "failed to retrieve data from the database",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "restaurants retrieved successfully",
-		"data":      gin.H{"restaurantslist": restaurants},
+		"status":  true,
+		"message": "restaurants retrieved successfully",
+		"data":    gin.H{"restaurantslist": restaurants},
 	})
 }
 
@@ -240,10 +294,10 @@ func EditRestaurant(c *gin.Context) {
 	var restaurant model.Restaurant
 	if err := c.BindJSON(&restaurant); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   "failed to bind request",
+			"status":     false,
+			"message":    "failed to bind request",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -252,10 +306,10 @@ func EditRestaurant(c *gin.Context) {
 	var existingRestaurant model.Restaurant
 	if err := database.DB.First(&existingRestaurant, restaurant.ID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":    false,
-			"message":   "restaurant doesn't exist",
+			"status":     false,
+			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -263,18 +317,18 @@ func EditRestaurant(c *gin.Context) {
 	// Edit the restaurant
 	if err := database.DB.Model(&existingRestaurant).Updates(restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to edit the restaurant",
+			"status":     false,
+			"message":    "failed to edit the restaurant",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "successfully edited the restaurant",
-		"data":      gin.H{},
+		"status":  true,
+		"message": "successfully edited the restaurant",
+		"data":    gin.H{},
 	})
 }
 
@@ -284,10 +338,10 @@ func DeleteRestaurant(c *gin.Context) {
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   "invalid restaurant ID",
+			"status":     false,
+			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -296,10 +350,10 @@ func DeleteRestaurant(c *gin.Context) {
 	var existingRestaurant model.Restaurant
 	if err := database.DB.First(&existingRestaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":    false,
-			"message":   "restaurant doesn't exist",
+			"status":     false,
+			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -307,18 +361,18 @@ func DeleteRestaurant(c *gin.Context) {
 	// Delete it
 	if err := database.DB.Delete(&existingRestaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to delete the restaurant",
+			"status":     false,
+			"message":    "failed to delete the restaurant",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "successfully deleted the restaurant",
-		"data":      gin.H{},
+		"status":  true,
+		"message": "successfully deleted the restaurant",
+		"data":    gin.H{},
 	})
 }
 
@@ -328,10 +382,10 @@ func BlockRestaurant(c *gin.Context) {
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   "invalid restaurant ID",
+			"status":     false,
+			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -340,20 +394,20 @@ func BlockRestaurant(c *gin.Context) {
 	var restaurant model.Restaurant
 	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":    false,
-			"message":   "restaurant not found",
+			"status":     false,
+			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if restaurant.Blocked {
 		c.JSON(http.StatusConflict, gin.H{
-			"status":    false,
-			"message":   "restaurant is already blocked",
+			"status":     false,
+			"message":    "restaurant is already blocked",
 			"error_code": http.StatusConflict,
-			"data":      gin.H{"restaurant": restaurant},
+			"data":       gin.H{"restaurant": restaurant},
 		})
 		return
 	}
@@ -363,18 +417,18 @@ func BlockRestaurant(c *gin.Context) {
 
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to change the block status",
+			"status":     false,
+			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "restaurant is blocked",
-		"data":      gin.H{"restaurant": restaurant},
+		"status":  true,
+		"message": "restaurant is blocked",
+		"data":    gin.H{"restaurant": restaurant},
 	})
 }
 
@@ -384,10 +438,10 @@ func UnblockRestaurant(c *gin.Context) {
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    false,
-			"message":   "invalid restaurant ID",
+			"status":     false,
+			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
@@ -396,20 +450,20 @@ func UnblockRestaurant(c *gin.Context) {
 	var restaurant model.Restaurant
 	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":    false,
-			"message":   "restaurant not found",
+			"status":     false,
+			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	if !restaurant.Blocked {
 		c.JSON(http.StatusConflict, gin.H{
-			"status":    false,
-			"message":   "restaurant is already unblocked",
+			"status":     false,
+			"message":    "restaurant is already unblocked",
 			"error_code": http.StatusConflict,
-			"data":      gin.H{"restaurant": restaurant},
+			"data":       gin.H{"restaurant": restaurant},
 		})
 		return
 	}
@@ -419,17 +473,17 @@ func UnblockRestaurant(c *gin.Context) {
 
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":    false,
-			"message":   "failed to change the block status",
+			"status":     false,
+			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			"data":      gin.H{},
+			"data":       gin.H{},
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":    true,
-		"message":   "restaurant is unblocked",
-		"data":      gin.H{"restaurant": restaurant},
+		"status":  true,
+		"message": "restaurant is unblocked",
+		"data":    gin.H{"restaurant": restaurant},
 	})
 }

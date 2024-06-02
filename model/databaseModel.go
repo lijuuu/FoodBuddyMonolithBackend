@@ -44,16 +44,6 @@ type User struct {
 	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
 }
 
-type GoogleResponse struct {
-	ID            string `json:"id"`
-	Email         string `json:"email"`
-	VerifiedEmail bool   `json:"verified_email"`
-	Name          string `json:"name"`
-	GivenName     string `json:"given_name"`
-	FamilyName    string `json:"family_name"`
-	Picture       string `json:"picture"`
-	Locale        string `json:"locale"`
-}
 
 type VerificationTable struct {
 	Email              string `validate:"required,email" gorm:"type:varchar(255);unique_index"`
@@ -63,10 +53,6 @@ type VerificationTable struct {
 	VerificationStatus string `gorm:"type:varchar(255)"`
 }
 
-type LoginForm struct {
-	Email    string `form:"email" validate:"required,email" json:"email"`
-	Password string `form:"password" validate:"required" json:"password"`
-}
 
 type Category struct {
 	gorm.Model
@@ -108,8 +94,9 @@ type Restaurant struct {
 	HashedPassword     string
 }
 
+
 type RestaurantLogin struct {
-	Email   string `validate:"required,email"`
+	Email    string `validate:"required,email"`
 	Password string `validate:"required"`
 }
 
@@ -128,3 +115,5 @@ type Address struct {
 	State        string `validate:"required" json:"state" gorm:"column:state"`
 	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
 }
+
+

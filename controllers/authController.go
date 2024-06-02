@@ -246,7 +246,7 @@ func EmailSignup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
-			"message":    "failed to process the incoming request",
+			"message":    "failed to hash the password",
 			"error_code": http.StatusInternalServerError,
 			"data":       gin.H{},
 		})
@@ -316,7 +316,7 @@ func EmailSignup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
-		"message":    "Email login successful, please login to complete your otp verification",
+		"message":    "Email login successful, please login to complete your email verification",
 		"error_code": http.StatusOK,
 		"data": gin.H{
 			"user": gin.H{
@@ -432,7 +432,16 @@ func EmailLogin(c *gin.Context) {
 				"error_code": http.StatusTooManyRequests,
 				"data": gin.H{},
 			})
+			return
 		}
+		
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"status":     false,
+			"message":    "please complete your email verification",
+			"error_code": http.StatusAccepted,
+			"data": gin.H{},
+		})
 		return
 	}
 
@@ -453,7 +462,6 @@ func EmailLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"message":    "Email login successful.",
-		"error_code": http.StatusOK,
 		"data": gin.H{
 			"user": gin.H{
 				"name":         user.Name,
@@ -484,9 +492,15 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 		return errors.New(str)
 	}
 
-
-	// Set expiryTime as 10 minutes from now
-	expiryTime := now + 10*60 // 10 minutes in seconds
+	var expiryTime int64
+	switch role {
+	case model.AdminRole:
+		expiryTime = now + 2*60
+	case model.RestaurantRole:
+		expiryTime = now + 5*60
+	case model.UserRole:
+		expiryTime = now + 10*60
+	}
 
 	// fmt.Printf("Sending mail because OTP has expired: %v\n", expiryTime)
 
@@ -541,7 +555,7 @@ func VerifyOTP(c *gin.Context) {
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
-			"message":    "failed to retrieve user information",
+			"message":    "failed to retrieve  information",
 			"error_code": http.StatusInternalServerError,
 			"data":       gin.H{},
 		})
@@ -552,7 +566,7 @@ func VerifyOTP(c *gin.Context) {
 	if VerificationTable.VerificationStatus == model.VerificationStatusVerified {
 		c.JSON(http.StatusIMUsed, gin.H{
 			"status":     false,
-			"message":    "user is already verified",
+			"message":    "already verified",
 			"error_code": http.StatusAlreadyReported,
 			"data":       gin.H{},
 		})
@@ -603,22 +617,21 @@ func VerifyOTP(c *gin.Context) {
 	}
 	var token string
 	var err error
-	if entityRole == model.AdminRole{
-        token,err = GenerateJWT(c,entityEmail,model.AdminRole)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":     false,
-				"message":    "failed to generate token, please try again",
-				"error_code": http.StatusInternalServerError,
-				"data":       gin.H{},
-			})
-			return
-		}
-    }
+
+	token,err = GenerateJWT(c,entityEmail,model.AdminRole)
+	if token == "" ||  err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to generate token, please try again",
+			"error_code": http.StatusInternalServerError,
+			"data":       gin.H{},
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
-		"message":    "OTP verification is Successful",
+		"message":    "Email verification is Successful",
 	    "data":gin.H{
 			"token":token,
 		},
@@ -710,17 +723,7 @@ func EmailFromUserID(UserID uint) (string, bool) {
 	return userinfo.Email, true
 }
 
-func IsAdmin(email string) bool {
-	var Admin model.Admin
-	if err := database.DB.Where("email = ?", email).First(&Admin).Error; err != nil {
-		return false
-	}
-	if Admin.Email == "" {
-		return false
-	}
 
-	return true
-}
 
 // removing cookie "authorization"
 func Logout(c *gin.Context) {

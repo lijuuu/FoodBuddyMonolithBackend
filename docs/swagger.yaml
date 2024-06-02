@@ -1,4 +1,74 @@
+basePath: /
+definitions:
+  model.AdminLoginRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  model.ErrorResponse:
+    properties:
+      error_code:
+        type: integer
+      message:
+        type: string
+      status:
+        type: boolean
+    type: object
+  model.SuccessResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: boolean
+    type: object
+host: localhost:8080
 info:
-  contact: {}
-paths: {}
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server todo server. You can visit the GitHub repository
+    at https://github.com/LordGhostX/swag-gin-demo
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Go + Gin Todo API
+  version: "1.0"
+paths:
+  /api/v1/auth/admin/login:
+    post:
+      consumes:
+      - application/json
+      description: Login an admin using email
+      parameters:
+      - description: Admin Login
+        in: body
+        name: AdminLogin
+        required: true
+        schema:
+          $ref: '#/definitions/model.AdminLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Admin login
+      tags:
+      - admin
 swagger: "2.0"

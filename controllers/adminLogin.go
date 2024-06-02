@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"errors"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"foodbuddy/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func CheckAdmin(c *gin.Context) {
@@ -22,32 +24,38 @@ func CheckAdmin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "authorized request, proceed to login",
-	})
 	c.Next()
 }
 
+// AdminLogin godoc
+// @Summary Admin login
+// @Description Login an admin using email
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param AdminLogin body model.AdminLoginRequest true "Admin Login"
+// @Success 200 {object} model.SuccessResponse
+// @Failure 400 {object} model.ErrorResponse
+// @Failure 401 {object} model.ErrorResponse
+// @Failure 500 {object} model.ErrorResponse
+// @Router /api/v1/auth/admin/login [post]
 func AdminLogin(c *gin.Context) {
-	//get the json from the request
+	// Get the email from the JSON request
 	var form struct {
-		Email string
+		Email string `json:"email" validate:"required,email"`
 	}
 	if err := c.BindJSON(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "failed to process the incoming request",
+			"message":    "Failed to process the incoming request",
 			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
 	}
 
-	//validate the content of the json
-	err := validate(form)
-	if err != nil {
+	// Validate the content of the JSON
+	if err := validate(form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -57,21 +65,60 @@ func AdminLogin(c *gin.Context) {
 		return
 	}
 
-	//update the otp and expiry
-	var VerificationTable model.VerificationTable
-
-	if err := database.DB.Where("email = ? AND role = ?", form.Email, model.AdminRole).First(&VerificationTable).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    err.Error(),
-			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
-		})
-		return
+	// Check if email exists in the admin table
+	var admin model.Admin
+	if tx := database.DB.Where("email = ?", form.Email).First(&admin); tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":     false,
+				"message":    "Email not present in the admin table",
+				"error_code": http.StatusUnauthorized,
+				"data":       gin.H{},
+			})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "Database error",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
+			})
+			return
+		}
 	}
 
-	//sendotp
-	err = SendOTP(c, form.Email, VerificationTable.OTPExpiry, VerificationTable.Role)
+	// Check if email exists in the verification table with admin role
+	var verification model.VerificationTable
+	if tx := database.DB.Where("email = ? AND role = ?", form.Email, model.AdminRole).First(&verification); tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			// Create a new entry in the verification table
+			verification = model.VerificationTable{
+				Email:              form.Email,
+				Role:               model.AdminRole,
+				VerificationStatus: model.VerificationStatusPending,
+			}
+			if err := database.DB.Create(&verification).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":     false,
+					"message":    "Failed to create admin verification entry",
+					"error_code": http.StatusInternalServerError,
+					"data":       gin.H{},
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "Database error",
+				"error_code": http.StatusInternalServerError,
+				"data":       gin.H{},
+			})
+			return
+		}
+	}
+
+	// Send OTP
+	err := SendOTP(c, form.Email, verification.OTPExpiry, verification.Role)
 	if err != nil {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
@@ -83,7 +130,7 @@ func AdminLogin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  false,
-		"message": "OTP is send successfully",
+		"status":  true,
+		"message": "Verification link sent successfully. Please verify via that. Link expires soon .",
 	})
 }

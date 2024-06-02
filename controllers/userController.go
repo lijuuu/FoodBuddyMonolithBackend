@@ -10,6 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func UpdateUserInformation(c *gin.Context){
+	//bind json
+}
+
 func GetUserList(c *gin.Context) {
 	var users []model.User
 
