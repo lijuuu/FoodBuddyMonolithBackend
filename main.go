@@ -56,14 +56,9 @@ func main() {
 	router.POST("/api/v1/auth/restaurant/signup", controllers.RestaurantSignup)
 	router.POST("/api/v1/auth/restaurant/login", controllers.RestaurantLogin)
 
-	// User profile routes
-	router.POST("/api/v1/user/update", controllers.UpdateUserInformation)
-	// router.GET("/api/v1/user/:userid", controllers.GetUserProfile)
-	router.POST("/api/v1/user/UpdateUserInformation", controllers.UpdateUserInformation)
-
 	// Public routes for viewing categories, products, and restaurants
 	router.GET("/api/v1/public/categories", controllers.GetCategoryList)
-	router.GET("/api/v1/public/categories/products/:categoryid", controllers.GetCategoryProductList)
+	router.GET("/api/v1/public/categories/products", controllers.GetCategoryProductList)
 	router.GET("/api/v1/public/products", controllers.GetProductList)
 	router.GET("/api/v1/public/restaurants", controllers.GetRestaurants)
 	router.GET("/api/v1/public/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID)
@@ -86,7 +81,7 @@ func main() {
 
 		// Restaurant management
 		adminRoutes.GET("/restaurants", controllers.GetRestaurants)
-		adminRoutes.POST("/restaurant/edit", controllers.EditRestaurant)
+		adminRoutes.POST("/restaurants/edit", controllers.EditRestaurant)
 		adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
 		adminRoutes.POST("/restaurants/block/:restaurantid", controllers.BlockRestaurant)
 		adminRoutes.POST("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
@@ -99,25 +94,27 @@ func main() {
 	}
 
 	// Restaurant routes with restaurant middleware
-	restaurantRoutes := router.Group("/api/v1/restaurant")
+	restaurantRoutes := router.Group("/api/v1/restaurants")
 	restaurantRoutes.Use(controllers.CheckRestaurant)
 	{
 		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)
-		restaurantRoutes.POST("/products/:productid", controllers.EditProduct)
+		restaurantRoutes.POST("/products/edit", controllers.EditProduct)
 		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
 	}
 
-	// User favorite products routes
-	router.GET("/api/v1/userfavorites/:userid", controllers.GetFavouriteProductByUserID)
-	router.POST("/api/v1/userfavorites/:userid", controllers.AddFavouriteProduct)
-	router.DELETE("/api/v1/user/userfavorites/:userid", controllers.RemoveFavouriteProduct)
-
-	// User address routes
-	router.POST("/api/v1/user/address/add", controllers.AddUserAddress)
-	router.GET("/api/v1/user/address/:userid", controllers.GetUserAddress)
-	router.PUT("/api/v1/user/address/edit", controllers.EditUserAddress)
-	router.DELETE("/api/v1/user/address", controllers.DeleteUserAddress)
+	userRoutes := router.Group("/api/v1/user")
+	{
+		userRoutes.GET("/favorites/:userid", controllers.GetFavouriteProductByUserID)
+		userRoutes.POST("/favorites/:userid", controllers.AddFavouriteProduct)
+		userRoutes.DELETE("/favorites/:userid", controllers.RemoveFavouriteProduct)
+		userRoutes.GET("/:userid", controllers.GetUserProfile)
+		userRoutes.POST("/update", controllers.UpdateUserInformation)
+		userRoutes.POST("/address/add", controllers.AddUserAddress)
+		userRoutes.GET("/address/:userid", controllers.GetUserAddress)
+		userRoutes.PUT("/address/edit", controllers.EditUserAddress)
+		userRoutes.DELETE("/address", controllers.DeleteUserAddress)
+	}
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)

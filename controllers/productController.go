@@ -207,7 +207,7 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 	// Update product details
-	if err := database.DB.Save(&product).Error; err != nil {
+	if err := database.DB.Updates(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update product",

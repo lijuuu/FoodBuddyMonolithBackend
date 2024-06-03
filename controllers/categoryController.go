@@ -44,9 +44,9 @@ func GetCategoryProductList(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
-		"message": "category list is fetched successfully",
+		"message": "category list with products is fetched successfully",
 		"data": gin.H{
 			"categorylist": categories,
 		},

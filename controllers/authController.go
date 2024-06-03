@@ -504,7 +504,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry int64, role string) error {
 	from := "foodbuddycode@gmail.com"
 	appPassword := "emdnwucohpvcoyin"
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/verifyotp/%v/%v/%v",role,to,otp)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/verifyotp/%v/%v/%v",role,to,otp)
 	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v",url)
 
 	//send the otp to the specified email

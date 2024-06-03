@@ -10,7 +10,7 @@ import (
 )
 
 func RateLimitMiddleware() gin.HandlerFunc {
-    apiRate := 3 
+    apiRate := 3
 	ttl := 3 * time.Minute //time-to-live,map with that value are deleted after that
 
 	type Visitor struct {
@@ -61,7 +61,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		mutex.Unlock()
 	}()
 
-	//deleting the map with the specific ip as key if the last seen is greater than ttl. ip not active more than the ttl time
+	//deleting the map with the specific ip as key if the last seen is greater than ttl -> ip not active more than the ttl time
 	go func() {
 		for {
 			time.Sleep(time.Minute)

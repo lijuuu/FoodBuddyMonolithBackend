@@ -10,6 +10,39 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetUserProfile(c *gin.Context)  {
+	
+	//get id
+	userIDStr := c.Param("userid")
+
+	//check user info and save it on struct
+	var UserProfile model.User
+	if err := database.DB.Where("id = ?",userIDStr).First(&UserProfile).Error;err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"error_code": http.StatusNotFound,
+			"data":       gin.H{},
+		})
+		return
+	}
+	
+	//return
+	c.JSON(http.StatusNotFound, gin.H{
+		"status":     true,
+		"message":    "successfully fetched user profile",
+		"data": gin.H{
+			"id":            UserProfile.ID,
+			"name":          UserProfile.Name,
+			"email":         UserProfile.Email,
+			"phone_number":  UserProfile.PhoneNumber,
+			"picture":       UserProfile.Picture,
+			"login_method":  UserProfile.LoginMethod,
+			"blocked":       UserProfile.Blocked,
+		},
+	})
+}
+
 func UpdateUserInformation(c *gin.Context){
 	//bind json
 }
