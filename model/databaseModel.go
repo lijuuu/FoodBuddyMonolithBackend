@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -44,15 +46,13 @@ type User struct {
 	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
 }
 
-
 type VerificationTable struct {
 	Email              string `validate:"required,email" gorm:"type:varchar(255);unique_index"`
 	Role               string
-	OTP                int
-	OTPExpiry          int64
+	OTP                uint64
+	OTPExpiry          uint64
 	VerificationStatus string `gorm:"type:varchar(255)"`
 }
-
 
 type Category struct {
 	gorm.Model
@@ -94,7 +94,6 @@ type Restaurant struct {
 	HashedPassword     string
 }
 
-
 type FavouriteProduct struct {
 	UserID    uint `validate:"required"`
 	ProductID uint `validate:"required"`
@@ -111,4 +110,69 @@ type Address struct {
 	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
 }
 
+type CartDetails struct {
+	OrderID    uint `validate:"required,number" json:"order_id" gorm:"column:order_id"`
+	ProductID  uint `validate:"required,number" json:"product_id" gorm:"column:product_id"`
+	Quantity   uint `validate:"required,number" json:"quantity" gorm:"column:quantity"`
+	CartAmount uint `validate:"required,number" json:"cart_amount" gorm:"column:cart_amount"`
+}
 
+type PaymentDetails struct {
+	PaymentID     uint   `validate:"required,number" json:"payment_id" gorm:"column:payment_id"`
+	OrderID       uint   `validate:"required,number" json:"order_id" gorm:"column:order_id"`
+	PaymentAmount uint   `validate:"required,number" json:"payment_amount" gorm:"column:payment_amount"`
+	TransactionID uint   `validate:"required,number" json:"transaction_id" gorm:"column:transaction_id"`
+	PaymentStatus string `validate:"required" json:"payment_status" gorm:"column:payment_status"`
+}
+
+type Cart struct {
+	CartID    uint       `gorm:"primaryKey;autoIncrement"`
+	UserID    uint       `gorm:"not null" validate:"required,number" json:"user_id"`
+	CartItems []CartItem `json:"cart_items"`
+}
+
+type CartItem struct {
+	CartID    uint    `gorm:"not null"`
+	UserID    uint    `validate:"required,number" json:"user_id"`
+	ProductID uint    `gorm:"not null" validate:"required,number" json:"product_id"`
+	Quantity  uint    `gorm:"not null" validate:"required,number" json:"quantity"`
+	Price     float64 `gorm:"not null" validate:"required,number" json:"price"`
+}
+
+type Order struct {
+	OrderID    uint        `gorm:"primaryKey;autoIncrement"`
+	UserID     uint        `gorm:"not null" validate:"required,number" json:"user_id"`
+	AddressID  uint        `gorm:"not null" validate:"required,number" json:"address_id"`
+	TotalPrice float64     `gorm:"not null" validate:"required,number" json:"total_price"`
+	Status     string      `gorm:"not null" validate:"required" json:"status"`
+	CreatedAt  time.Time   `gorm:"autoCreateTime" json:"created_at"`
+	OrderItems []OrderItem `json:"order_items"`
+}
+
+type OrderItem struct {
+	OrderID   uint    `gorm:"not null"`
+	ProductID uint    `gorm:"not null" validate:"required,number" json:"product_id"`
+	Quantity  uint    `gorm:"not null" validate:"required,number" json:"quantity"`
+	Price     float64 `gorm:"not null" validate:"required,number" json:"price"`
+}
+
+type OrderDetails struct {
+	OrderID        uint   `validate:"required,number" json:"order_id" gorm:"column:order_id"`
+	UserID         uint   `validate:"required,number" json:"user_id" gorm:"column:user_id"`
+	RestaurantID   uint   `validate:"required,number" json:"restaurant_id" gorm:"column:restaurant_id"`
+	OrderStatus    string `validate:"required" json:"order_status" gorm:"column:order_status"`
+	TotalPrice     uint   `validate:"required,number" json:"total_price" gorm:"column:total_price"`
+	PaymentMethod  string `validate:"required" json:"payment_method" gorm:"column:payment_method"`
+	AddressID      uint   `validate:"required,number" json:"address_id" gorm:"column:address_id"`
+	DeliveryStatus string `validate:"required" json:"delivery_status" gorm:"column:delivery_status"`
+	CustomerReview string `validate:"required" json:"customer_review" gorm:"column:customer_review"`
+	Rating         uint   `validate:"required,number" json:"rating" gorm:"column:rating"`
+}
+
+type OnlinePayment struct {
+	PaymentID     uint    `gorm:"primaryKey;autoIncrement"`
+	OrderID       uint    `gorm:"not null" validate:"required,number" json:"order_id"`
+	PaymentAmount float64 `gorm:"not null" validate:"required,number" json:"payment_amount"`
+	PaymentStatus string  `gorm:"not null" validate:"required" json:"payment_status"`
+	TransactionID string  `gorm:"not null" validate:"required" json:"transaction_id"`
+}

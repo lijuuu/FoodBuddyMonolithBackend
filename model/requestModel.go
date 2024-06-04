@@ -30,3 +30,9 @@ type RestaurantLoginRequest struct {
 type AdminLoginRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type AddToCartReq struct {
+	UserID   uint    `gorm:"column:user_id" validate:"required,number" json:"user_id"`
+	ProductID uint    `gorm:"column:product_id" validate:"required,number" json:"product_id"`
+	Quantity  uint    `validate:"required,number" json:"quantity"`
+}

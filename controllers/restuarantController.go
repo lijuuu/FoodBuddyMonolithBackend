@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"foodbuddy/utils"
@@ -276,24 +278,21 @@ func RestaurantLogin(c *gin.Context) {
 	})
 }
 
-func CheckRestaurant(c *gin.Context) {
-	email := utils.GetJWTEmailClaim(c)
-	if email == "" {
-		c.Abort()
-		return
+func CheckRestaurant(c *gin.Context, requestEmail string) (string, error) {
+	email, err := utils.GetJWTEmailClaim(c)
+	if err != nil {
+		return email, errors.New("request unauthorized")
+	}
+
+	if email != requestEmail {
+		return email, errors.New("request unauthorized")
 	}
 
 	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "access denied, request is unauthorized",
-			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
-		})
-		c.Abort()
-		return
+		return email, errors.New("request unauthorized")
 	}
-	c.Next()
+
+	return email, nil
 }
 
 func GetRestaurants(c *gin.Context) {
@@ -324,7 +323,6 @@ func EditRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to bind request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
 		})
 		return
 	}
@@ -334,7 +332,6 @@ func EditRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
 		})
 		return
 	}
@@ -346,7 +343,15 @@ func EditRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+		})
+		return
+	}
+
+	if _, err := CheckRestaurant(c,existingRestaurant.Email); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    err.Error(),
+			"error_code": http.StatusUnauthorized,
 		})
 		return
 	}
@@ -357,11 +362,11 @@ func EditRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to edit the restaurant",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
 		})
 		return
 	}
 
+	fmt.Println("done")
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "successfully edited the restaurant",
@@ -370,6 +375,7 @@ func EditRestaurant(c *gin.Context) {
 }
 
 func DeleteRestaurant(c *gin.Context) {
+
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
@@ -414,6 +420,7 @@ func DeleteRestaurant(c *gin.Context) {
 }
 
 func BlockRestaurant(c *gin.Context) {
+
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
@@ -470,6 +477,7 @@ func BlockRestaurant(c *gin.Context) {
 }
 
 func UnblockRestaurant(c *gin.Context) {
+
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)

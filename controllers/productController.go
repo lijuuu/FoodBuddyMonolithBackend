@@ -67,6 +67,11 @@ func GetProductsByRestaurantID(c *gin.Context) {
 }
 
 func AddProduct(c *gin.Context) {
+	   
+	if status := c.IsAborted(); !status{
+		return
+	}
+
 	// Bind JSON
 	var product model.Product
 
@@ -103,6 +108,15 @@ func AddProduct(c *gin.Context) {
 		})
 		return
 	}
+
+	if _,err := CheckRestaurant(c,restaurant.Email);err!=nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    err.Error(),
+			"error_code": http.StatusUnauthorized,
+		})
+		return
+	   }
 
 	// Check if the category is present
 	var category model.Category
@@ -151,6 +165,9 @@ func AddProduct(c *gin.Context) {
 }
 
 func EditProduct(c *gin.Context) {
+	if status := c.IsAborted(); !status{
+		return
+	}
 	// Bind JSON
 	var product model.Product
 	if err := c.BindJSON(&product); err != nil {
@@ -227,6 +244,9 @@ func EditProduct(c *gin.Context) {
 }
 
 func DeleteProduct(c *gin.Context) {
+	if status := c.IsAborted(); !status{
+		return
+	}
 	// Get product id from parameters
 	productIDStr := c.Param("productid")
 	productID, err := strconv.Atoi(productIDStr)

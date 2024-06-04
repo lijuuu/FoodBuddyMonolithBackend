@@ -11,21 +11,20 @@ import (
 	"gorm.io/gorm"
 )
 
-func CheckAdmin(c *gin.Context) {
-	email := utils.GetJWTEmailClaim(c)
-
-
-	if err := VerifyJWT(c, model.AdminRole, email); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "access denied, request is unauthorized",
-			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
-		})
-		c.Abort()
-		return
+func CheckAdmin(c *gin.Context)(string,error) {
+	email,err := utils.GetJWTEmailClaim(c)
+	if err !=nil{
+		return email,errors.New("request unauthorized")
 	}
-	c.Next()
+	
+	if email == "" {
+		return email,errors.New("request unauthorized")
+	}
+
+	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
+		return email,errors.New("request unauthorized")
+	}
+	return email,nil
 }
 
 // AdminLogin godoc

@@ -55,6 +55,7 @@ func GetCategoryProductList(c *gin.Context) {
 
 func AddCategory(c *gin.Context) {
 
+
 	var category model.Category
 	var existingcategory model.Category
 
@@ -122,6 +123,7 @@ func AddCategory(c *gin.Context) {
 }
 func EditCategory(c *gin.Context) {
 
+
 	var category model.Category
 	var existingcategory model.Category
 
@@ -176,6 +178,8 @@ func EditCategory(c *gin.Context) {
 }
 
 func DeleteCategory(c *gin.Context) {
+
+
 
 	var category model.Category
 

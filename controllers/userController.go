@@ -70,6 +70,7 @@ func GetUserList(c *gin.Context) {
 }
 
 func GetBlockedUserList(c *gin.Context) {
+
 	var blockedUsers []model.User
 
 	tx := database.DB.Where("deleted_at IS NULL AND blocked =?", true).Find(&blockedUsers)
@@ -103,6 +104,7 @@ func GetBlockedUserList(c *gin.Context) {
 }
 
 func BlockUser(c *gin.Context) {
+
 	var user model.User
 
 	userIdStr := c.Param("userid")
@@ -158,6 +160,7 @@ func BlockUser(c *gin.Context) {
 }
 
 func UnblockUser(c *gin.Context) {
+
 	var user model.User
 
 	userIdStr := c.Param("userid")
