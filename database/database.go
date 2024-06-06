@@ -38,4 +38,8 @@ func AutoMigrate() {
 	DB.AutoMigrate(&model.Address{})
 	DB.AutoMigrate(&model.Admin{})
 	DB.AutoMigrate(&model.VerificationTable{})
+	DB.AutoMigrate(&model.CartItems{})
+	DB.AutoMigrate(&model.Order{})
+	// DB.AutoMigrate(&model.OrderDetails{})
+	DB.AutoMigrate(&model.PaymentDetails{})
 }

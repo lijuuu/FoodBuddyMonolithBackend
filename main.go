@@ -86,7 +86,7 @@ func main() {
 	// Restaurant routes with restaurant middleware
 	restaurantRoutes := router.Group("/api/v1/restaurants")
 	{
-		restaurantRoutes.POST("/edit",controllers.EditRestaurant)
+		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)
 		restaurantRoutes.POST("/products/edit", controllers.EditProduct)
 		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
@@ -110,37 +110,15 @@ func main() {
 		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress)
 	}
 
-
-
 	//cart management
-	userRoutes.POST("/cart/add",controllers.AddToCart)
+	userRoutes.POST("/cart/add", controllers.AddToCart) //add items to cart
+	userRoutes.GET("/cart/:userid", controllers.GetCartTotal) //get everything that cart holds
+	userRoutes.DELETE("/cart/delete/:userid", controllers.ClearCartByUserID) //remove the entire cart
+	userRoutes.DELETE("/cart/remove",controllers.RemoveItemFromCart) //remove specific products form the cart
+	userRoutes.PUT("/cart/update/",controllers.UpdateQuantity)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	//delete specific product
+	//checkout 
 
 
 
@@ -155,4 +133,3 @@ func main() {
 
 	router.Run(":8080")
 }
-
