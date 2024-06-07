@@ -324,7 +324,7 @@ func AddUserAddress(c *gin.Context) {
 		"status":  true,
 		"message": "successfully added new address",
 		"data": gin.H{
-			"address": UserAddresses,
+			"address": UserAddress,
 		},
 	})
 }

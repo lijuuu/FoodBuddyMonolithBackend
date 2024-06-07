@@ -33,6 +33,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	router.Use(controllers.RateLimitMiddleware())
+	router.Use(utils.CorsMiddleware())
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "hello, its working",
@@ -117,12 +118,17 @@ func main() {
 	userRoutes.DELETE("/cart/remove",controllers.RemoveItemFromCart) //remove specific products form the cart
 	userRoutes.PUT("/cart/update/",controllers.UpdateQuantity)
 
-	//delete specific product
-	//checkout 
-
-
-
-
+	//order management
+	  //checkout
+	  //createorder with address selection etc..
+	  //intiatepayment
+	  //retry payment
+	  //cancel order
+	
+	userRoutes.POST("/order/step1/placeorder",controllers.PlaceOrder)
+	userRoutes.POST("/order/step2/initiatepayment",controllers.InitiatePayment)
+	userRoutes.POST("/order/step3/paymentcallback/:orderid",controllers.PaymentGatewayCallback)
+    
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
@@ -133,3 +139,7 @@ func main() {
 
 	router.Run(":8080")
 }
+
+//forget password
+//add wallet to user and restaurant
+//after payment, split the cash to the respective restaurant

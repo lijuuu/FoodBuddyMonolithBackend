@@ -68,9 +68,9 @@ func GetProductsByRestaurantID(c *gin.Context) {
 
 func AddProduct(c *gin.Context) {
 	   
-	if status := c.IsAborted(); !status{
-		return
-	}
+	// if status := c.IsAborted(); !status{
+	// 	return
+	// }
 
 	// Bind JSON
 	var product model.Product

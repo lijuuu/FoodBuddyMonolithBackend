@@ -110,6 +110,7 @@ func AddCategory(c *gin.Context) {
 			"error_code": http.StatusInternalServerError,
 			"data":       gin.H{},
 		})
+		return
 		
 	}
 
@@ -178,8 +179,6 @@ func EditCategory(c *gin.Context) {
 }
 
 func DeleteCategory(c *gin.Context) {
-
-
 
 	var category model.Category
 

@@ -40,6 +40,8 @@ func AutoMigrate() {
 	DB.AutoMigrate(&model.VerificationTable{})
 	DB.AutoMigrate(&model.CartItems{})
 	DB.AutoMigrate(&model.Order{})
-	// DB.AutoMigrate(&model.OrderDetails{})
-	DB.AutoMigrate(&model.PaymentDetails{})
+	DB.AutoMigrate(&model.OrderItem{})
+	DB.AutoMigrate(&model.Payment{})
+	DB.AutoMigrate(&model.RestaurantOrderDetails{})
+
 }

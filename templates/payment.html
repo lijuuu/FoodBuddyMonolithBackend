@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay with Razorpay</title>
+</head>
+<body>
+    <button id="rzp-button1">Pay with Razorpay</button>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.getElementById('rzp-button1').onclick = function (e) {
+            e.preventDefault();
+            var options = {
+                "key": "{{ .key }}", 
+                "amount": "{{ .amount }}", 
+                "currency": "INR",
+                "name": "FoodBuddy",
+                "description": "Test Transaction",
+                "order_id": "{{ .razorpay_order_id }}", 
+                "callback_url": "{{ .callbackurl }}",
+                "prefill": {
+                    "name": "foodbuddy",
+                    "email": "foodbuddy@gmail.com",
+                    "contact": "9000090000"
+                },
+                "notes": {
+                    "address": "FoodBuddy Office"
+                },
+                "theme": {
+                    "color": "#32CD32" 
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        alert("The payment process was interrupted. Please try again.");
+                    },
+                    "animation": true, 
+                    "backdropclose": false, 
+                    "escape": true, 
+                    "handleback": true, 
+                    "confirm_close": true 
+                },
+                "retry": {
+                    "enabled": true,
+                    "max_count": 3 
+                }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+        }
+    </script>
+    
+</body>
+</html>
