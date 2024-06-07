@@ -91,13 +91,16 @@ func main() {
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)
 		restaurantRoutes.POST("/products/edit", controllers.EditProduct)
 		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
+
+		//order history
+		restaurantRoutes.POST("/order/history/",controllers.OrderHistoryRestaurants)
 	}
 
 	userRoutes := router.Group("/api/v1/user")
 	{
 
 		userRoutes.GET("/:userid", controllers.GetUserProfile)
-		userRoutes.PUT("/edit", controllers.UpdateUserInformation)
+		userRoutes.POST("/edit", controllers.UpdateUserInformation)
 
 		//favourite product by usedid
 		userRoutes.GET("/favorites/:userid", controllers.GetFavouriteProductByUserID)
@@ -120,6 +123,13 @@ func main() {
 		userRoutes.POST("/order/step1/placeorder",controllers.PlaceOrder)
 		userRoutes.POST("/order/step2/initiatepayment",controllers.InitiatePayment)
 		userRoutes.POST("/order/step3/paymentcallback/:orderid",controllers.PaymentGatewayCallback)
+
+		userRoutes.POST("/order/history",controllers.UserOrderHistory)
+	    userRoutes.POST("/order/information",controllers.GetOrderInfoByOrderID)
+		userRoutes.POST("/order/paymenthistory",controllers.PaymentDetailsByOrderID)
+
+		restaurantRoutes.POST("/order/nextstatus",controllers.UpdateOrderStatusForRestaurant)
+
 
 	}
 

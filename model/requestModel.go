@@ -12,6 +12,13 @@ type EmailLoginRequest struct {
 	Password string `form:"password" validate:"required" json:"password"`
 }
 
+type UpdateUserInformation struct{
+	ID             uint   `validate:"required"`
+	Name           string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
+	PhoneNumber    int `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	Picture        string `gorm:"column:picture;type:text" json:"picture"`
+}
+
 type RestaurantSignupRequest struct {
 	Name           string `validate:"required" json:"name"`
 	Description    string `gorm:"column:description" validate:"required" json:"description"`
@@ -22,6 +29,7 @@ type RestaurantSignupRequest struct {
 	ImageURL       string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
 }
+
 type RestaurantLoginRequest struct {
 	Email    string `validate:"required,email"`
 	Password string `validate:"required"`
@@ -60,3 +68,28 @@ type RazorpayPayment struct {
 	OrderID   string `form:"razorpay_order_id" binding:"required"`
 	Signature string `form:"razorpay_signature" binding:"required"`
 }
+
+type OrderHistoryRestaurants struct{
+	RestaurantID uint `json:"restaurant_id"`
+	OrderStatus string `json:"order_status"`
+}
+
+type UserOrderHistory struct{
+	UserID uint `json:"user_id"`
+	PaymentStatus string `json:"payment_status"`
+}
+
+type GetOrderInfoByOrderID struct{
+	OrderID string `json:"order_id"`
+}
+
+type PaymentDetailsByOrderID struct{
+	OrderID string `json:"order_id"`
+	PaymentStatus string `json:"payment_status"`
+}
+
+type UpdateOrderStatusForRestaurant struct{
+	OrderID string `json:"order_id"`
+	ProductID uint `json:"product_id"`
+}
+

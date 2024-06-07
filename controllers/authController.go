@@ -731,3 +731,4 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
+

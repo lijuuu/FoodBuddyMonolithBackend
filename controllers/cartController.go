@@ -106,7 +106,15 @@ func AddToCart(c *gin.Context) {
 		}
 	} else {
 		// 	- If the product is not in the cart, add it with the specified quantity.
-		CartItems.Quantity += Request.Quantity
+		if CartItems.Quantity + Request.Quantity > model.MaxUserQuantity{
+			c.JSON(http.StatusConflict, gin.H{
+				"status":     false,
+				"message":    "Total of Requested and Current need of quantity exceeds the max user quantity",
+				"error_code": http.StatusConflict,
+			})
+			return
+		}
+
 		if Request.CookingRequest != "" {
 			CartItems.CookingRequest = Request.CookingRequest
 		}

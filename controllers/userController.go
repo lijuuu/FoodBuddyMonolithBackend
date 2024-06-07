@@ -10,41 +10,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetUserProfile(c *gin.Context)  {
-	
+func GetUserProfile(c *gin.Context) {
+
 	//get id
 	userIDStr := c.Param("userid")
 
 	//check user info and save it on struct
 	var UserProfile model.User
-	if err := database.DB.Where("id = ?",userIDStr).First(&UserProfile).Error;err!=nil{
+	if err := database.DB.Where("id = ?", userIDStr).First(&UserProfile).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
-	
+
 	//return
 	c.JSON(http.StatusNotFound, gin.H{
-		"status":     true,
-		"message":    "successfully fetched user profile",
+		"status":  true,
+		"message": "successfully fetched user profile",
 		"data": gin.H{
-			"id":            UserProfile.ID,
-			"name":          UserProfile.Name,
-			"email":         UserProfile.Email,
-			"phone_number":  UserProfile.PhoneNumber,
-			"picture":       UserProfile.Picture,
-			"login_method":  UserProfile.LoginMethod,
-			"blocked":       UserProfile.Blocked,
+			"id":           UserProfile.ID,
+			"name":         UserProfile.Name,
+			"email":        UserProfile.Email,
+			"phone_number": UserProfile.PhoneNumber,
+			"picture":      UserProfile.Picture,
+			"login_method": UserProfile.LoginMethod,
+			"blocked":      UserProfile.Blocked,
 		},
 	})
-}
-
-func UpdateUserInformation(c *gin.Context){
-	//bind json
 }
 
 func GetUserList(c *gin.Context) {
@@ -56,7 +51,6 @@ func GetUserList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -79,7 +73,6 @@ func GetBlockedUserList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -89,7 +82,6 @@ func GetBlockedUserList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -115,7 +107,6 @@ func BlockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid user ID",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -126,7 +117,6 @@ func BlockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch user information",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -136,7 +126,6 @@ func BlockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "user is already blocked",
 			"error_code": http.StatusAlreadyReported,
-			
 		})
 		return
 	}
@@ -149,7 +138,6 @@ func BlockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the block status ",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -171,7 +159,6 @@ func UnblockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid user ID",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -181,7 +168,6 @@ func UnblockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "User not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -191,7 +177,6 @@ func UnblockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "user is already unblocked",
 			"error_code": http.StatusAlreadyReported,
-			
 		})
 		return
 	}
@@ -204,7 +189,6 @@ func UnblockUser(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the unblock status",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -223,17 +207,15 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to bind the incoming request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
 
-	if err:= validate(UserAddress);err!=nil{
+	if err := validate(UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err,
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -245,16 +227,14 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get user email from the database",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
-	if err := VerifyJWT(c, model.UserRole,email); err != nil {
+	if err := VerifyJWT(c, model.UserRole, email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -268,7 +248,6 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    errs,
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -280,7 +259,6 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "User not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -292,7 +270,6 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve the existing user addresses from the database",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -303,7 +280,6 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "user already have three addresses, please delete or edit the existing addresses",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -314,7 +290,6 @@ func AddUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to create the address on the database",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -339,7 +314,6 @@ func GetUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process the request data",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -351,7 +325,6 @@ func GetUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get informations from the database",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -363,16 +336,14 @@ func GetUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get user email from the database",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
-	if err := VerifyJWT(c, model.UserRole,email); err != nil {
+	if err := VerifyJWT(c, model.UserRole, email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -384,7 +355,6 @@ func GetUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "no addresses related to the userid",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -409,7 +379,6 @@ func EditUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to bind the incoming request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -422,7 +391,6 @@ func EditUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "address not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -434,17 +402,15 @@ func EditUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get user email from the database",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
-	if err := VerifyJWT(c, model.UserRole,email); err != nil {
+	if err := VerifyJWT(c, model.UserRole, email); err != nil {
 
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -463,7 +429,6 @@ func EditUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to update the address",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -483,7 +448,6 @@ func DeleteUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to bind the incoming request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -495,7 +459,6 @@ func DeleteUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "address not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -508,16 +471,14 @@ func DeleteUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get user email from the database",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
-	if errs := VerifyJWT(c, model.UserRole,email); errs != nil {
+	if errs := VerifyJWT(c, model.UserRole, email); errs != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 
 		return
@@ -529,7 +490,6 @@ func DeleteUserAddress(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to delete the address",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -539,4 +499,61 @@ func DeleteUserAddress(c *gin.Context) {
 		"status":  true,
 		"message": "address deleted successfully",
 	})
+}
+
+func UpdateUserInformation(c *gin.Context) {
+	//bind json
+	var Request model.UpdateUserInformation
+
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "failed to bind the json",
+		})
+		return
+	}
+
+	//validate
+	if err := validate(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": err,
+		})
+		return
+	}
+
+	if ok := CheckUser(Request.ID);!ok{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "user doesnt exist",
+		})
+		return
+	}
+
+	//update the user information
+	if err := database.DB.Model(&model.User{}).Where("id = ?",Request.ID).Updates(&Request).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to update user profile",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully updated user profile",
+		"data":gin.H{
+			"user":Request,
+		},
+	})
+
+}
+
+func ChangePassword() {
+	//use new table - PasswordResets (email,token,expiry in unix)//while creating forgot password override the existing token, if email is not available create a new row
+	//sent mail with token
+	//click mail
+	//js gets the token query... add the password in the form... sent the request to a callback url
+	//that listens for incoming request... use the token , check expiry ... check password match,...
+	//change the password
 }

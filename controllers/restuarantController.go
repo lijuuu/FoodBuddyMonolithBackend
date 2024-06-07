@@ -347,14 +347,14 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
-	if _, err := CheckRestaurant(c,existingRestaurant.Email); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    err.Error(),
-			"error_code": http.StatusUnauthorized,
-		})
-		return
-	}
+	// if _, err := CheckRestaurant(c,existingRestaurant.Email); err != nil {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{
+	// 		"status":     false,
+	// 		"message":    err.Error(),
+	// 		"error_code": http.StatusUnauthorized,
+	// 	})
+	// 	return
+	// }
 
 	// Edit the restaurant
 	if err := database.DB.Model(&existingRestaurant).Updates(restaurant).Error; err != nil {

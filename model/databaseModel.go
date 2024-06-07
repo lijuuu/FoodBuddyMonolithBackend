@@ -14,15 +14,21 @@ const (
 	UserRole                   = "user"
 	AdminRole                  = "admin"
 	RestaurantRole             = "restaurant"
-	MaxUserQuantity            = 5
-	CashOnDelivery             = "COD"
-	OnlinePayment              = "ONLINE"
-	PaymentPending             = "PENDING"
-	PaymentComplete            = "COMPLETE"
-	PaymentFailed              = "FAILED"
-	OrderStatusConfirmed       = "CONFIRMED"
-	OrderStatusFailed          = "FAILED"
-	OrderStatusProcessing      = "PROCESSING"
+	MaxUserQuantity            = 50
+
+	CashOnDelivery = "COD"
+	OnlinePayment  = "ONLINE"
+
+	PaymentPending  = "PENDING"
+	PaymentComplete = "COMPLETE"
+	PaymentFailed   = "FAILED"
+
+	OrderStatusProcessing    = "PROCESSING"
+	OrderStatusInPreparation = "PREPARATION"
+	OrderStatusPrepared      = "PREPARED"
+	OrderStatusOntheway     = "ONTHEWAY"
+	OrderStatusDelivered     = "DELIVERED"
+	OrderStatusCancelled     = "CANCELLED"
 )
 
 type EnvVariables struct {
@@ -47,7 +53,7 @@ type User struct {
 	ID             uint   `validate:"required"`
 	Name           string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
 	Email          string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber    string `gorm:"column:email;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	PhoneNumber    string `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string `gorm:"column:picture;type:text" json:"picture"`
 	HashedPassword string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
 	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
@@ -146,6 +152,7 @@ type Payment struct {
 
 type OrderItem struct {
 	OrderID        string `validate:"required"`
+	RestaurantID   uint   `validate:"required,number" json:"restaurant_id"`
 	ProductID      uint   ` validate:"required,number" json:"product_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
 	CookingRequest string

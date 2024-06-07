@@ -64,12 +64,14 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 	}
 
 	for _, v := range CartItems {
+
 		OrderItem := model.OrderItem{
 			OrderID:        OrderID,
 			ProductID:      v.ProductID,
 			Quantity:       v.Quantity,
 			CookingRequest: v.CookingRequest,
-			OrderStatus: model.OrderStatusProcessing,
+			OrderStatus:    model.OrderStatusProcessing,
+			RestaurantID:   RestaurantIDByProductID(v.ProductID),
 		}
 
 		if err := database.DB.Create(&OrderItem).Error; err != nil {
@@ -107,8 +109,8 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 	//check user
-	ok:= CheckUser(PlaceOrder.UserID)
-	if !ok{
+	ok := CheckUser(PlaceOrder.UserID)
+	if !ok {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":     false,
 			"message":    "user doesnt exist, please verify user id",
@@ -182,7 +184,6 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	
 	//get cart details
 	//insert everything to orderItems
 	ok = CartToOrderItems(PlaceOrder.UserID, OrderID)
@@ -203,6 +204,7 @@ func PlaceOrder(c *gin.Context) {
 		},
 	})
 }
+
 // get response from place order render the pay button with initiate payment logic
 func InitiatePayment(c *gin.Context) {
 	// Get order id from request body
@@ -303,7 +305,7 @@ func PaymentGatewayCallback(c *gin.Context) {
 	OrderID := c.Param("orderid")
 	fmt.Println(OrderID)
 	if OrderID == "" {
-		
+
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get orderid",
@@ -343,7 +345,7 @@ func PaymentGatewayCallback(c *gin.Context) {
 		RazorpaySignature: RazorpayPayment.Signature,
 		PaymentStatus:     model.PaymentComplete,
 	}
-	if err := database.DB.Where("order_id = ? AND razorpay_order_id = ?", OrderID,PaymentDetails.RazorpayOrderID).Updates(&PaymentDetails).Error; err != nil {
+	if err := database.DB.Where("order_id = ? AND razorpay_order_id = ?", OrderID, PaymentDetails.RazorpayOrderID).Updates(&PaymentDetails).Error; err != nil {
 		PaymentFailedOrderTable(OrderID)
 		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -390,7 +392,7 @@ func PaymentFailedOrderTable(OrderID string) bool {
 	return true
 }
 
-func PaymentFailedPaymentTable(RazorpayOrderID string)bool {
+func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
 	var PaymentDetails model.Payment
 	PaymentDetails.PaymentStatus = model.PaymentFailed
 	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.PaymentFailed).Error; err != nil {
@@ -399,13 +401,277 @@ func PaymentFailedPaymentTable(RazorpayOrderID string)bool {
 	return true
 }
 
-func CheckUser(UserID uint)bool  {
+func CheckUser(UserID uint) bool {
 
 	var User model.User
-	if err:= database.DB.Where("id = ?",UserID).First(&User).Error;err!=nil{
+	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
 		return false
 	}
 	return true
 }
+func RestaurantIDByProductID(ProductID uint) uint {
 
-//active orders odf 
+	var Product model.Product
+	if err := database.DB.Where("id = ?", ProductID).First(&Product).Error; err != nil {
+		return 0
+	}
+	return Product.RestaurantID
+}
+
+// active orders of restaurants
+func OrderHistoryRestaurants(c *gin.Context) {
+	//Restaurant id, if order status is provided use it or get the whole history
+	var Request model.OrderHistoryRestaurants
+	if err := c.Bind(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind the json",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+	//if provided with order_status show the specific order's of that status
+
+	var OrderItems []model.OrderItem
+	if Request.OrderStatus != "" {
+		//condition one order status not empty
+		//return all the orders with order_id, restaurant_id,order_status is met with the condition
+		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", Request.RestaurantID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":     false,
+				"message":    "failed to fetch orders assigned to this restaurant",
+				"error_code": http.StatusNotFound,
+			})
+			return
+		}
+	} else {
+		//condition two order status empty
+		//return all the orders with order_id, restaurant_id is met with the condition
+		if err := database.DB.Where("restaurant_id = ?", Request.RestaurantID).Find(&OrderItems).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":     false,
+				"message":    "failed to fetch orders assigned to this restaurant",
+				"error_code": http.StatusNotFound,
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"message": gin.H{
+			"orderhistory": OrderItems,
+		},
+	})
+}
+
+func UserOrderHistory(c *gin.Context) {
+	//same like restaurant
+	var Request model.UserOrderHistory
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  true,
+			"message": "failed to bind the request",
+		})
+		return
+	}
+	var Orders []model.Order
+
+	if Request.PaymentStatus != "" {
+		if err := database.DB.Where("user_id = ? AND payment_status = ?", Request.UserID, Request.PaymentStatus).Find(&Orders).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  true,
+				"message": "failed to fetch order history of the user by order status",
+			})
+			return
+		}
+	} else {
+		if err := database.DB.Where("user_id = ?", Request.UserID).Find(&Orders).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  true,
+				"message": "failed to fetch order history of the user",
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully fetched order history",
+		"data": gin.H{
+			"orderhistory": Orders,
+		},
+	})
+}
+
+func GetOrderInfoByOrderID(c *gin.Context) {
+	//get order id
+	var Request model.GetOrderInfoByOrderID
+	if err := c.Bind(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var OrderItems []model.OrderItem
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "Successfully retrieved OrderInformation",
+		"data": gin.H{
+			"orderitems": OrderItems,
+		},
+	})
+}
+
+func PaymentDetailsByOrderID(c *gin.Context) {
+
+	var Request model.PaymentDetailsByOrderID
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var PaymentDetails []model.Payment
+	if Request.PaymentStatus != "" {
+		if err := database.DB.Where("order_id = ? AND payment_status = ?", Request.OrderID, Request.PaymentStatus).Find(&PaymentDetails).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  true,
+				"message": "failed to fetch payment information",
+			})
+			return
+		}
+
+	} else {
+		if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&PaymentDetails).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  true,
+				"message": "failed to fetch payment information",
+			})
+			return
+		}
+	}
+
+	if len(PaymentDetails) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  true,
+			"message": "failed to fetch payment information with the specified order_status",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "Successfully retrieved payment information",
+		"data": gin.H{
+			"paymentdetails": PaymentDetails,
+		},
+	})
+}
+
+func UpdateOrderStatusForRestaurant(c *gin.Context) {
+	var Request model.UpdateOrderStatusForRestaurant
+
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var OrderItemDetail model.OrderItem
+	if err := database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).First(&OrderItemDetail).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information for the specific product",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
+	var NextOrderStatus string
+
+	if OrderItemDetail.OrderStatus == model.OrderStatusProcessing{
+		NextOrderStatus = model.OrderStatusInPreparation
+	}else{
+		OrderTransition := []string{model.OrderStatusInPreparation, model.OrderStatusPrepared, model.OrderStatusDelivered}
+
+		//get current index of the status transition
+		fmt.Println(OrderItemDetail.OrderStatus)
+		var orderIndex int
+		for i, v := range OrderTransition {
+			if OrderItemDetail.OrderStatus == v {
+				orderIndex = i
+				break
+			}
+		}
+
+		//check if transition ended
+		if orderIndex == len(OrderTransition)-1 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":     false,
+				"message":    "Reached maximum level of order transition",
+				"error_code": http.StatusNotFound,
+			})
+			return
+		}
+
+		NextOrderStatus = OrderTransition[orderIndex+1] 
+		fmt.Println(NextOrderStatus)
+	}
+
+	//update the new status to the orderitem table
+	if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).Update("order_status", NextOrderStatus).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to update order status for the specific product",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
+	OrderItemDetail.OrderStatus = NextOrderStatus
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "Successfully changed to next order status",
+		"data": gin.H{
+			"orderdetails": OrderItemDetail,
+		},
+	})
+}
+
+
+func UserReviewonOrderItem(c *gin.Context){
+	//orderid, productid,review text
+	//check delivered
+	//if no, return
+	//check review text for inappropriate words
+	//if yes, update the text to row
+}
+
+func UserRatingOrderItem(c *gin.Context)  {
+	
+}
+
+func CancelOrderedProduct(c *gin.Context)  {
+	//get orderid product
+	//if mentioned with productid only cancel that
+	//if no productid is mentioned cancel all the orders equal to and under preparing
+}
