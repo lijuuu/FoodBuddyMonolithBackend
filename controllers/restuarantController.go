@@ -33,7 +33,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process the request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -44,7 +44,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -57,7 +57,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "database error",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	} else if tx.Error == gorm.ErrRecordNotFound {
@@ -73,7 +73,7 @@ func RestaurantSignup(c *gin.Context) {
 				"status":     false,
 				"message":    "failed to create restaurant verification entry",
 				"error_code": http.StatusInternalServerError,
-				"data":       gin.H{},
+				
 			})
 			return
 		}
@@ -83,7 +83,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant email already exists",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -97,7 +97,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process the request",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -123,7 +123,7 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to save restaurant data",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -168,7 +168,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to process the incoming request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -179,7 +179,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -190,7 +190,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Error fetching restaurant details",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -201,7 +201,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Restaurant not authorized to access the route",
 			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -213,7 +213,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Invalid credentials",
 			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -225,7 +225,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to fetch email verification status",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -236,7 +236,7 @@ func RestaurantLogin(c *gin.Context) {
 				"status":     false,
 				"message":    err.Error(),
 				"error_code": http.StatusAlreadyReported,
-				"data":       gin.H{},
+				
 			})
 			return
 		}
@@ -244,7 +244,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Please verify your email to continue",
 			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -255,7 +255,7 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to generate token",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -303,7 +303,7 @@ func GetRestaurants(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -384,7 +384,7 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -396,7 +396,7 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -407,7 +407,7 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to delete the restaurant",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -429,7 +429,7 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -441,7 +441,7 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -464,7 +464,7 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -486,7 +486,7 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -498,7 +498,7 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -521,7 +521,7 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}

@@ -19,7 +19,7 @@ func GetProductList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the product doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -41,7 +41,7 @@ func GetProductsByRestaurantID(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -52,7 +52,7 @@ func GetProductsByRestaurantID(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve products",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -80,7 +80,7 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -90,7 +90,7 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -104,19 +104,19 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
 
-	if _,err := CheckRestaurant(c,restaurant.Email);err!=nil{
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    err.Error(),
-			"error_code": http.StatusUnauthorized,
-		})
-		return
-	   }
+	// if _,err := CheckRestaurant(c,restaurant.Email);err!=nil{
+	// 	c.JSON(http.StatusUnauthorized, gin.H{
+	// 		"status":     false,
+	// 		"message":    err.Error(),
+	// 		"error_code": http.StatusUnauthorized,
+	// 	})
+	// 	return
+	//    }
 
 	// Check if the category is present
 	var category model.Category
@@ -125,7 +125,7 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "category doesn't exist",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -137,7 +137,7 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "product with the same name already exists in this restaurant",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -148,7 +148,7 @@ func AddProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to create product",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -175,7 +175,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -185,7 +185,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -196,7 +196,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch product from the database",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -208,7 +208,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -219,7 +219,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "category doesn't exist",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -229,7 +229,7 @@ func EditProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to update product",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -255,7 +255,7 @@ func DeleteProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid product ID",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -266,7 +266,7 @@ func DeleteProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "product is not present in the database",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -277,14 +277,14 @@ func DeleteProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "unable to delete the product from the database",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"message":    "successfully deleted the product",
-		"data":       gin.H{},
+		
 	})
 }
 
@@ -296,7 +296,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid user ID format",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -308,7 +308,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to get user email from the database",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -318,7 +318,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 			"status":     false,
 			"message":    "unauthorized user",
 			"error_code": http.StatusUnauthorized,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -330,7 +330,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 			"status":     false,
 			"message":    "the user ID doesn't exist in the database",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}

@@ -49,7 +49,7 @@ func AdminLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to process the incoming request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -60,7 +60,7 @@ func AdminLogin(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -73,7 +73,7 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Email not present in the admin table",
 				"error_code": http.StatusUnauthorized,
-				"data":       gin.H{},
+				
 			})
 			return
 		} else {
@@ -81,7 +81,7 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Database error",
 				"error_code": http.StatusInternalServerError,
-				"data":       gin.H{},
+				
 			})
 			return
 		}
@@ -102,7 +102,7 @@ func AdminLogin(c *gin.Context) {
 					"status":     false,
 					"message":    "Failed to create admin verification entry",
 					"error_code": http.StatusInternalServerError,
-					"data":       gin.H{},
+					
 				})
 				return
 			}
@@ -111,7 +111,7 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Database error",
 				"error_code": http.StatusInternalServerError,
-				"data":       gin.H{},
+				
 			})
 			return
 		}
@@ -124,7 +124,7 @@ func AdminLogin(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusAlreadyReported,
-			"data":       gin.H{},
+			
 		})
 		return
 	}

@@ -109,14 +109,19 @@ func main() {
 		userRoutes.POST("/address/add", controllers.AddUserAddress)
 		userRoutes.PUT("/address/edit", controllers.EditUserAddress)
 		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress)
-	}
 
-	//cart management
-	userRoutes.POST("/cart/add", controllers.AddToCart) //add items to cart
-	userRoutes.GET("/cart/:userid", controllers.GetCartTotal) //get everything that cart holds
-	userRoutes.DELETE("/cart/delete/:userid", controllers.ClearCartByUserID) //remove the entire cart
-	userRoutes.DELETE("/cart/remove",controllers.RemoveItemFromCart) //remove specific products form the cart
-	userRoutes.PUT("/cart/update/",controllers.UpdateQuantity)
+		//cart management
+		userRoutes.POST("/cart/add", controllers.AddToCart) //add items to cart
+		userRoutes.GET("/cart/:userid", controllers.GetCartTotal) //get everything that cart holds
+		userRoutes.DELETE("/cart/delete/:userid", controllers.ClearCartByUserID) //remove the entire cart
+		userRoutes.DELETE("/cart/remove",controllers.RemoveItemFromCart) //remove specific products form the cart
+		userRoutes.PUT("/cart/update/",controllers.UpdateQuantity)
+
+		userRoutes.POST("/order/step1/placeorder",controllers.PlaceOrder)
+		userRoutes.POST("/order/step2/initiatepayment",controllers.InitiatePayment)
+		userRoutes.POST("/order/step3/paymentcallback/:orderid",controllers.PaymentGatewayCallback)
+
+	}
 
 	//order management
 	  //checkout
@@ -125,9 +130,6 @@ func main() {
 	  //retry payment
 	  //cancel order
 	
-	userRoutes.POST("/order/step1/placeorder",controllers.PlaceOrder)
-	userRoutes.POST("/order/step2/initiatepayment",controllers.InitiatePayment)
-	userRoutes.POST("/order/step3/paymentcallback/:orderid",controllers.PaymentGatewayCallback)
     
 
 	// Image upload route

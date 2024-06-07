@@ -20,6 +20,9 @@ const (
 	PaymentPending             = "PENDING"
 	PaymentComplete            = "COMPLETE"
 	PaymentFailed              = "FAILED"
+	OrderStatusConfirmed       = "CONFIRMED"
+	OrderStatusFailed          = "FAILED"
+	OrderStatusProcessing      = "PROCESSING"
 )
 
 type EnvVariables struct {
@@ -146,6 +149,7 @@ type OrderItem struct {
 	ProductID      uint   ` validate:"required,number" json:"product_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
 	CookingRequest string
+	OrderStatus    string `json:"order_status" gorm:"column:order_status"`
 }
 
 type RestaurantOrderDetails struct {

@@ -139,6 +139,18 @@ func GetCartTotal(c *gin.Context) {
 		return
 	}
 
+	//check user
+	// intUserID,_ := strconv.Atoi(UserID)
+	// ok:= CheckUser(uint(intUserID))
+	// if !ok{
+	// 	c.JSON(http.StatusConflict, gin.H{
+	// 		"status":     false,
+	// 		"message":    "user doesnt exist, please verify user id",
+	// 		"error_code": http.StatusConflict,
+	// 	})
+	// 	return
+	// }
+
 	var CartItems []model.CartItems
 
 	if err := database.DB.Where("user_id = ?", UserID).Find(&CartItems).Error; err != nil {
@@ -317,7 +329,7 @@ func CalculateCartTotal(userID uint) (int, error) {
 	var totalAmount int
 
 	if err := database.DB.Where("user_id = ?", userID).Find(&cartItems).Error; err != nil {
-		return 0, errors.New("failed to fetch cart items",)
+		return 0, errors.New("failed to fetch cart items")
 	}
 
 	if len(cartItems) == 0 {
@@ -334,4 +346,3 @@ func CalculateCartTotal(userID uint) (int, error) {
 
 	return totalAmount, nil
 }
-

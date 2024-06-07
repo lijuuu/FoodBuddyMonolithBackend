@@ -18,7 +18,7 @@ func GetCategoryList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -39,7 +39,7 @@ func GetCategoryProductList(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -64,7 +64,7 @@ func AddCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process incoming request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -76,7 +76,7 @@ func AddCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to validate category information",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -87,7 +87,7 @@ func AddCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch information for possible category name match",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -97,7 +97,7 @@ func AddCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "category already exists",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -108,7 +108,7 @@ func AddCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "unable to add new category, server error ",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 		
@@ -133,7 +133,7 @@ func EditCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process incoming request",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -144,7 +144,7 @@ func EditCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch category details from the database",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -154,7 +154,7 @@ func EditCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch category details via category name",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -166,7 +166,7 @@ func EditCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to update category details",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -174,7 +174,7 @@ func EditCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"message":    "successfully updated category",
-		"data":       gin.H{},
+		
 	})
 }
 
@@ -190,7 +190,7 @@ func DeleteCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid category ID",
 			"error_code": http.StatusBadRequest,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -200,7 +200,7 @@ func DeleteCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to fetch category from the database",
 			"error_code": http.StatusNotFound,
-			"data":       gin.H{},
+			
 		})
 		return
 	}
@@ -210,7 +210,7 @@ func DeleteCategory(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to delete category from the database",
 			"error_code": http.StatusInternalServerError,
-			"data":       gin.H{},
+			
 		})
 		return
 	}

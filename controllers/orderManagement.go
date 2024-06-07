@@ -69,6 +69,7 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 			ProductID:      v.ProductID,
 			Quantity:       v.Quantity,
 			CookingRequest: v.CookingRequest,
+			OrderStatus: model.OrderStatusProcessing,
 		}
 
 		if err := database.DB.Create(&OrderItem).Error; err != nil {
@@ -105,8 +106,18 @@ func PlaceOrder(c *gin.Context) {
 		})
 		return
 	}
+	//check user
+	ok:= CheckUser(PlaceOrder.UserID)
+	if !ok{
+		c.JSON(http.StatusConflict, gin.H{
+			"status":     false,
+			"message":    "user doesnt exist, please verify user id",
+			"error_code": http.StatusConflict,
+		})
+		return
+	}
 	//check address
-	ok := ValidAddress(PlaceOrder.UserID, PlaceOrder.AddressID)
+	ok = ValidAddress(PlaceOrder.UserID, PlaceOrder.AddressID)
 	if !ok {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":     false,
@@ -162,7 +173,6 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	fmt.Println(Order)
-
 	if err := database.DB.Where("order_id = ?", OrderID).FirstOrCreate(&Order).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -172,6 +182,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	
 	//get cart details
 	//insert everything to orderItems
 	ok = CartToOrderItems(PlaceOrder.UserID, OrderID)
@@ -191,9 +202,7 @@ func PlaceOrder(c *gin.Context) {
 			"OrderDetails": Order,
 		},
 	})
-
 }
-
 // get response from place order render the pay button with initiate payment logic
 func InitiatePayment(c *gin.Context) {
 	// Get order id from request body
@@ -389,3 +398,14 @@ func PaymentFailedPaymentTable(RazorpayOrderID string)bool {
 	}
 	return true
 }
+
+func CheckUser(UserID uint)bool  {
+
+	var User model.User
+	if err:= database.DB.Where("id = ?",UserID).First(&User).Error;err!=nil{
+		return false
+	}
+	return true
+}
+
+//active orders odf 
