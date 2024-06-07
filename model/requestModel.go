@@ -56,7 +56,7 @@ type InitiatePayment struct{
 }
 
 type RazorpayPayment struct {
-	PaymentID string `json:"razorpay_payment_id"`
-	OrderID   string `json:"razorpay_order_id"`
-	Signature string `json:"razorpay_signature"`
+	PaymentID string `form:"razorpay_payment_id" binding:"required"`
+	OrderID   string `form:"razorpay_order_id" binding:"required"`
+	Signature string `form:"razorpay_signature" binding:"required"`
 }

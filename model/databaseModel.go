@@ -19,6 +19,7 @@ const (
 	OnlinePayment              = "ONLINE"
 	PaymentPending             = "PENDING"
 	PaymentComplete            = "COMPLETE"
+	PaymentFailed              = "FAILED"
 )
 
 type EnvVariables struct {
@@ -70,7 +71,7 @@ type Category struct {
 
 type Product struct {
 	gorm.Model
-	ID           uint   
+	ID           uint
 	RestaurantID uint   `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
 	CategoryID   uint   `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
 	Name         string `validate:"required" json:"name"`
@@ -123,14 +124,13 @@ type CartItems struct {
 	CookingRequest string // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 type Order struct {
-	OrderID       string      `validate:"required" json:"order_id"`
-	UserID        uint        `validate:"required,number" json:"user_id"`
-	AddressID     uint        `validate:"required,number" json:"address_id"`
-	TotalAmount   float64     `validate:"required,number" json:"total_price"`
-	PaymentMethod string      `validate:"required" json:"payment_method" gorm:"column:payment_method"`
-	PaymentStatus string      `validate:"required" json:"payment_status" gorm:"column:payment_status"`
-	OrderedAt     time.Time   `gorm:"autoCreateTime" json:"ordered_at"`
-	
+	OrderID       string    `validate:"required" json:"order_id"`
+	UserID        uint      `validate:"required,number" json:"user_id"`
+	AddressID     uint      `validate:"required,number" json:"address_id"`
+	TotalAmount   float64   `validate:"required,number" json:"total_price"`
+	PaymentMethod string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
+	PaymentStatus string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
+	OrderedAt     time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
 
 type Payment struct {

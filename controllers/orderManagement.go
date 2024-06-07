@@ -210,6 +210,7 @@ func InitiatePayment(c *gin.Context) {
 	// Check if payment status is confirmed
 	var Order []model.Order
 	if err := database.DB.Where("order_id = ?", initiatePayment.OrderID).Find(&Order).Error; err != nil {
+		PaymentFailedOrderTable(initiatePayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "Failed to get payment information",
@@ -217,7 +218,6 @@ func InitiatePayment(c *gin.Context) {
 		})
 		return
 	}
-
 
 	for _, v := range Order {
 		if v.PaymentStatus == string(model.PaymentComplete) {
@@ -232,6 +232,7 @@ func InitiatePayment(c *gin.Context) {
 	// Fetch order details
 	var order model.Order
 	if err := database.DB.Where("order_id = ?", initiatePayment.OrderID).First(&order).Error; err != nil {
+		PaymentFailedOrderTable(initiatePayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "Failed to fetch order information",
@@ -250,9 +251,26 @@ func InitiatePayment(c *gin.Context) {
 	}
 	rzpOrder, err := client.Order.Create(data, nil)
 	if err != nil {
+		PaymentFailedOrderTable(initiatePayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "Failed to create Razorpay order",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	//add to payment tables
+	RazorpayOrderID := rzpOrder["id"]
+	PaymentDetails := model.Payment{
+		OrderID:         initiatePayment.OrderID,
+		RazorpayOrderID: RazorpayOrderID.(string),
+	}
+	if err := database.DB.Create(&PaymentDetails).Error; err != nil {
+		PaymentFailedOrderTable(initiatePayment.OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "Failed to add Payment order details",
 			"error_code": http.StatusInternalServerError,
 		})
 		return
@@ -276,6 +294,7 @@ func PaymentGatewayCallback(c *gin.Context) {
 	OrderID := c.Param("orderid")
 	fmt.Println(OrderID)
 	if OrderID == "" {
+		
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get orderid",
@@ -285,11 +304,12 @@ func PaymentGatewayCallback(c *gin.Context) {
 	}
 
 	var RazorpayPayment model.RazorpayPayment
-	if err := c.BindJSON(&RazorpayPayment); err != nil {
+	if err := c.ShouldBind(&RazorpayPayment); err != nil {
+		PaymentFailedOrderTable(OrderID)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message": "failed to get orderid",
-			"error_code": http.StatusInternalServerError,
+			"message":    "failed to bind Razorpay payment details",
+			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -298,9 +318,28 @@ func PaymentGatewayCallback(c *gin.Context) {
 
 	// Now you can proceed with your verification logic
 	if !verifyRazorpaySignature(RazorpayPayment.OrderID, RazorpayPayment.PaymentID, RazorpayPayment.Signature, os.Getenv("RAZORPAY_KEY_SECRET")) {
+		PaymentFailedOrderTable(OrderID)
+		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message": "failed to verify",
+			"message":    "failed to verify",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	PaymentDetails := model.Payment{
+		RazorpayOrderID:   RazorpayPayment.OrderID,
+		RazorpayPaymentID: RazorpayPayment.PaymentID,
+		RazorpaySignature: RazorpayPayment.Signature,
+		PaymentStatus:     model.PaymentComplete,
+	}
+	if err := database.DB.Where("order_id = ? AND razorpay_order_id = ?", OrderID,PaymentDetails.RazorpayOrderID).Updates(&PaymentDetails).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to update payment informations",
 			"error_code": http.StatusInternalServerError,
 		})
 		return
@@ -308,6 +347,8 @@ func PaymentGatewayCallback(c *gin.Context) {
 
 	var Order model.Order
 	if err := database.DB.Model(&Order).Where("order_id = ?", OrderID).Update("payment_status", model.PaymentComplete).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update payment informations",
@@ -317,9 +358,9 @@ func PaymentGatewayCallback(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":true,
-		"data":gin.H{
-			"paymentdata":RazorpayPayment,
+		"status": true,
+		"data": gin.H{
+			"paymentdata": RazorpayPayment,
 		},
 	})
 }
@@ -329,4 +370,22 @@ func verifyRazorpaySignature(orderID, paymentID, signature, secret string) bool 
 	h.Write([]byte(orderID + "|" + paymentID))
 	computedSignature := hex.EncodeToString(h.Sum(nil))
 	return hmac.Equal([]byte(computedSignature), []byte(signature))
+}
+
+func PaymentFailedOrderTable(OrderID string) bool {
+	var Order model.Order
+	Order.PaymentStatus = model.PaymentFailed
+	if err := database.DB.Model(&model.Order{}).Where("order_id = ?", OrderID).Update("payment_status", model.PaymentFailed).Error; err != nil {
+		return false
+	}
+	return true
+}
+
+func PaymentFailedPaymentTable(RazorpayOrderID string)bool {
+	var PaymentDetails model.Payment
+	PaymentDetails.PaymentStatus = model.PaymentFailed
+	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.PaymentFailed).Error; err != nil {
+		return false
+	}
+	return true
 }

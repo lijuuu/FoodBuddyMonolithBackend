@@ -334,3 +334,4 @@ func CalculateCartTotal(userID uint) (int, error) {
 
 	return totalAmount, nil
 }
+
