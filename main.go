@@ -127,8 +127,10 @@ func main() {
 		userRoutes.POST("/order/history",controllers.UserOrderHistory)
 	    userRoutes.POST("/order/information",controllers.GetOrderInfoByOrderID)
 		userRoutes.POST("/order/paymenthistory",controllers.PaymentDetailsByOrderID)
+        userRoutes.POST("/order/cancel",controllers.CancelOrderedProduct)
 
 		restaurantRoutes.POST("/order/nextstatus",controllers.UpdateOrderStatusForRestaurant)
+
 
 
 	}

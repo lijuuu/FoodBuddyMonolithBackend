@@ -93,3 +93,7 @@ type UpdateOrderStatusForRestaurant struct{
 	ProductID uint `json:"product_id"`
 }
 
+type CancelOrderedProduct struct{
+	OrderID string `json:"order_id"`
+	ProductId uint `json:"product_id"`
+}

@@ -78,8 +78,8 @@ func AddToCart(c *gin.Context) {
 
 	// - **Update Cart**:
 	// 	- If the product is already in the cart, update the quantity.
-	var CartItems model.CartItems
-	if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).First(&CartItems).Error; err != nil {
+	var CartItem model.CartItems
+	if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).First(&CartItem).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
@@ -93,7 +93,7 @@ func AddToCart(c *gin.Context) {
 
 		AddCartItems.UserID = Request.UserID
 		AddCartItems.ProductID = Request.ProductID
-		AddCartItems.Quantity = Request.Quantity
+		AddCartItems.Quantity = Request.Quantity 
 		AddCartItems.CookingRequest = Request.CookingRequest
 
 		if err := database.DB.Create(&AddCartItems).Error; err != nil {
@@ -106,7 +106,7 @@ func AddToCart(c *gin.Context) {
 		}
 	} else {
 		// 	- If the product is not in the cart, add it with the specified quantity.
-		if CartItems.Quantity + Request.Quantity > model.MaxUserQuantity{
+		if CartItem.Quantity + Request.Quantity > model.MaxUserQuantity{
 			c.JSON(http.StatusConflict, gin.H{
 				"status":     false,
 				"message":    "Total of Requested and Current need of quantity exceeds the max user quantity",
@@ -115,10 +115,13 @@ func AddToCart(c *gin.Context) {
 			return
 		}
 
+		CartItem.Quantity += Request.Quantity
+		
 		if Request.CookingRequest != "" {
-			CartItems.CookingRequest = Request.CookingRequest
+			CartItem.CookingRequest = Request.CookingRequest
 		}
-		if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).Updates(&CartItems).Error; err != nil {
+
+		if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).Updates(&CartItem).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
 				"message":    "Failed to update cart items. Please try again later.",

@@ -159,14 +159,8 @@ type OrderItem struct {
 	OrderStatus    string `json:"order_status" gorm:"column:order_status"`
 }
 
-type RestaurantOrderDetails struct {
-	OrderID        uint   `validate:"required,number" json:"order_id" gorm:"column:order_id"`
-	UserID         uint   `validate:"required,number" json:"user_id" gorm:"column:user_id"`
-	RestaurantID   uint   `validate:"required,number" json:"restaurant_id" gorm:"column:restaurant_id"`
-	OrderStatus    string `validate:"required" json:"order_status" gorm:"column:order_status"`
-	TotalPrice     uint   `validate:"required,number" json:"total_price" gorm:"column:total_price"`
-	AddressID      uint   `validate:"required,number" json:"address_id" gorm:"column:address_id"`
-	DeliveryStatus string `validate:"required" json:"delivery_status" gorm:"column:delivery_status"`
-	CustomerReview string `validate:"required" json:"customer_review" gorm:"column:customer_review"`
-	Rating         uint   `validate:"required,number" json:"rating" gorm:"column:rating"`
+type UserPasswordReset struct{
+	Email string `validate:"email"`
+	ResetToken string `gorm:"column:reset_token" json:"reset_token"`
+    ExpiryTime uint `gorm:"expiry_time" json:"expiry_time"`
 }

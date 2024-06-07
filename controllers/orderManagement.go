@@ -196,6 +196,10 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	if PlaceOrder.PaymentMethod == model.CashOnDelivery {
+		//decrement stock
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "Order is Successfully created",
@@ -367,6 +371,8 @@ func PaymentGatewayCallback(c *gin.Context) {
 		})
 		return
 	}
+
+	//decrement stock based on orderid
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
@@ -608,9 +614,9 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 
 	var NextOrderStatus string
 
-	if OrderItemDetail.OrderStatus == model.OrderStatusProcessing{
+	if OrderItemDetail.OrderStatus == model.OrderStatusProcessing {
 		NextOrderStatus = model.OrderStatusInPreparation
-	}else{
+	} else {
 		OrderTransition := []string{model.OrderStatusInPreparation, model.OrderStatusPrepared, model.OrderStatusDelivered}
 
 		//get current index of the status transition
@@ -633,7 +639,7 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 			return
 		}
 
-		NextOrderStatus = OrderTransition[orderIndex+1] 
+		NextOrderStatus = OrderTransition[orderIndex+1]
 		fmt.Println(NextOrderStatus)
 	}
 
@@ -657,21 +663,77 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	})
 }
 
-
-func UserReviewonOrderItem(c *gin.Context){
+func UserReviewonOrderItem(c *gin.Context) {
 	//orderid, productid,review text
 	//check delivered
 	//if no, return
-	//check review text for inappropriate words
+	//check review text
 	//if yes, update the text to row
 }
 
-func UserRatingOrderItem(c *gin.Context)  {
-	
+func UserRatingOrderItem(c *gin.Context) {
+
 }
 
-func CancelOrderedProduct(c *gin.Context)  {
+func CancelOrderedProduct(c *gin.Context) {
 	//get orderid product
+	var Request model.CancelOrderedProduct
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var OrderItem model.OrderItem
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&OrderItem).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to fetch the order item",
+		})
+		return
+	}
+
+	//check order status is processing
+	if OrderItem.OrderStatus != model.OrderStatusProcessing && OrderItem.OrderStatus != model.OrderStatusInPreparation {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  false,
+			"message": "order can only be cancelled during processing or in preparation status",
+		})
+		return
+	}
+
 	//if mentioned with productid only cancel that
-	//if no productid is mentioned cancel all the orders equal to and under preparing
+	if Request.ProductId != 0 {
+		//change status to cancelled
+		if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductId).Update("order_status", model.OrderStatusCancelled).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":  false,
+				"message": "failed to cancel the order item",
+			})
+			return
+		}
+	} else {
+		if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ?", Request.OrderID).Update("order_status", model.OrderStatusCancelled).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":  false,
+				"message": "failed to cancel the order item",
+			})
+			return
+		}
+		//if no productid is mentioned cancel all the orders equal to and under preparing
+		//increment stockleft
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully cancelled the order",
+		"data": gin.H{
+			"order_id": Request.OrderID,
+		},
+	})
 }
+
+//after payment_confirmed change the stockleft based on orderitems quantity
