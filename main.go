@@ -48,6 +48,11 @@ func main() {
 	router.POST("/api/v1/auth/user/email/signup", controllers.EmailSignup)
 	router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP)
 
+	//password resets
+	router.POST("/api/v1/auth/passwordreset/step1",controllers.Step1PasswordReset)
+	router.GET("/api/v1/auth/passwordreset",controllers.LoadPasswordReset)
+	router.POST("/api/v1/auth/passwordreset/step2",controllers.Step2PasswordReset)
+
 	// Social login routes
 	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin)
 	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback)
@@ -94,6 +99,7 @@ func main() {
 
 		//order history
 		restaurantRoutes.POST("/order/history/",controllers.OrderHistoryRestaurants)
+		restaurantRoutes.POST("/order/nextstatus",controllers.UpdateOrderStatusForRestaurant)
 	}
 
 	userRoutes := router.Group("/api/v1/user")
@@ -129,9 +135,8 @@ func main() {
 		userRoutes.POST("/order/paymenthistory",controllers.PaymentDetailsByOrderID)
         userRoutes.POST("/order/cancel",controllers.CancelOrderedProduct)
 
-		restaurantRoutes.POST("/order/nextstatus",controllers.UpdateOrderStatusForRestaurant)
-
-
+		userRoutes.POST("/order/review",controllers.UserReviewonOrderItem)
+		userRoutes.POST("/order/rating",controllers.UserRatingOrderItem)
 
 	}
 
@@ -142,7 +147,6 @@ func main() {
 	  //retry payment
 	  //cancel order
 	
-    
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)

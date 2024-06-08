@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/smtp"
+	"os"
 	"strconv"
 	"time"
 
@@ -500,7 +501,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	// fmt.Printf("Sending mail because OTP has expired: %v\n", expiryTime)
 
 	from := "foodbuddycode@gmail.com"
-	appPassword := "emdnwucohpvcoyin"
+	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/verifyotp/%v/%v/%v", role, to, otp)
 	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v", url)

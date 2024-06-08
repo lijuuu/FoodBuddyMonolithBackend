@@ -1,13 +1,19 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
+	"net/smtp"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetUserProfile(c *gin.Context) {
@@ -522,7 +528,7 @@ func UpdateUserInformation(c *gin.Context) {
 		return
 	}
 
-	if ok := CheckUser(Request.ID);!ok{
+	if ok := CheckUser(Request.ID); !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "user doesnt exist",
@@ -531,7 +537,7 @@ func UpdateUserInformation(c *gin.Context) {
 	}
 
 	//update the user information
-	if err := database.DB.Model(&model.User{}).Where("id = ?",Request.ID).Updates(&Request).Error; err != nil {
+	if err := database.DB.Model(&model.User{}).Where("id = ?", Request.ID).Updates(&Request).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to update user profile",
@@ -542,18 +548,143 @@ func UpdateUserInformation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "successfully updated user profile",
-		"data":gin.H{
-			"user":Request,
+		"data": gin.H{
+			"user": Request,
 		},
 	})
-
 }
 
-func ChangePassword() {
-	//use new table - PasswordResets (email,token,expiry in unix)//while creating forgot password override the existing token, if email is not available create a new row
-	//sent mail with token
-	//click mail
-	//js gets the token query... add the password in the form... sent the request to a callback url
-	//that listens for incoming request... use the token , check expiry ... check password match,...
-	//change the password
+//sent reset email
+
+func Step1PasswordReset(c *gin.Context) {
+	//receive email
+	var Request model.Step1PasswordReset
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "failed to bind the request"})
+		return
+	}
+	//check if the user exists
+	var User model.User
+	if err:= database.DB.Where("email = ?",Request.Email).First(&User).Error;err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "user doesnt exists"})
+		return
+	}
+
+	//generate token,expiry etc
+	ResetToken := utils.GenerateRandomString(10)
+	ExpiryTime := time.Now().Unix() + 1*60
+	//sent email  use smtp with token as query
+
+	from := "foodbuddycode@gmail.com"
+	appPassword := os.Getenv("SMTPAPP")
+	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
+	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v", Request.Email, ResetToken)
+	mail := fmt.Sprintf("FoodBuddy Password Reset \n Click here to reset your password %v", url)
+
+	//send the otp to the specified email
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{Request.Email}, []byte(mail))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to sent the password reset mail"})
+		return
+	}
+
+	//save it on the server
+	var UserPasswordReset model.UserPasswordReset
+	UserPasswordReset.Email = Request.Email
+	UserPasswordReset.ResetToken = ResetToken
+	UserPasswordReset.ExpiryTime = uint(ExpiryTime)
+
+	var CheckUser model.UserPasswordReset
+	if err := database.DB.Where("email = ?", Request.Email).First(&CheckUser).Error; err != nil {
+		//email row doesnt exist create new entry
+		if err := database.DB.Create(&UserPasswordReset).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to save password reset information, try again"})
+			return
+		}
+	} else {
+		//update the mail if it exists
+		if err := database.DB.Where("email = ?", Request.Email).Updates(&UserPasswordReset).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to save password reset information, try again"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Successfully sent the password reset email"})
+}
+
+func LoadPasswordReset(c *gin.Context) {
+	email := c.Query("email")
+	token := c.Query("token")
+
+	fmt.Println(email, ": ", token)
+
+	c.HTML(http.StatusOK, "passwordreset.html", gin.H{
+		"email": email,
+		"token": token,
+	})
+}
+
+func Step2PasswordReset(c *gin.Context) {
+	//user clicks the url with token,
+	var Request model.Step2PasswordReset
+	if err := c.ShouldBind(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "failed to bind the request"})
+		return
+	}
+
+	if err := validate(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": err.Error()})
+		return
+	}
+	// this function recieves email, token, passwords(check for password match)
+	//check email
+	var UserPasswordReset model.UserPasswordReset
+	if err := database.DB.Where("email = ?", Request.Email).First(&UserPasswordReset).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
+		return
+	}
+	//call step3
+	ok, err := Step3PasswordReset(Request)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "Successfully Reseted password"})
+}
+
+func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
+	// check if passwords match
+	if Request.Password != Request.ConfirmPassword {
+		return false, errors.New("please ensure both the passwords are same")
+	}
+
+	// generate salt
+	salt := utils.GenerateRandomString(7)
+
+	// combine salt and password and hash it
+	saltedPassword := salt + Request.Password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return false, errors.New("failed to hash the password")
+	}
+
+	// create a new user instance with updated password and salt
+	user := model.User{
+		Email:          Request.Email,
+		Salt:           salt,
+		HashedPassword: string(hashedPassword),
+	}
+
+	// save the updated user record
+	if err := database.DB.Model(&user).Where("email = ?", user.Email).Updates(user).Error; err != nil {
+		return false, errors.New("failed to update the password")
+	}
+
+	//change verification status to pending in the verification table as well
+	if err:= database.DB.Model(&model.VerificationTable{}).Where("email = ?",Request.Email).Update("verification_status",model.VerificationStatusPending).Error;err!=nil{
+		return false, errors.New("failed to update the verification status")
+	}
+
+	return true, nil
 }

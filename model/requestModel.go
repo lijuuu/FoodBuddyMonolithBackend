@@ -97,3 +97,30 @@ type CancelOrderedProduct struct{
 	OrderID string `json:"order_id"`
 	ProductId uint `json:"product_id"`
 }
+
+type IncrementStock struct{
+	OrderID string `json:"order_id"`
+}
+
+type Step1PasswordReset struct{
+	Email string `validate:"required,email"`
+}
+
+type Step2PasswordReset struct {
+	Email           string `form:"email" binding:"required,email" json:"email"`
+	Token           string `form:"token" binding:"required" json:"token"`
+	Password        string `form:"password1" binding:"required" json:"password1"`
+	ConfirmPassword string `form:"password2" binding:"required" json:"password2"`
+}
+
+type UserReviewonOrderItem struct{
+	OrderID string `validate:"required" json:"order_id"`
+	ProductID uint `validate:"required" json:"product_id"`
+	ReviewText string `validate:"required" json:"user_review"`
+}
+
+type UserRatingOrderItem struct{
+	OrderID string `validate:"required" json:"order_id"`
+	ProductID uint `validate:"required" json:"product_id"`
+	UserRating float64 `validate:"required" json:"user_rating"`
+}
