@@ -21,7 +21,7 @@ func CheckAdmin(c *gin.Context)(string,error) {
 		return email,errors.New("request unauthorized")
 	}
 
-	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
+	if err := VerifyJWT(c, model.AdminRole, email); err != nil {
 		return email,errors.New("request unauthorized")
 	}
 	return email,nil

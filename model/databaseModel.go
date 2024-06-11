@@ -19,9 +19,13 @@ const (
 	CashOnDelivery = "COD"
 	OnlinePayment  = "ONLINE"
 
-	PaymentPending   = "PENDING"
-	PaymentConfirmed = "CONFIRMED"
-	PaymentFailed    = "FAILED"
+	OnlinePaymentPending   = "ONLINE_PENDING"
+	OnlinePaymentConfirmed = "ONLINE_CONFIRMED"
+	OnlinePaymentFailed    = "ONLINE_FAILED"
+
+	CODStatusPending   = "COD_PENDING"
+    CODStatusConfirmed = "COD_CONFIRMED"
+    CODStatusFailed    = "COD_FAILED"
 
 	OrderStatusProcessing    = "PROCESSING"
 	OrderStatusInPreparation = "PREPARATION"

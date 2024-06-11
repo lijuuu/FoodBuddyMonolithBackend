@@ -103,7 +103,7 @@ func AddCategory(c *gin.Context) {
 	}
 
 	category.ID = 0
-	if err := database.DB.Create(&category); err != nil {
+	if err := database.DB.Create(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "unable to add new category, server error ",

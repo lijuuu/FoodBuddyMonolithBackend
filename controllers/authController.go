@@ -482,7 +482,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	if otpexpiry > 0 && uint64(now) < otpexpiry {
 		// OTP is still valid, respond with a message and do not send a new OTP
 		//send back tim left before trying another one
-		timeLeft := otpexpiry - uint64(now) 
+		timeLeft := otpexpiry - uint64(now)
 		str := fmt.Sprintf("OTP is still valid. wait before sending another request, %v seconds left", int(timeLeft))
 
 		return errors.New(str)
@@ -517,7 +517,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 		Email:              to,
 		Role:               role,
 		OTP:                uint64(otp),
-		OTPExpiry:         uint64(expiryTime),
+		OTPExpiry:          uint64(expiryTime),
 		VerificationStatus: model.VerificationStatusPending, //already metioned during signup //mentioning it sprtly for all routes as well
 	}
 
@@ -732,4 +732,3 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
-

@@ -565,7 +565,7 @@ func Step1PasswordReset(c *gin.Context) {
 	}
 	//check if the user exists
 	var User model.User
-	if err:= database.DB.Where("email = ?",Request.Email).First(&User).Error;err!=nil{
+	if err := database.DB.Where("email = ?", Request.Email).First(&User).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "user doesnt exists"})
 		return
 	}
@@ -682,7 +682,7 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 	}
 
 	//change verification status to pending in the verification table as well
-	if err:= database.DB.Model(&model.VerificationTable{}).Where("email = ?",Request.Email).Update("verification_status",model.VerificationStatusPending).Error;err!=nil{
+	if err := database.DB.Model(&model.VerificationTable{}).Where("email = ?", Request.Email).Update("verification_status", model.VerificationStatusPending).Error; err != nil {
 		return false, errors.New("failed to update the verification status")
 	}
 

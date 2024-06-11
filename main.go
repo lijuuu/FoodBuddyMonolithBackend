@@ -68,6 +68,13 @@ func main() {
 	router.GET("/api/v1/public/restaurants", controllers.GetRestaurants)
 	router.GET("/api/v1/public/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID)
 
+	// Image upload route
+	router.GET("/api/v1/uploadimage", view.LoadUpload)
+	router.POST("/api/v1/uploadimage", utils.ImageUpload)
+
+	// Logout route
+	router.GET("/api/v1/logout", controllers.Logout)
+
 	// Admin routes with admin middleware
 	adminRoutes := router.Group("/api/v1/admin")
 	{
@@ -146,14 +153,6 @@ func main() {
 	  //intiatepayment
 	  //retry payment
 	  //cancel order
-	
-
-	// Image upload route
-	router.GET("/api/v1/uploadimage", view.LoadUpload)
-	router.POST("/api/v1/uploadimage", utils.ImageUpload)
-
-	// Logout route
-	router.GET("/api/v1/logout", controllers.Logout)
 
 	router.Run(":8080")
 }

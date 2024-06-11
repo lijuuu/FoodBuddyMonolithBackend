@@ -9,7 +9,6 @@ import (
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"foodbuddy/utils"
-	"math"
 	"net/http"
 	"os"
 	"time"
@@ -101,6 +100,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+
 	if err := validate(&PlaceOrder); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
@@ -160,6 +160,16 @@ func PlaceOrder(c *gin.Context) {
 		})
 		return
 	}
+
+	if PlaceOrder.PaymentMethod == model.CashOnDelivery{
+		if TotalAmount >= 1000{
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "please switch to ONLINE payment for total amount more than or equal to 1000",
+			})
+			return
+		}
+	}
 	//create order row with userid,addressid,totalprice,paymentmethod,etc...,payment status as "pending"
 	var Order model.Order
 	Order.OrderID = OrderID
@@ -170,10 +180,9 @@ func PlaceOrder(c *gin.Context) {
 	Order.OrderedAt = time.Now()
 
 	if PlaceOrder.PaymentMethod == model.CashOnDelivery {
-		Order.PaymentStatus = model.PaymentConfirmed
+		Order.PaymentStatus = model.CODStatusPending
 	} else {
-		Order.PaymentStatus = model.PaymentPending
-	}
+		Order.PaymentStatus = model.OnlinePaymentPending
 
 	fmt.Println(Order)
 	if err := database.DB.Where("order_id = ?", OrderID).FirstOrCreate(&Order).Error; err != nil {
@@ -216,6 +225,7 @@ func PlaceOrder(c *gin.Context) {
 		},
 	})
 }
+}
 
 // get response from place order render the pay button with initiate payment logic
 func InitiatePayment(c *gin.Context) {
@@ -243,13 +253,21 @@ func InitiatePayment(c *gin.Context) {
 	}
 
 	for _, v := range Order {
-		if v.PaymentStatus == string(model.PaymentConfirmed) {
+		if v.PaymentStatus == string(model.OnlinePaymentConfirmed) {
 			c.JSON(http.StatusAlreadyReported, gin.H{
 				"status":  true,
 				"message": "Payment already done",
 			})
 			return
 		}
+		if v.PaymentStatus == string(model.CODStatusPending) || v.PaymentStatus == string(model.CODStatusConfirmed) {
+			c.JSON(http.StatusAlreadyReported, gin.H{
+				"status":  true,
+				"message": "Payment already done",
+			})
+			return
+		}
+		
 	}
 
 	// Fetch order details
@@ -355,7 +373,7 @@ func PaymentGatewayCallback(c *gin.Context) {
 		RazorpayOrderID:   RazorpayPayment.OrderID,
 		RazorpayPaymentID: RazorpayPayment.PaymentID,
 		RazorpaySignature: RazorpayPayment.Signature,
-		PaymentStatus:     model.PaymentConfirmed,
+		PaymentStatus:     model.OnlinePaymentConfirmed,
 	}
 	if err := database.DB.Where("order_id = ? AND razorpay_order_id = ?", OrderID, PaymentDetails.RazorpayOrderID).Updates(&PaymentDetails).Error; err != nil {
 		PaymentFailedOrderTable(OrderID)
@@ -369,7 +387,7 @@ func PaymentGatewayCallback(c *gin.Context) {
 	}
 
 	var Order model.Order
-	if err := database.DB.Model(&Order).Where("order_id = ?", OrderID).Update("payment_status", model.PaymentConfirmed).Error; err != nil {
+	if err := database.DB.Model(&Order).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentConfirmed).Error; err != nil {
 		PaymentFailedOrderTable(OrderID)
 		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -407,8 +425,8 @@ func verifyRazorpaySignature(orderID, paymentID, signature, secret string) bool 
 
 func PaymentFailedOrderTable(OrderID string) bool {
 	var Order model.Order
-	Order.PaymentStatus = model.PaymentFailed
-	if err := database.DB.Model(&model.Order{}).Where("order_id = ?", OrderID).Update("payment_status", model.PaymentFailed).Error; err != nil {
+	Order.PaymentStatus = model.OnlinePaymentFailed
+	if err := database.DB.Model(&model.Order{}).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
 		return false
 	}
 	return true
@@ -416,8 +434,8 @@ func PaymentFailedOrderTable(OrderID string) bool {
 
 func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
 	var PaymentDetails model.Payment
-	PaymentDetails.PaymentStatus = model.PaymentFailed
-	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.PaymentFailed).Error; err != nil {
+	PaymentDetails.PaymentStatus = model.OnlinePaymentFailed
+	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
 		return false
 	}
 	return true
@@ -633,7 +651,7 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	if OrderItemDetail.OrderStatus == model.OrderStatusProcessing {
 		NextOrderStatus = model.OrderStatusInPreparation
 	} else {
-		OrderTransition := []string{model.OrderStatusInPreparation, model.OrderStatusPrepared, model.OrderStatusDelivered}
+		OrderTransition := []string{model.OrderStatusInPreparation, model.OrderStatusPrepared, model.OrderStatusOntheway, model.OrderStatusDelivered}
 
 		//get current index of the status transition
 		fmt.Println(OrderItemDetail.OrderStatus)
@@ -759,6 +777,17 @@ func CancelOrderedProduct(c *gin.Context) {
 	})
 }
 
+
+// func ProvideWalletRefundToUser(OrderItems []model.OrderItem)  {
+// 	//get order items to cancel from orderItems
+// 	//find total sum of refund
+// 	for _,item := range OrderItems{
+// 		item.
+// 	}
+
+// }
+
+
 func IncrementStock(OrderID string) bool {
 
 	//get orderitems
@@ -843,12 +872,12 @@ func UserReviewonOrderItem(c *gin.Context) {
 	}
 	//check review text
 	OrderItem.OrderReview = Request.ReviewText
-	if err := database.DB.Where("order_id = ?", Request.OrderID).Updates(&OrderItem).Error; err != nil {
+	if err := database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).Updates(&OrderItem).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to add order review, please try again"})
 		return
 	}
 
-	c.JSON(http.StatusConflict, gin.H{"status": true, "message": "successfully added the review"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully added the review"})
 }
 
 func UserRatingOrderItem(c *gin.Context) {
@@ -876,36 +905,33 @@ func UserRatingOrderItem(c *gin.Context) {
 		return
 	}
 
-	//find the total count of ratings provided for that particular product... orderrating in orderitems greater than 0 condition = product_id
-	var count int64
-	if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ? AND product_id = ? AND order_rating BETWEEN ? AND ?", Request.OrderID, Request.ProductID, 1, 5).Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": "failed to count the total number of ratings for the product",
-		})
+	
+	var OrderItems []model.OrderItem
+	if err := database.DB.Model(&model.OrderItem{}).Where("product_id = ? AND order_rating BETWEEN ? AND ?", Request.ProductID, 1, 5).Update("order_rating", Request.UserRating).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to update product rating"})
 		return
+	}
+	
+
+	var RatingSum float64
+	for _,v := range OrderItems{
+       RatingSum += v.OrderRating
 	}
 
-	//get product info
-	var Product model.Product
-	if err := database.DB.Where("id = ?", Request.ProductID).First(&Product).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch product information"})
-		return
-	}
-	//calculate the rating
-	newRating := (Request.UserRating + Product.AverageRating*float64(count)) / (float64(count) + 1)
-	newRating = float64(math.Min(math.Max(float64(newRating), 1.0), 5.0))
-	Product.AverageRating = newRating
+	newRating  := (RatingSum+Request.UserRating)/float64(len(OrderItems)+1)
 	fmt.Println(newRating)
+
 	//update
 	if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).Update("order_rating", Request.UserRating).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to update product rating"})
 		return
 	}
-	if err := database.DB.Where("id = ?", Request.ProductID).Updates(&Product).Error; err != nil {
+
+	if err := database.DB.Model(&model.Product{}).Where("id = ?", Request.ProductID).Update("average_rating", newRating).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to update product rating"})
 		return
 	}
 	//success
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully updated rating"})
 }
+
