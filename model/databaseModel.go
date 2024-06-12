@@ -24,8 +24,8 @@ const (
 	OnlinePaymentFailed    = "ONLINE_FAILED"
 
 	CODStatusPending   = "COD_PENDING"
-    CODStatusConfirmed = "COD_CONFIRMED"
-    CODStatusFailed    = "COD_FAILED"
+	CODStatusConfirmed = "COD_CONFIRMED"
+	CODStatusFailed    = "COD_FAILED"
 
 	OrderStatusProcessing    = "PROCESSING"
 	OrderStatusInPreparation = "PREPARATION"
@@ -59,10 +59,11 @@ type User struct {
 	Email          string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
 	PhoneNumber    string `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string `gorm:"column:picture;type:text" json:"picture"`
-	HashedPassword string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
-	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
+	WalletAmount   uint   `gorm:"column:wallet_amount;" json:"wallet_amount"`
 	LoginMethod    string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
 	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
+	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
+	HashedPassword string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
 }
 
 type VerificationTable struct {
@@ -85,15 +86,15 @@ type Category struct {
 type Product struct {
 	gorm.Model
 	ID            uint
-	RestaurantID  uint   `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
-	CategoryID    uint   `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
-	Name          string `validate:"required" json:"name"`
-	Description   string `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL      string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price         uint   `validate:"required,number" json:"price"`
-	MaxStock      uint   `validate:"required,number" json:"max_stock"`
-	StockLeft     uint   `validate:"required,number" json:"stock_left"`
-	AverageRating float64   `json:"average_rating"`
+	RestaurantID  uint    `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
+	CategoryID    uint    `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
+	Name          string  `validate:"required" json:"name"`
+	Description   string  `gorm:"column:description" validate:"required" json:"description"`
+	ImageURL      string  `gorm:"column:image_url" validate:"required" json:"image_url"`
+	Price         uint    `validate:"required,number" json:"price"`
+	MaxStock      uint    `validate:"required,number" json:"max_stock"`
+	StockLeft     uint    `validate:"required,number" json:"stock_left"`
+	AverageRating float64 `json:"average_rating"`
 	//totalorders till now
 	//avg rating
 	//veg or non veg, validate this
@@ -107,6 +108,7 @@ type Restaurant struct {
 	Address            string
 	Email              string
 	PhoneNumber        string
+	WalletAmount       int    `gorm:"column:wallet_amount;" json:"wallet_amount"`
 	ImageURL           string `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL     string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
 	VerificationStatus string
@@ -138,13 +140,16 @@ type CartItems struct {
 	CookingRequest string // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 type Order struct {
-	OrderID       string    `validate:"required" json:"order_id"`
-	UserID        uint      `validate:"required,number" json:"user_id"`
-	AddressID     uint      `validate:"required,number" json:"address_id"`
-	TotalAmount   float64   `validate:"required,number" json:"total_price"`
-	PaymentMethod string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
-	PaymentStatus string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
-	OrderedAt     time.Time `gorm:"autoCreateTime" json:"ordered_at"`
+	OrderID        string    `validate:"required" json:"order_id"`
+	UserID         uint      `validate:"required,number" json:"user_id"`
+	AddressID      uint      `validate:"required,number" json:"address_id"`
+	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
+	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
+	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
+	CouponCode     string    `json:"coupon_code"`
+	PaymentMethod  string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
+	PaymentStatus  string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
+	OrderedAt      time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
 
 type Payment struct {
@@ -160,6 +165,7 @@ type OrderItem struct {
 	RestaurantID   uint   `validate:"required,number" json:"restaurant_id"`
 	ProductID      uint   ` validate:"required,number" json:"product_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
+	Amount         uint   ` validate:"required,number" json:"amount"`
 	CookingRequest string
 	OrderStatus    string `json:"order_status" gorm:"column:order_status"`
 	OrderReview    string
@@ -171,4 +177,21 @@ type UserPasswordReset struct {
 	Email      string `validate:"email"`
 	ResetToken string `gorm:"column:reset_token" json:"reset_token"`
 	ExpiryTime uint   `gorm:"expiry_time" json:"expiry_time"`
+}
+
+type CouponInventory struct {
+    CouponCode   string `json:"coupon_code" gorm:"primary_key"`
+    Expiry       uint   `json:"expiry"`
+    Percentage   uint   `json:"percentage"`
+    TotalUsage   uint   `json:"total_usage"`
+    Used         uint   `json:"used"`       
+}
+
+
+type CouponUsage struct {
+    gorm.Model
+    OrderID      uint  `json:"order_id"`
+    UserID       uint  `json:"user_id"`
+    CouponCode   string `json:"coupon_code"`
+    UsageCount   uint  `json:"usage_count"`
 }

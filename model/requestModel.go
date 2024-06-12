@@ -12,11 +12,11 @@ type EmailLoginRequest struct {
 	Password string `form:"password" validate:"required" json:"password"`
 }
 
-type UpdateUserInformation struct{
-	ID             uint   `validate:"required"`
-	Name           string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
-	PhoneNumber    int `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
-	Picture        string `gorm:"column:picture;type:text" json:"picture"`
+type UpdateUserInformation struct {
+	ID          uint   `validate:"required"`
+	Name        string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
+	PhoneNumber int    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	Picture     string `gorm:"column:picture;type:text" json:"picture"`
 }
 
 type RestaurantSignupRequest struct {
@@ -40,26 +40,24 @@ type AdminLoginRequest struct {
 }
 
 type AddToCartReq struct {
-	UserID   uint    `gorm:"column:user_id" validate:"required,number" json:"user_id"`
-	ProductID uint    `gorm:"column:product_id" validate:"required,number" json:"product_id"`
-	Quantity  uint    `validate:"required,number" json:"quantity"`
-	CookingRequest string `json:"cooking_request"`// similar to zomato,, requesting restaurant to add or remove specific ingredients etc
+	UserID         uint   `gorm:"column:user_id" validate:"required,number" json:"user_id"`
+	ProductID      uint   `gorm:"column:product_id" validate:"required,number" json:"product_id"`
+	Quantity       uint   `validate:"required,number" json:"quantity"`
+	CookingRequest string `json:"cooking_request"` // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 
-type RemoveItem struct{
+type RemoveItem struct {
 	UserID    uint `validate:"required,number" json:"user_id"`
 	ProductID uint `validate:"required,number" json:"product_id"`
 }
 
-
-type PlaceOrder struct{
-	UserID    uint `validate:"required,number" json:"user_id"`
-	AddressID uint `validate:"required,number" json:"address_id"`
+type PlaceOrder struct {
+	UserID        uint   `validate:"required,number" json:"user_id"`
+	AddressID     uint   `validate:"required,number" json:"address_id"`
 	PaymentMethod string `validate:"required" json:"payment_method"`
-	
 }
 
-type InitiatePayment struct{
+type InitiatePayment struct {
 	OrderID string `json:"order_id"`
 }
 
@@ -69,40 +67,40 @@ type RazorpayPayment struct {
 	Signature string `form:"razorpay_signature" binding:"required"`
 }
 
-type OrderHistoryRestaurants struct{
-	RestaurantID uint `json:"restaurant_id"`
-	OrderStatus string `json:"order_status"`
+type OrderHistoryRestaurants struct {
+	RestaurantID uint   `json:"restaurant_id"`
+	OrderStatus  string `json:"order_status"`
 }
 
-type UserOrderHistory struct{
-	UserID uint `json:"user_id"`
+type UserOrderHistory struct {
+	UserID        uint   `json:"user_id"`
 	PaymentStatus string `json:"payment_status"`
 }
 
-type GetOrderInfoByOrderID struct{
+type GetOrderInfoByOrderID struct {
 	OrderID string `json:"order_id"`
 }
 
-type PaymentDetailsByOrderID struct{
-	OrderID string `json:"order_id"`
+type PaymentDetailsByOrderID struct {
+	OrderID       string `json:"order_id"`
 	PaymentStatus string `json:"payment_status"`
 }
 
-type UpdateOrderStatusForRestaurant struct{
-	OrderID string `json:"order_id"`
-	ProductID uint `json:"product_id"`
+type UpdateOrderStatusForRestaurant struct {
+	OrderID   string `json:"order_id"`
+	ProductID uint   `json:"product_id"`
 }
 
-type CancelOrderedProduct struct{
-	OrderID string `json:"order_id"`
-	ProductId uint `json:"product_id"`
+type CancelOrderedProduct struct {
+	OrderID   string `json:"order_id"`
+	ProductId uint   `json:"product_id"`
 }
 
-type IncrementStock struct{
+type IncrementStock struct {
 	OrderID string `json:"order_id"`
 }
 
-type Step1PasswordReset struct{
+type Step1PasswordReset struct {
 	Email string `validate:"required,email"`
 }
 
@@ -113,14 +111,22 @@ type Step2PasswordReset struct {
 	ConfirmPassword string `form:"password2" binding:"required" json:"password2"`
 }
 
-type UserReviewonOrderItem struct{
-	OrderID string `validate:"required" json:"order_id"`
-	ProductID uint `validate:"required" json:"product_id"`
+type UserReviewonOrderItem struct {
+	OrderID    string `validate:"required" json:"order_id"`
+	ProductID  uint   `validate:"required" json:"product_id"`
 	ReviewText string `validate:"required" json:"user_review"`
 }
 
-type UserRatingOrderItem struct{
-	OrderID string `validate:"required" json:"order_id"`
-	ProductID uint `validate:"required" json:"product_id"`
+type UserRatingOrderItem struct {
+	OrderID    string  `validate:"required" json:"order_id"`
+	ProductID  uint    `validate:"required" json:"product_id"`
 	UserRating float64 `validate:"required" json:"user_rating"`
+}
+
+type CouponInventoryRequest struct {
+	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
+	Expiry       uint   `validate:"required" json:"expiry"`
+	Percentage   uint   `validate:"required" json:"percentage"`
+	MaximumUsage uint   `validate:"required" json:"total_usage"`
+	GlobalUsage  uint   `validate:"required" json:"gloabl_usage"`     
 }
