@@ -104,3 +104,10 @@ func CheckCouponExists(code string) bool {
 //add coupon -user side on the cart side //check conditions
 //calculate and add the finalamount discount amount on the place order
 //remove coupon - user side on the cart side //check conditions
+
+
+
+//add one more payment method if possible
+//june 13 - authentication on each endpoints and add request model if possible
+//june 14 - sales report, order report etc... pdf,excel file generation
+//june 15 - fix all issues...make swagger if possible
