@@ -49,9 +49,9 @@ func main() {
 	router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP)
 
 	//password resets
-	router.POST("/api/v1/auth/passwordreset/step1",controllers.Step1PasswordReset)
-	router.GET("/api/v1/auth/passwordreset",controllers.LoadPasswordReset)
-	router.POST("/api/v1/auth/passwordreset/step2",controllers.Step2PasswordReset)
+	router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset)
+	router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)
+	router.POST("/api/v1/auth/passwordreset/step2", controllers.Step2PasswordReset)
 
 	// Social login routes
 	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin)
@@ -105,8 +105,8 @@ func main() {
 		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
 
 		//order history
-		restaurantRoutes.POST("/order/history/",controllers.OrderHistoryRestaurants)
-		restaurantRoutes.POST("/order/nextstatus",controllers.UpdateOrderStatusForRestaurant)
+		restaurantRoutes.POST("/order/history/", controllers.OrderHistoryRestaurants)
+		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
 	}
 
 	userRoutes := router.Group("/api/v1/user")
@@ -127,32 +127,38 @@ func main() {
 		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress)
 
 		//cart management
-		userRoutes.POST("/cart/add", controllers.AddToCart) //add items to cart
-		userRoutes.GET("/cart/:userid", controllers.GetCartTotal) //get everything that cart holds
+		userRoutes.POST("/cart/add", controllers.AddToCart)                      //add items to cart
+		userRoutes.GET("/cart/:userid", controllers.GetCartTotal)                //get everything that cart holds
 		userRoutes.DELETE("/cart/delete/:userid", controllers.ClearCartByUserID) //remove the entire cart
-		userRoutes.DELETE("/cart/remove",controllers.RemoveItemFromCart) //remove specific products form the cart
-		userRoutes.PUT("/cart/update/",controllers.UpdateQuantity)
+		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart)        //remove specific products form the cart
+		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity)
 
-		userRoutes.POST("/order/step1/placeorder",controllers.PlaceOrder)
-		userRoutes.POST("/order/step2/initiatepayment",controllers.InitiatePayment)
-		userRoutes.POST("/order/step3/paymentcallback/:orderid",controllers.PaymentGatewayCallback)
+		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
+		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
+		userRoutes.POST("/order/step3/paymentcallback/:orderid", controllers.PaymentGatewayCallback)
 
-		userRoutes.POST("/order/history",controllers.UserOrderHistory)
-	    userRoutes.POST("/order/information",controllers.GetOrderInfoByOrderID)
-		userRoutes.POST("/order/paymenthistory",controllers.PaymentDetailsByOrderID)
-        userRoutes.POST("/order/cancel",controllers.CancelOrderedProduct)
+		userRoutes.POST("/order/history", controllers.UserOrderHistory)
+		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderID)
+		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
+		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 
-		userRoutes.POST("/order/review",controllers.UserReviewonOrderItem)
-		userRoutes.POST("/order/rating",controllers.UserRatingOrderItem)
+		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
+		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
 
 	}
 
+	//coupons
+	adminRoutes.POST("/coupon/create", controllers.CreateCoupon)
+	adminRoutes.POST("/coupon/update", controllers.UpdateCoupon)
+	userRoutes.GET("/coupon/all", controllers.GetAllCoupons)
+	userRoutes.GET("/coupon/cart/:userid/:couponcode", controllers.ApplyCouponOnCart)
+
 	//order management
-	  //checkout
-	  //createorder with address selection etc..
-	  //intiatepayment
-	  //retry payment
-	  //cancel order
+	//checkout
+	//createorder with address selection etc..
+	//intiatepayment
+	//retry payment
+	//cancel order
 
 	router.Run(":8080")
 }

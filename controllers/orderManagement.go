@@ -268,7 +268,7 @@ func InitiatePayment(c *gin.Context) {
 		if v.PaymentStatus == string(model.CODStatusPending) || v.PaymentStatus == string(model.CODStatusConfirmed) {
 			c.JSON(http.StatusAlreadyReported, gin.H{
 				"status":  true,
-				"message": "Payment already done",
+				"message": "Customer chose payment via COD",
 			})
 			return
 		}
@@ -290,7 +290,7 @@ func InitiatePayment(c *gin.Context) {
 	// Create Razorpay order
 	client := razorpay.NewClient(os.Getenv("RAZORPAY_KEY_ID"), os.Getenv("RAZORPAY_KEY_SECRET"))
 	data := map[string]interface{}{
-		"amount":          order.TotalAmount * 100, // Amount in paisa
+		"amount":          order.FinalAmount * 100, // Amount in paisa
 		"currency":        "INR",
 		"receipt":         order.OrderID,
 		"payment_capture": 1,

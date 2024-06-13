@@ -143,10 +143,10 @@ type Order struct {
 	OrderID        string    `validate:"required" json:"order_id"`
 	UserID         uint      `validate:"required,number" json:"user_id"`
 	AddressID      uint      `validate:"required,number" json:"address_id"`
-	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
 	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
-	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
 	CouponCode     string    `json:"coupon_code"`
+	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
+	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
 	PaymentMethod  string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
 	PaymentStatus  string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
 	OrderedAt      time.Time `gorm:"autoCreateTime" json:"ordered_at"`
@@ -180,18 +180,16 @@ type UserPasswordReset struct {
 }
 
 type CouponInventory struct {
-    CouponCode   string `json:"coupon_code" gorm:"primary_key"`
-    Expiry       uint   `json:"expiry"`
-    Percentage   uint   `json:"percentage"`
-    TotalUsage   uint   `json:"total_usage"`
-    Used         uint   `json:"used"`       
+	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
+	Expiry       uint   `validate:"required" json:"expiry"`
+	Percentage   uint   `validate:"required" json:"percentage"`
+	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
 }
 
-
 type CouponUsage struct {
-    gorm.Model
-    OrderID      uint  `json:"order_id"`
-    UserID       uint  `json:"user_id"`
-    CouponCode   string `json:"coupon_code"`
-    UsageCount   uint  `json:"usage_count"`
+	gorm.Model
+	OrderID    uint   `json:"order_id"`
+	UserID     uint   `json:"user_id"`
+	CouponCode string `json:"coupon_code"`
+	UsageCount uint   `json:"usage_count"`
 }

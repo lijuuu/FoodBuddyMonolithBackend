@@ -127,6 +127,5 @@ type CouponInventoryRequest struct {
 	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
 	Expiry       uint   `validate:"required" json:"expiry"`
 	Percentage   uint   `validate:"required" json:"percentage"`
-	MaximumUsage uint   `validate:"required" json:"total_usage"`
-	GlobalUsage  uint   `validate:"required" json:"gloabl_usage"`     
+	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
 }
