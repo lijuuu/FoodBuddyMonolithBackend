@@ -19,6 +19,9 @@ const (
 	CashOnDelivery = "COD"
 	OnlinePayment  = "ONLINE"
 
+	Razorpay = "RAZORPAY"
+	Stripe   = "STRIPE"
+
 	OnlinePaymentPending   = "ONLINE_PENDING"
 	OnlinePaymentConfirmed = "ONLINE_CONFIRMED"
 	OnlinePaymentFailed    = "ONLINE_FAILED"
@@ -157,6 +160,7 @@ type Payment struct {
 	RazorpayOrderID   string `validate:"required" json:"razorpay_order_id" gorm:"column:razorpay_order_id"`
 	RazorpayPaymentID string `validate:"required" json:"razorpay_payment_id" gorm:"column:razorpay_payment_id"`
 	RazorpaySignature string `validate:"required" json:"razorpay_signature" gorm:"column:razorpay_signature"`
+	PaymentGateway    string `json:"payment_gateway" gorm:"payment_gateway"`
 	PaymentStatus     string `validate:"required" json:"payment_status" gorm:"column:payment_status"`
 }
 
@@ -188,7 +192,7 @@ type CouponInventory struct {
 
 type CouponUsage struct {
 	gorm.Model
-	OrderID    uint   `json:"order_id"`
+	OrderID    string `json:"order_id"`
 	UserID     uint   `json:"user_id"`
 	CouponCode string `json:"coupon_code"`
 	UsageCount uint   `json:"usage_count"`

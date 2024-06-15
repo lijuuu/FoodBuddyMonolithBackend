@@ -11,21 +11,40 @@ import (
 	"foodbuddy/utils"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/razorpay/razorpay-go"
+	"gorm.io/gorm"
 )
 
 func CreateOrderID(UserID uint) (string, error) {
-	//get user info - name
 	var UserInfo model.User
 	if err := database.DB.Where("id = ?", UserID).First(&UserInfo).Error; err != nil {
-		return "", errors.New("failed to fetch user information")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", errors.New("user not found")
+		}
+		return "", fmt.Errorf("failed to fetch user information: %w", err)
 	}
-	//create and check for orderID...if order id is present create another one
-	random := utils.GenerateRandomString(10)
-	OrderID := fmt.Sprintf("%v_%v", UserInfo.Name, random)
+
+	// Replace spaces and special characters with an underscore
+	re := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	cleanedName := re.ReplaceAllString(UserInfo.Name, "_")
+
+	var OrderID string
+	for {
+		random := utils.GenerateRandomString(10)
+		OrderID = fmt.Sprintf("%v_%v", cleanedName, random)
+
+		var existingOrder model.Order
+		if err := database.DB.Where("order_id = ?", OrderID).First(&existingOrder).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				break
+			}
+			return "", fmt.Errorf("error checking existing order ID: %w", err)
+		}
+	}
+
 	return OrderID, nil
 }
 
@@ -95,7 +114,6 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 }
 
 func PlaceOrder(c *gin.Context) {
-	//bind json (userid,addressid,paymentmethod)
 	var PlaceOrder model.PlaceOrder
 	if err := c.BindJSON(&PlaceOrder); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -114,19 +132,17 @@ func PlaceOrder(c *gin.Context) {
 		})
 		return
 	}
-	//check user
-	ok := CheckUser(PlaceOrder.UserID)
-	if !ok {
-		c.JSON(http.StatusConflict, gin.H{
+
+	if !CheckUser(PlaceOrder.UserID) {
+		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
-			"message":    "user doesnt exist, please verify user id",
-			"error_code": http.StatusConflict,
+			"message":    "user doesn't exist, please verify user id",
+			"error_code": http.StatusNotFound,
 		})
 		return
 	}
-	//check address
-	ok = ValidAddress(PlaceOrder.UserID, PlaceOrder.AddressID)
-	if !ok {
+
+	if !ValidAddress(PlaceOrder.UserID, PlaceOrder.AddressID) {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":     false,
 			"message":    "invalid address, please retry with user's address",
@@ -134,28 +150,26 @@ func PlaceOrder(c *gin.Context) {
 		})
 		return
 	}
-	//check for stock avaiability using check stock
-	available := CheckStock(PlaceOrder.UserID)
-	if !available {
+
+	if !CheckStock(PlaceOrder.UserID) {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":     false,
-			"message":    "items on the cart is out of stock, please update the cart to make sure the cart is containing items in stock",
+			"message":    "items in the cart are out of stock, please update the cart to ensure all items are in stock",
 			"error_code": http.StatusConflict,
 		})
 		return
 	}
-	//create orderid
+
 	OrderID, err := CreateOrderID(PlaceOrder.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
-			"message":    "failed to create orderid",
+			"message":    "failed to create order ID",
 			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
 
-	//get cart total
 	TotalAmount, err := CalculateCartTotal(PlaceOrder.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -166,32 +180,32 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if PlaceOrder.PaymentMethod == model.CashOnDelivery {
-		if TotalAmount >= 1000 {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  false,
-				"message": "please switch to ONLINE payment for total amount more than or equal to 1000",
-			})
-			return
-		}
+	if PlaceOrder.PaymentMethod == model.CashOnDelivery && TotalAmount >= 1000 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "please switch to ONLINE payment for total amounts greater than or equal to 1000",
+		})
+		return
 	}
-	//create order row with userid,addressid,totalprice,paymentmethod,etc...,payment status as "pending"
-	var Order model.Order
-	Order.OrderID = OrderID
-	Order.UserID = PlaceOrder.UserID
-	Order.AddressID = PlaceOrder.AddressID
-	Order.TotalAmount = float64(TotalAmount)
-	Order.PaymentMethod = PlaceOrder.PaymentMethod
-	Order.OrderedAt = time.Now()
+
+	order := model.Order{
+		OrderID:       OrderID,
+		UserID:        PlaceOrder.UserID,
+		AddressID:     PlaceOrder.AddressID,
+		TotalAmount:   float64(TotalAmount),
+		FinalAmount:   float64(TotalAmount),
+		PaymentMethod: PlaceOrder.PaymentMethod,
+		OrderedAt:     time.Now(),
+	}
 
 	if PlaceOrder.PaymentMethod == model.CashOnDelivery {
-		Order.PaymentStatus = model.CODStatusPending
+		order.PaymentStatus = model.CODStatusPending
 	} else {
-		Order.PaymentStatus = model.OnlinePaymentPending
+		order.PaymentStatus = model.OnlinePaymentPending
 	}
 
-	fmt.Println(Order)
-	if err := database.DB.Where("order_id = ?", OrderID).FirstOrCreate(&Order).Error; err != nil {
+	// Attempt to create order record
+	if err := database.DB.Create(&order).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to create order",
@@ -200,10 +214,24 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	//get cart details
-	//insert everything to orderItems
-	ok = CartToOrderItems(PlaceOrder.UserID, OrderID)
-	if !ok {
+	// Apply coupon if provided
+	if PlaceOrder.CouponCode != "" {
+		success, msg := ApplyCouponToOrder(order, PlaceOrder.UserID, PlaceOrder.CouponCode)
+		if !success {
+			// Rollback order creation if coupon application fails
+			database.DB.Where("order_id = ?", OrderID).Delete(&order)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  false,
+				"message": msg,
+			})
+			return
+		}
+	}
+
+	// Transfer cart items to order
+	if !CartToOrderItems(PlaceOrder.UserID, OrderID) {
+		// Rollback order creation and coupon application if cart items transfer fails
+		database.DB.Where("order_id = ?", OrderID).Delete(&order)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to transfer cart items to order",
@@ -212,9 +240,11 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	// Decrement stock for COD orders
 	if PlaceOrder.PaymentMethod == model.CashOnDelivery {
-		done := DecrementStock(OrderID)
-		if !done {
+		if !DecrementStock(OrderID) {
+			// Rollback order creation, coupon application, and cart items transfer if stock decrement fails
+			database.DB.Where("order_id = ?", OrderID).Delete(&order)
 			c.JSON(http.StatusConflict, gin.H{
 				"status":  false,
 				"message": "failed to decrement order stock",
@@ -223,11 +253,21 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}
 
+	// Fetch final order details
+	if err := database.DB.Where("order_id = ?", OrderID).First(&order).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed fetch order details",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
-		"message": "Order is Successfully created",
+		"message": "Order is successfully created",
 		"data": gin.H{
-			"OrderDetails": Order,
+			"OrderDetails": order,
 		},
 	})
 }
@@ -287,55 +327,12 @@ func InitiatePayment(c *gin.Context) {
 		return
 	}
 
-	// Create Razorpay order
-	client := razorpay.NewClient(os.Getenv("RAZORPAY_KEY_ID"), os.Getenv("RAZORPAY_KEY_SECRET"))
-	data := map[string]interface{}{
-		"amount":          order.FinalAmount * 100, // Amount in paisa
-		"currency":        "INR",
-		"receipt":         order.OrderID,
-		"payment_capture": 1,
-	}
-	rzpOrder, err := client.Order.Create(data, nil)
-	if err != nil {
-		PaymentFailedOrderTable(initiatePayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "Failed to create Razorpay order",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	//add to payment tables
-	RazorpayOrderID := rzpOrder["id"]
-	PaymentDetails := model.Payment{
-		OrderID:         initiatePayment.OrderID,
-		RazorpayOrderID: RazorpayOrderID.(string),
-	}
-	if err := database.DB.Create(&PaymentDetails).Error; err != nil {
-		PaymentFailedOrderTable(initiatePayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "Failed to add Payment order details",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	callbackurl := fmt.Sprintf("http://localhost:8080/api/v1/user/order/step3/paymentcallback/%v", initiatePayment.OrderID)
-
-	responseData := map[string]interface{}{
-		"razorpay_order_id": rzpOrder["id"],
-		"amount":            rzpOrder["amount"],
-		"key":               os.Getenv("RAZORPAY_KEY_ID"),
-		"callbackurl":       callbackurl,
-	}
-
-	// Render the payment page
-	c.HTML(http.StatusOK, "payment.html", responseData)
+	HandleStripe(c, initiatePayment, order)
+	// UpdatePaymentGatewayMethod(initiatePayment.OrderID,)
+	// HandleRazorpay(c, initiatePayment, order)
 }
 
-func PaymentGatewayCallback(c *gin.Context) {
+func RazorPayGatewayCallback(c *gin.Context) {
 
 	OrderID := c.Param("orderid")
 	fmt.Println(OrderID)
@@ -422,7 +419,6 @@ func PaymentGatewayCallback(c *gin.Context) {
 		})
 		return
 	}
-
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
@@ -756,7 +752,7 @@ func CancelOrderedProduct(c *gin.Context) {
 	//if mentioned with productid only cancel that
 	var OrderItems []model.OrderItem
 	if Request.ProductId != 0 {
-		if err:= database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductId).Find(&OrderItems).Error;err!=nil{
+		if err := database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductId).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":  false,
 				"message": "failed to fetch the order item",
@@ -772,7 +768,7 @@ func CancelOrderedProduct(c *gin.Context) {
 			return
 		}
 	} else {
-		if err:= database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error;err!=nil{
+		if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":  false,
 				"message": "failed to fetch the order item",
@@ -801,7 +797,7 @@ func CancelOrderedProduct(c *gin.Context) {
 	}
 
 	var order model.Order
-	if err:= database.DB.Where("order_id = ?",Request.OrderID).First(&order).Error;err!=nil{
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to fetch order information",
@@ -809,8 +805,8 @@ func CancelOrderedProduct(c *gin.Context) {
 		return
 	}
 
-    if order.PaymentStatus == model.OnlinePaymentConfirmed{
-		done = ProvideWalletRefundToUser(order.UserID,OrderItems)
+	if order.PaymentStatus == model.OnlinePaymentConfirmed {
+		done = ProvideWalletRefundToUser(order.UserID, OrderItems)
 		if !done {
 			c.JSON(http.StatusConflict, gin.H{
 				"status":  false,
@@ -829,52 +825,51 @@ func CancelOrderedProduct(c *gin.Context) {
 	})
 }
 
-func ProvideWalletRefundToUser(UserID uint,OrderItems []model.OrderItem) bool{
+func ProvideWalletRefundToUser(UserID uint, OrderItems []model.OrderItem) bool {
 	var sum uint
 	for _, item := range OrderItems {
 		sum += item.Amount
 
 		var Restaurant model.Restaurant
-		if err:= database.DB.Where("id = ?",item.RestaurantID).First(&Restaurant).Error;err!=nil{
+		if err := database.DB.Where("id = ?", item.RestaurantID).First(&Restaurant).Error; err != nil {
 			return false
 		}
 
 		Restaurant.WalletAmount -= int(item.Amount)
 
-		if err:= database.DB.Updates(&Restaurant).Error;err!=nil{
+		if err := database.DB.Updates(&Restaurant).Error; err != nil {
 			return false
 		}
 	}
-    
+
 	var User model.User
-	if err:= database.DB.Where("id = ?",UserID).First(&User).Error;err!=nil{
+	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
 		return false
 	}
 
-
 	User.WalletAmount += sum
-	if err:=database.DB.Updates(&User).Error;err!=nil{
-      return false
+	if err := database.DB.Updates(&User).Error; err != nil {
+		return false
 	}
 
 	return true
 }
 
-func SplitMoneyToRestaurants(OrderID string) bool{
+func SplitMoneyToRestaurants(OrderID string) bool {
 	var OrderItems []model.OrderItem
-	if err:=database.DB.Where("order_id = ?",OrderID).Find(&OrderItems).Error;err!=nil{
+	if err := database.DB.Where("order_id = ?", OrderID).Find(&OrderItems).Error; err != nil {
 		return false
 	}
-	for _,item:= range OrderItems{
-	  var Restaurant model.Restaurant
-	  if err:= database.DB.Where("id = ?",item.RestaurantID).First(&Restaurant).Error;err!=nil{
-		return false
-	  }
+	for _, item := range OrderItems {
+		var Restaurant model.Restaurant
+		if err := database.DB.Where("id = ?", item.RestaurantID).First(&Restaurant).Error; err != nil {
+			return false
+		}
 
-	  Restaurant.WalletAmount += int(item.Amount)
-	  if err:=database.DB.Updates(&Restaurant).Error;err!=nil{
-		return false
-	  }
+		Restaurant.WalletAmount += int(item.Amount)
+		if err := database.DB.Updates(&Restaurant).Error; err != nil {
+			return false
+		}
 
 	}
 	return true
@@ -1017,4 +1012,11 @@ func UserRatingOrderItem(c *gin.Context) {
 	}
 	//success
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully updated rating"})
+}
+
+func UpdatePaymentGatewayMethod(OrderID string, PaymentGateway string) bool {
+	if err := database.DB.Model(&model.Payment{}).Where("order_id = ?", OrderID).Update("payment_gateway", PaymentGateway).Error; err != nil {
+		return false
+	}
+	return true
 }

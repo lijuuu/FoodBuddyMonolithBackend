@@ -55,6 +55,7 @@ type PlaceOrder struct {
 	UserID        uint   `validate:"required,number" json:"user_id"`
 	AddressID     uint   `validate:"required,number" json:"address_id"`
 	PaymentMethod string `validate:"required" json:"payment_method"`
+	CouponCode string `json:"coupon_code"`
 }
 
 type InitiatePayment struct {
@@ -124,8 +125,14 @@ type UserRatingOrderItem struct {
 }
 
 type CouponInventoryRequest struct {
-	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
+	CouponCode   string `validate:"required" json:"coupon_code"`
 	Expiry       uint   `validate:"required" json:"expiry"`
 	Percentage   uint   `validate:"required" json:"percentage"`
 	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
+}
+
+type ApplyCouponOnOrderRequest struct{
+	UserID        uint   `validate:"required" json:"user_id"`
+	CouponCode   string `validate:"required" json:"coupon_code"`
+    OrderID    string  `validate:"required" json:"order_id"`
 }

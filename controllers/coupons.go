@@ -277,6 +277,64 @@ func ApplyCouponOnCart(c *gin.Context) {
     })
 }
 
+func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool, string) {
+
+
+	if order.CouponCode != "" {
+		errMsg := fmt.Sprintf("%v coupon already exists, remove this coupon to add a new coupon", order.CouponCode)
+		return false, errMsg
+	}
+
+	var coupon model.CouponInventory
+	if err := database.DB.Where("coupon_code = ?", CouponCode).First(&coupon).Error; err != nil {
+		return false, "coupon not found"
+	}
+
+	if time.Now().Unix() > int64(coupon.Expiry) {
+		return false, "coupon has expired"
+	}
+
+	var couponUsage model.CouponUsage
+	err := database.DB.Where("coupon_code = ? AND user_id = ?", CouponCode, UserID).First(&couponUsage).Error
+
+	if err == nil {
+		if couponUsage.UsageCount >= coupon.MaximumUsage {
+			return false, "coupon usage limit reached"
+		}
+	} else if err != gorm.ErrRecordNotFound {
+		return false, "database error"
+	}
+
+	discountAmount := order.TotalAmount * float64(coupon.Percentage) / 100
+	finalAmount := order.TotalAmount - discountAmount
+
+	order.CouponCode = CouponCode
+	order.DiscountAmount = discountAmount
+	order.FinalAmount = finalAmount
+
+	if err := database.DB.Where("order_id = ?",order.OrderID).Updates(&order).Error; err != nil {
+		return false, "failed to apply coupon to order"
+	}
+
+	if err == gorm.ErrRecordNotFound {
+		couponUsage = model.CouponUsage{
+			OrderID:    order.OrderID,
+			UserID:     UserID,
+			CouponCode: CouponCode,
+			UsageCount: 1,
+		}
+		if err := database.DB.Create(&couponUsage).Error; err != nil {
+			return false, "failed to create coupon usage record"
+		}
+	} else {
+		couponUsage.UsageCount++
+		if err := database.DB.Where("order_id = ?",order.OrderID).Save(&couponUsage).Error; err != nil {
+			return false, "failed to update coupon usage record"
+		}
+	}
+
+	return true, "coupon applied successfully"
+}
 
 //add coupon on cart
 //remove coupon on cart

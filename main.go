@@ -135,7 +135,7 @@ func main() {
 
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
-		userRoutes.POST("/order/step3/paymentcallback/:orderid", controllers.PaymentGatewayCallback)
+		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
 
 		userRoutes.POST("/order/history", controllers.UserOrderHistory)
 		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderID)
@@ -144,6 +144,8 @@ func main() {
 
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
+
+		userRoutes.GET("/order/step3/stripecallback", controllers.HandleWebhookStripe)
 
 	}
 
