@@ -190,7 +190,7 @@ func GoogleHandleCallback(c *gin.Context) {
 
 }
 
-// EmailSignup godoc
+
 // @Summary Email signup
 // @Description Signup a new user using email
 // @Tags authentication
@@ -328,7 +328,6 @@ func EmailSignup(c *gin.Context) {
 	c.Next()
 }
 
-// EmailLogin godoc
 // @Summary Email login
 // @Description Login a user using email
 // @Tags authentication
@@ -528,7 +527,6 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	return nil
 }
 
-// VerifyOTP godoc
 // @Summary Verify OTP
 // @Description Verify OTP for email verification
 // @Tags authentication
@@ -732,3 +730,4 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
+

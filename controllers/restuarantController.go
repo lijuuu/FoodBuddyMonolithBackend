@@ -279,7 +279,7 @@ func RestaurantLogin(c *gin.Context) {
 }
 
 func CheckRestaurant(c *gin.Context, requestEmail string) (string, error) {
-	email, err := utils.GetJWTEmailClaim(c)
+	email,_, err := utils.GetJWTClaim(c)
 	if err != nil {
 		return email, errors.New("request unauthorized")
 	}
@@ -295,6 +295,7 @@ func CheckRestaurant(c *gin.Context, requestEmail string) (string, error) {
 	return email, nil
 }
 
+//public
 func GetRestaurants(c *gin.Context) {
 	var restaurants []model.Restaurant
 	// Search db and get all
@@ -315,6 +316,7 @@ func GetRestaurants(c *gin.Context) {
 	})
 }
 
+//restaurant
 func EditRestaurant(c *gin.Context) {
 	// Bind JSON
 	var restaurant model.Restaurant
@@ -374,6 +376,7 @@ func EditRestaurant(c *gin.Context) {
 	})
 }
 
+//admin
 func DeleteRestaurant(c *gin.Context) {
 
 	// Get the restaurant id
@@ -419,6 +422,7 @@ func DeleteRestaurant(c *gin.Context) {
 	})
 }
 
+//admin
 func BlockRestaurant(c *gin.Context) {
 
 	// Get the restaurant id
@@ -476,6 +480,7 @@ func BlockRestaurant(c *gin.Context) {
 	})
 }
 
+//admin
 func UnblockRestaurant(c *gin.Context) {
 
 	// Get the restaurant id

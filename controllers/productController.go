@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//public
 func GetProductList(c *gin.Context) {
 	var Products []model.Product
 
@@ -33,6 +34,7 @@ func GetProductList(c *gin.Context) {
 	})
 }
 
+//public
 func GetProductsByRestaurantID(c *gin.Context) {
 	restaurantIDStr := c.Param("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
@@ -66,6 +68,7 @@ func GetProductsByRestaurantID(c *gin.Context) {
 	})
 }
 
+//restuarant id 
 func AddProduct(c *gin.Context) {
 	   
 	// if status := c.IsAborted(); !status{
@@ -164,6 +167,7 @@ func AddProduct(c *gin.Context) {
 	})
 }
 
+//restaurant id
 func EditProduct(c *gin.Context) {
 	if status := c.IsAborted(); !status{
 		return
@@ -243,6 +247,7 @@ func EditProduct(c *gin.Context) {
 	})
 }
 
+//restaurant id
 func DeleteProduct(c *gin.Context) {
 	if status := c.IsAborted(); !status{
 		return
@@ -288,6 +293,7 @@ func DeleteProduct(c *gin.Context) {
 	})
 }
 
+//user id
 func GetFavouriteProductByUserID(c *gin.Context) {
 	userIDStr := c.Param("userid")
 	UserID, err := strconv.Atoi(userIDStr)
@@ -343,6 +349,7 @@ func GetFavouriteProductByUserID(c *gin.Context) {
 	})
 }
 
+//user id
 func AddFavouriteProduct(c *gin.Context) {
 	var request struct {
 		UserID    uint `validate:"required,number" json:"user_id"`
@@ -447,6 +454,7 @@ func AddFavouriteProduct(c *gin.Context) {
 	})
 }
 
+//user id 
 func RemoveFavouriteProduct(c *gin.Context) {
 	var request struct {
 		UserID    uint `validate:"required,number" json:"user_id"`

@@ -98,9 +98,6 @@ type Product struct {
 	MaxStock      uint    `validate:"required,number" json:"max_stock"`
 	StockLeft     uint    `validate:"required,number" json:"stock_left"`
 	AverageRating float64 `json:"average_rating"`
-	//totalorders till now
-	//avg rating
-	//veg or non veg, validate this
 }
 
 type Restaurant struct {
@@ -157,6 +154,8 @@ type Order struct {
 
 type Payment struct {
 	OrderID           string `validate:"required"`
+	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`
+	StripePaymentID   string `json:"stripe_payment_id" column:"stripe_payment_id"`
 	RazorpayOrderID   string `validate:"required" json:"razorpay_order_id" gorm:"column:razorpay_order_id"`
 	RazorpayPaymentID string `validate:"required" json:"razorpay_payment_id" gorm:"column:razorpay_payment_id"`
 	RazorpaySignature string `validate:"required" json:"razorpay_signature" gorm:"column:razorpay_signature"`

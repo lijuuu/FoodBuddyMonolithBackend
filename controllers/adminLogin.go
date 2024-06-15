@@ -12,7 +12,7 @@ import (
 )
 
 func CheckAdmin(c *gin.Context)(string,error) {
-	email,err := utils.GetJWTEmailClaim(c)
+	email,_,err := utils.GetJWTClaim(c)
 	if err !=nil{
 		return email,errors.New("request unauthorized")
 	}
@@ -27,18 +27,7 @@ func CheckAdmin(c *gin.Context)(string,error) {
 	return email,nil
 }
 
-// AdminLogin godoc
-// @Summary Admin login
-// @Description Login an admin using email
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param AdminLogin body model.AdminLoginRequest true "Admin Login"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 401 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/admin/login [post]
+
 func AdminLogin(c *gin.Context) {
 	// Get the email from the JSON request
 	var form struct {

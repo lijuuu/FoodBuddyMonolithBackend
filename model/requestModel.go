@@ -60,6 +60,7 @@ type PlaceOrder struct {
 
 type InitiatePayment struct {
 	OrderID string `json:"order_id"`
+	PaymentGateway string `json:"payment_gateway"`
 }
 
 type RazorpayPayment struct {

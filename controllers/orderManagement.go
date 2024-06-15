@@ -1,16 +1,12 @@
 package controllers
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"foodbuddy/utils"
 	"net/http"
-	"os"
 	"regexp"
 	"time"
 
@@ -113,6 +109,7 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 	return true
 }
 
+//user - check userid
 func PlaceOrder(c *gin.Context) {
 	var PlaceOrder model.PlaceOrder
 	if err := c.BindJSON(&PlaceOrder); err != nil {
@@ -273,6 +270,7 @@ func PlaceOrder(c *gin.Context) {
 }
 
 // get response from place order render the pay button with initiate payment logic
+//user - check userid by order.userid
 func InitiatePayment(c *gin.Context) {
 	// Get order id from request body
 	var initiatePayment model.InitiatePayment
@@ -327,130 +325,14 @@ func InitiatePayment(c *gin.Context) {
 		return
 	}
 
-	HandleStripe(c, initiatePayment, order)
-	// UpdatePaymentGatewayMethod(initiatePayment.OrderID,)
-	// HandleRazorpay(c, initiatePayment, order)
-}
-
-func RazorPayGatewayCallback(c *gin.Context) {
-
-	OrderID := c.Param("orderid")
-	fmt.Println(OrderID)
-	if OrderID == "" {
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to get orderid",
-			"error_code": http.StatusBadRequest,
-		})
-		return
+	switch initiatePayment.PaymentGateway {
+	case model.Razorpay:
+		HandleRazorpay(c, initiatePayment, order)
+	case model.Stripe:
+		HandleStripe(c, initiatePayment, order)
+	default:
+		HandleRazorpay(c, initiatePayment, order)
 	}
-
-	var RazorpayPayment model.RazorpayPayment
-	if err := c.ShouldBind(&RazorpayPayment); err != nil {
-		PaymentFailedOrderTable(OrderID)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind Razorpay payment details",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
-
-	fmt.Println(RazorpayPayment)
-
-	// Now you can proceed with your verification logic
-	if !verifyRazorpaySignature(RazorpayPayment.OrderID, RazorpayPayment.PaymentID, RazorpayPayment.Signature, os.Getenv("RAZORPAY_KEY_SECRET")) {
-		PaymentFailedOrderTable(OrderID)
-		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to verify",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
-
-	PaymentDetails := model.Payment{
-		RazorpayOrderID:   RazorpayPayment.OrderID,
-		RazorpayPaymentID: RazorpayPayment.PaymentID,
-		RazorpaySignature: RazorpayPayment.Signature,
-		PaymentStatus:     model.OnlinePaymentConfirmed,
-	}
-	if err := database.DB.Where("order_id = ? AND razorpay_order_id = ?", OrderID, PaymentDetails.RazorpayOrderID).Updates(&PaymentDetails).Error; err != nil {
-		PaymentFailedOrderTable(OrderID)
-		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to update payment informations",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	var Order model.Order
-	if err := database.DB.Model(&Order).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentConfirmed).Error; err != nil {
-		PaymentFailedOrderTable(OrderID)
-		PaymentFailedPaymentTable(RazorpayPayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to update payment informations",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	//decrement stock based on orderid
-	done := DecrementStock(OrderID)
-	if !done {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": "failed to decrement order stock",
-		})
-		return
-	}
-
-	//update payment for each restaurant by splitting payment for each restaurant
-	done = SplitMoneyToRestaurants(OrderID)
-	if !done {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  false,
-			"message": "failed to split payment for restaurant",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": true,
-		"data": gin.H{
-			"paymentdata": RazorpayPayment,
-		},
-	})
-}
-
-func verifyRazorpaySignature(orderID, paymentID, signature, secret string) bool {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(orderID + "|" + paymentID))
-	computedSignature := hex.EncodeToString(h.Sum(nil))
-	return hmac.Equal([]byte(computedSignature), []byte(signature))
-}
-
-func PaymentFailedOrderTable(OrderID string) bool {
-	var Order model.Order
-	Order.PaymentStatus = model.OnlinePaymentFailed
-	if err := database.DB.Model(&model.Order{}).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
-		return false
-	}
-	return true
-}
-
-func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
-	var PaymentDetails model.Payment
-	PaymentDetails.PaymentStatus = model.OnlinePaymentFailed
-	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
-		return false
-	}
-	return true
 }
 
 func CheckUser(UserID uint) bool {
@@ -471,6 +353,7 @@ func RestaurantIDByProductID(ProductID uint) uint {
 }
 
 // active orders of restaurants
+//restaurant
 func OrderHistoryRestaurants(c *gin.Context) {
 	//Restaurant id, if order status is provided use it or get the whole history
 	var Request model.OrderHistoryRestaurants
@@ -517,6 +400,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	})
 }
 
+//user
 func UserOrderHistory(c *gin.Context) {
 	//same like restaurant
 	var Request model.UserOrderHistory
@@ -636,6 +520,7 @@ func PaymentDetailsByOrderID(c *gin.Context) {
 	})
 }
 
+//restaurant - check restid with product.rest id
 func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	var Request model.UpdateOrderStatusForRestaurant
 
@@ -709,6 +594,7 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	})
 }
 
+//user - check userid by order.userid
 func CancelOrderedProduct(c *gin.Context) {
 	//get orderid product
 	var Request model.CancelOrderedProduct
@@ -923,9 +809,7 @@ func DecrementStock(OrderID string) bool {
 	return true
 }
 
-//pending:
-//after payment_confirmed change the stockleft based on orderitems quantity
-
+//user - check userid by order.userid
 func UserReviewonOrderItem(c *gin.Context) {
 	//orderid, productid,review text
 	var Request model.UserReviewonOrderItem
@@ -961,6 +845,7 @@ func UserReviewonOrderItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully added the review"})
 }
 
+//user - check userid by order.userid
 func UserRatingOrderItem(c *gin.Context) {
 	//get the orderid,productid,rating
 	var Request model.UserRatingOrderItem
@@ -1013,6 +898,7 @@ func UserRatingOrderItem(c *gin.Context) {
 	//success
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully updated rating"})
 }
+
 
 func UpdatePaymentGatewayMethod(OrderID string, PaymentGateway string) bool {
 	if err := database.DB.Model(&model.Payment{}).Where("order_id = ?", OrderID).Update("payment_gateway", PaymentGateway).Error; err != nil {
