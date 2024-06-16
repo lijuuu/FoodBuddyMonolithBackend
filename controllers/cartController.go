@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,16 @@ import (
 )
 
 func AddToCart(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 	//bind the json
 	var Request model.AddToCartReq
 	if err := c.BindJSON(&Request); err != nil {
@@ -22,7 +33,7 @@ func AddToCart(c *gin.Context) {
 		})
 		return
 	}
-	// 	- **Validation**:
+
 	if err := validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
@@ -32,7 +43,6 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	// 	- Validate the product ID to ensure it exists.
 	var Product model.Product
 	if err := database.DB.Where("id = ?", Request.ProductID).First(&Product).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -42,9 +52,8 @@ func AddToCart(c *gin.Context) {
 		})
 		return
 	}
-	// 	- Validate the user ID to ensure the user is authenticated.
 	var User model.User
-	if err := database.DB.Where("id = ?", Request.UserID).First(&User).Error; err != nil {
+	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to fetch user information, make sure the user exists",
@@ -53,8 +62,6 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	// - **Stock Check**:
-	// 	- Fetch the current stock level of the product.
 	if Request.Quantity > Product.StockLeft {
 		message := fmt.Sprintf("Requested quantity exceeds available stock. Available stock: %v", Product.StockLeft)
 		c.JSON(http.StatusConflict, gin.H{
@@ -64,8 +71,6 @@ func AddToCart(c *gin.Context) {
 		})
 		return
 	}
-	// 	- Ensure the requested quantity does not exceed available stock.
-	// 	- Ensure the requested quantity does not exceed any per-user purchase limits.
 	if Request.Quantity > model.MaxUserQuantity {
 		message := fmt.Sprintf("Requested quantity exceeds allowed limit. Maximum quantity per cart:  %v", model.MaxUserQuantity)
 		c.JSON(http.StatusConflict, gin.H{
@@ -76,10 +81,8 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	// - **Update Cart**:
-	// 	- If the product is already in the cart, update the quantity.
 	var CartItem model.CartItems
-	if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).First(&CartItem).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND product_id = ?", UserID, Request.ProductID).First(&CartItem).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
@@ -91,9 +94,9 @@ func AddToCart(c *gin.Context) {
 
 		var AddCartItems model.CartItems
 
-		AddCartItems.UserID = Request.UserID
+		AddCartItems.UserID = UserID
 		AddCartItems.ProductID = Request.ProductID
-		AddCartItems.Quantity = Request.Quantity 
+		AddCartItems.Quantity = Request.Quantity
 		AddCartItems.CookingRequest = Request.CookingRequest
 
 		if err := database.DB.Create(&AddCartItems).Error; err != nil {
@@ -105,8 +108,8 @@ func AddToCart(c *gin.Context) {
 			return
 		}
 	} else {
-		// 	- If the product is not in the cart, add it with the specified quantity.
-		if CartItem.Quantity + Request.Quantity > model.MaxUserQuantity{
+	
+		if CartItem.Quantity+Request.Quantity > model.MaxUserQuantity {
 			c.JSON(http.StatusConflict, gin.H{
 				"status":     false,
 				"message":    "Total of Requested and Current need of quantity exceeds the max user quantity",
@@ -116,12 +119,12 @@ func AddToCart(c *gin.Context) {
 		}
 
 		CartItem.Quantity += Request.Quantity
-		
+
 		if Request.CookingRequest != "" {
 			CartItem.CookingRequest = Request.CookingRequest
 		}
 
-		if err := database.DB.Where("user_id = ? AND product_id = ?", Request.UserID, Request.ProductID).Updates(&CartItem).Error; err != nil {
+		if err := database.DB.Where("user_id = ? AND product_id = ?", UserID, Request.ProductID).Updates(&CartItem).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
 				"message":    "Failed to update cart items. Please try again later.",
@@ -131,8 +134,6 @@ func AddToCart(c *gin.Context) {
 		}
 
 	}
-	// - **Response**:
-	// 	- Provide feedback to the user about the action (success or failure).
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "Product successfully added to cart",
@@ -140,27 +141,26 @@ func AddToCart(c *gin.Context) {
 }
 
 func GetCartTotal(c *gin.Context) {
-	UserID := c.Param("userid")
-	if UserID == "" {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+	//bind the json
+	var Request model.AddToCartReq
+	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "Failed to fetch user ID. Please provide a valid user ID.",
+			"message":    "Failed to fetch incoming request. Please provide valid JSON data.",
 			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
-
-	//check user
-	// intUserID,_ := strconv.Atoi(UserID)
-	// ok:= CheckUser(uint(intUserID))
-	// if !ok{
-	// 	c.JSON(http.StatusConflict, gin.H{
-	// 		"status":     false,
-	// 		"message":    "user doesnt exist, please verify user id",
-	// 		"error_code": http.StatusConflict,
-	// 	})
-	// 	return
-	// }
 
 	var CartItems []model.CartItems
 
@@ -207,17 +207,18 @@ func GetCartTotal(c *gin.Context) {
 	})
 }
 
-func ClearCartByUserID(c *gin.Context) {
+func ClearCart(c *gin.Context) {
 
-	UserID := c.Param("userid")
-	if UserID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "Failed to fetch user ID. Please provide a valid user ID.",
-			"error_code": http.StatusBadRequest,
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
+	UserID, _ := UserIDfromEmail(email)
 
 	var CartItems model.CartItems
 	if err := database.DB.Where("user_id = ?", UserID).Delete(&CartItems).Error; err != nil {
@@ -235,6 +236,16 @@ func ClearCartByUserID(c *gin.Context) {
 }
 
 func RemoveItemFromCart(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 	//bindthe json
 	var CartItems model.RemoveItem
 	if err := c.BindJSON(&CartItems); err != nil {
@@ -256,7 +267,7 @@ func RemoveItemFromCart(c *gin.Context) {
 	}
 
 	var CartItem model.CartItems
-	if err := database.DB.Where("user_id = ? AND product_id = ?", CartItems.UserID, CartItems.ProductID).First(&CartItem).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND product_id = ?", UserID, CartItems.ProductID).First(&CartItem).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -265,7 +276,7 @@ func RemoveItemFromCart(c *gin.Context) {
 		return
 	}
 	//if yes, remove the item
-	if err := database.DB.Where("user_id = ? AND product_id = ?", CartItems.UserID, CartItems.ProductID).Delete(&CartItem).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND product_id = ?", UserID, CartItems.ProductID).Delete(&CartItem).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -280,6 +291,16 @@ func RemoveItemFromCart(c *gin.Context) {
 }
 
 func UpdateQuantity(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 	//bindthe json
 	var CartItems model.CartItems
 	if err := c.BindJSON(&CartItems); err != nil {
@@ -290,6 +311,7 @@ func UpdateQuantity(c *gin.Context) {
 		})
 		return
 	}
+	CartItems.UserID = UserID
 	//validate
 	if err := validate(&CartItems); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

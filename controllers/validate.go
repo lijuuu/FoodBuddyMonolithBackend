@@ -36,4 +36,3 @@ func validate(value interface{}) error {
 	}
 	return nil
 }
-

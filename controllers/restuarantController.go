@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
@@ -14,17 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// RestaurantSignup godoc
-// @Summary Restaurant signup
-// @Description Signup a new restaurant
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param RestaurantSignup body model.RestaurantSignupRequest true "Restaurant Signup"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/restaurant/signup [post]
+// RestaurantSignup
 func RestaurantSignup(c *gin.Context) {
 	// bind json to struct
 	var restaurantSignup model.RestaurantSignupRequest
@@ -33,7 +22,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process the request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -44,7 +32,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -57,7 +44,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "database error",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	} else if tx.Error == gorm.ErrRecordNotFound {
@@ -73,7 +59,6 @@ func RestaurantSignup(c *gin.Context) {
 				"status":     false,
 				"message":    "failed to create restaurant verification entry",
 				"error_code": http.StatusInternalServerError,
-				
 			})
 			return
 		}
@@ -83,7 +68,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant email already exists",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -97,7 +81,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to process the request",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -123,7 +106,6 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to save restaurant data",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -146,18 +128,7 @@ func RestaurantSignup(c *gin.Context) {
 	})
 }
 
-// RestaurantLogin godoc
-// @Summary Restaurant login
-// @Description Login a restaurant
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param RestaurantLogin body model.RestaurantLoginRequest true "Restaurant Login"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 401 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/restaurant/login [post]
+// RestaurantLogin
 func RestaurantLogin(c *gin.Context) {
 	// Get struct
 	var restaurantLogin model.RestaurantLoginRequest
@@ -168,7 +139,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to process the incoming request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -179,7 +149,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -190,7 +159,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Error fetching restaurant details",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -201,7 +169,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Restaurant not authorized to access the route",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -213,7 +180,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Invalid credentials",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -225,7 +191,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to fetch email verification status",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -236,7 +201,6 @@ func RestaurantLogin(c *gin.Context) {
 				"status":     false,
 				"message":    err.Error(),
 				"error_code": http.StatusAlreadyReported,
-				
 			})
 			return
 		}
@@ -244,7 +208,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Please verify your email to continue",
 			"error_code": http.StatusUnauthorized,
-			
 		})
 		return
 	}
@@ -255,7 +218,6 @@ func RestaurantLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to generate token",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -278,24 +240,7 @@ func RestaurantLogin(c *gin.Context) {
 	})
 }
 
-func CheckRestaurant(c *gin.Context, requestEmail string) (string, error) {
-	email,_, err := utils.GetJWTClaim(c)
-	if err != nil {
-		return email, errors.New("request unauthorized")
-	}
-
-	if email != requestEmail {
-		return email, errors.New("request unauthorized")
-	}
-
-	if err := VerifyJWT(c, model.RestaurantRole, email); err != nil {
-		return email, errors.New("request unauthorized")
-	}
-
-	return email, nil
-}
-
-//public
+// public
 func GetRestaurants(c *gin.Context) {
 	var restaurants []model.Restaurant
 	// Search db and get all
@@ -304,7 +249,6 @@ func GetRestaurants(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to retrieve data from the database",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -316,11 +260,22 @@ func GetRestaurants(c *gin.Context) {
 	})
 }
 
-//restaurant
+// restaurant
 func EditRestaurant(c *gin.Context) {
+
+	//check restaurant api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
 	// Bind JSON
-	var restaurant model.Restaurant
-	if err := c.BindJSON(&restaurant); err != nil {
+	var Request model.EditRestaurantRequest
+	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind request",
@@ -329,7 +284,7 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
-	if err := validate(restaurant); err != nil {
+	if err := validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -338,9 +293,19 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
+	RestaurantID, ok := RestIDfromEmail(email)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve restaurant information",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
 	// Check if present and update it with the new data
 	var existingRestaurant model.Restaurant
-	if err := database.DB.First(&existingRestaurant, restaurant.ID).Error; err != nil {
+	if err := database.DB.First(&existingRestaurant, RestaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "restaurant doesn't exist",
@@ -349,17 +314,8 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
-	// if _, err := CheckRestaurant(c,existingRestaurant.Email); err != nil {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{
-	// 		"status":     false,
-	// 		"message":    err.Error(),
-	// 		"error_code": http.StatusUnauthorized,
-	// 	})
-	// 	return
-	// }
-
 	// Edit the restaurant
-	if err := database.DB.Model(&existingRestaurant).Updates(restaurant).Error; err != nil {
+	if err := database.DB.Model(&existingRestaurant).Updates(Request).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to edit the restaurant",
@@ -376,8 +332,18 @@ func EditRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func DeleteRestaurant(c *gin.Context) {
+
+	//check admin api authentication
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
@@ -387,7 +353,6 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -399,7 +364,6 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant doesn't exist",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -410,7 +374,6 @@ func DeleteRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to delete the restaurant",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -422,8 +385,17 @@ func DeleteRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func BlockRestaurant(c *gin.Context) {
+	//check admin api authentication
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
@@ -433,7 +405,6 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -445,7 +416,6 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -468,7 +438,6 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -480,8 +449,17 @@ func BlockRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func UnblockRestaurant(c *gin.Context) {
+	//check admin api authentication
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 
 	// Get the restaurant id
 	restaurantIDStr := c.Param("restaurantid")
@@ -491,7 +469,6 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "invalid restaurant ID",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -503,7 +480,6 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant not found",
 			"error_code": http.StatusNotFound,
-			
 		})
 		return
 	}
@@ -526,7 +502,6 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to change the block status",
 			"error_code": http.StatusInternalServerError,
-			
 		})
 		return
 	}
@@ -536,4 +511,14 @@ func UnblockRestaurant(c *gin.Context) {
 		"message": "restaurant is unblocked",
 		"data":    gin.H{"restaurant": restaurant},
 	})
+}
+
+//get restaurantid from rest email
+
+func RestIDfromEmail(email string) (uint, bool) {
+	var Restaurant model.Restaurant
+	if err := database.DB.Where("email = ?", email).First(&Restaurant).Error; err != nil {
+		return 0, false
+	}
+	return Restaurant.ID, true
 }

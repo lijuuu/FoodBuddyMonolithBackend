@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
 	"time"
 
@@ -17,7 +18,6 @@ type CouponInventoryRequest struct {
 	Percentage   uint   `validate:"required" json:"percentage"`
 	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
 }
-
 
 type CouponUsage struct {
 	gorm.Model
@@ -41,7 +41,16 @@ type Order struct {
 }
 
 // create coupons -admin side
-func CreateCoupon(c *gin.Context) {
+func CreateCoupon(c *gin.Context) { //admin
+	// check admin api authentication
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 	var Request model.CouponInventoryRequest
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -76,9 +85,9 @@ func CreateCoupon(c *gin.Context) {
 	}
 
 	Coupon := model.CouponInventory{
-		CouponCode: Request.CouponCode,
-		Expiry:     Request.Expiry,
-		Percentage: Request.Percentage,
+		CouponCode:   Request.CouponCode,
+		Expiry:       Request.Expiry,
+		Percentage:   Request.Percentage,
 		MaximumUsage: Request.MaximumUsage,
 	}
 
@@ -96,25 +105,34 @@ func CreateCoupon(c *gin.Context) {
 	})
 }
 
-func GetAllCoupons(c *gin.Context){
-   var Coupons []model.CouponInventory
+func GetAllCoupons(c *gin.Context) { //public
+	var Coupons []model.CouponInventory
 
-   if err:= database.DB.Find(&Coupons).Error;err!=nil{
-	c.JSON(http.StatusBadRequest,gin.H{
-		"status":false,
-		"message":"failed to fetch coupon details",
-	})
-	return
-   }
+	if err := database.DB.Find(&Coupons).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "failed to fetch coupon details",
+		})
+		return
+	}
 
-   c.JSON(http.StatusOK,gin.H{
-	"status":true,
-	"data":Coupons,
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data":   Coupons,
 	})
 }
 
 // update coupon
-func UpdateCoupon(c *gin.Context) {
+func UpdateCoupon(c *gin.Context) { //admin
+	// check admin api authentication
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 	var request model.CouponInventoryRequest
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -133,7 +151,7 @@ func UpdateCoupon(c *gin.Context) {
 	}
 
 	var existingCoupon model.CouponInventory
-	err := database.DB.Where("coupon_code = ?", request.CouponCode).First(&existingCoupon).Error
+	err = database.DB.Where("coupon_code = ?", request.CouponCode).First(&existingCoupon).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -176,109 +194,110 @@ func UpdateCoupon(c *gin.Context) {
 	})
 }
 
-func ApplyCouponOnCart(c *gin.Context) {
-    UserID := c.Param("userid")
-    CouponCode := c.Param("couponcode")
-    if UserID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "status":  false,
-            "message": "ensure userid is present on the URL param",
-        })
-        return
-    }
+func ApplyCouponOnCart(c *gin.Context) { //user
+	// check restaurant api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID,_ := UserIDfromEmail(email)
+	CouponCode := c.Param("couponcode")
 
-    var CartItems []model.CartItems
+	var CartItems []model.CartItems
 
-    if err := database.DB.Where("user_id = ?", UserID).Find(&CartItems).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "status":     false,
-            "message":    "Failed to fetch cart items. Please try again later.",
-            "error_code": http.StatusInternalServerError,
-        })
-        return
-    }
+	if err := database.DB.Where("user_id = ?", UserID).Find(&CartItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "Failed to fetch cart items. Please try again later.",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
 
-    if len(CartItems) == 0 {
-        c.JSON(http.StatusNotFound, gin.H{
-            "status":     false,
-            "message":    "Your cart is empty.",
-            "error_code": http.StatusNotFound,
-        })
-        return
-    }
+	if len(CartItems) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "Your cart is empty.",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
 
-    // Total price of the cart
-    var sum float64
-    for _, item := range CartItems {
-        var Product model.Product
-        if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
-            c.JSON(http.StatusNotFound, gin.H{
-                "status":     false,
-                "message":    "Failed to fetch product information. Please try again later.",
-                "error_code": http.StatusNotFound,
-            })
-            return
-        }
+	// Total price of the cart
+	var sum float64
+	for _, item := range CartItems {
+		var Product model.Product
+		if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":     false,
+				"message":    "Failed to fetch product information. Please try again later.",
+				"error_code": http.StatusNotFound,
+			})
+			return
+		}
 
-        sum += float64((Product.Price) * (item.Quantity))
-    }
+		sum += float64((Product.Price) * (item.Quantity))
+	}
 
-    // Apply coupon if provided
-    var discount float64
-	var Percentage,finalamount float64
-    if CouponCode != "" {
-        var coupon model.CouponInventory
-        if err := database.DB.Where("coupon_code = ?", CouponCode).First(&coupon).Error; err != nil {
-            c.JSON(http.StatusNotFound, gin.H{
-                "status":     false,
-                "message":    "Invalid coupon code. Please check and try again.",
-                "error_code": http.StatusNotFound,
-            })
-            return
-        }
+	// Apply coupon if provided
+	var discount float64
+	var Percentage, finalamount float64
+	if CouponCode != "" {
+		var coupon model.CouponInventory
+		if err := database.DB.Where("coupon_code = ?", CouponCode).First(&coupon).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":     false,
+				"message":    "Invalid coupon code. Please check and try again.",
+				"error_code": http.StatusNotFound,
+			})
+			return
+		}
 
-        // Check coupon expiration
-        if time.Now().Unix() > int64(coupon.Expiry) {
-            c.JSON(http.StatusBadRequest, gin.H{
-                "status":  false,
-                "message": "The coupon has expired.",
-            })
-            return
-        }
+		// Check coupon expiration
+		if time.Now().Unix() > int64(coupon.Expiry) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  false,
+				"message": "The coupon has expired.",
+			})
+			return
+		}
 
-        // Check coupon usage
-        var usage model.CouponUsage
-        if err := database.DB.Where("user_id = ? AND coupon_code = ?", UserID, CouponCode).First(&usage).Error; err == nil {
-            if usage.UsageCount >= coupon.MaximumUsage {
-                c.JSON(http.StatusBadRequest, gin.H{
-                    "status":  false,
-                    "message": "The coupon usage limit has been reached.",
-                })
-                return
-            }
-        }
+		// Check coupon usage
+		var usage model.CouponUsage
+		if err := database.DB.Where("user_id = ? AND coupon_code = ?", UserID, CouponCode).First(&usage).Error; err == nil {
+			if usage.UsageCount >= coupon.MaximumUsage {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status":  false,
+					"message": "The coupon usage limit has been reached.",
+				})
+				return
+			}
+		}
 
-        // Calculate discount
+		// Calculate discount
 		Percentage = float64(coupon.Percentage)
-        discount = float64(sum) * (float64(coupon.Percentage) / 100.0)
-        finalamount = sum - (discount)
-    }
+		discount = float64(sum) * (float64(coupon.Percentage) / 100.0)
+		finalamount = sum - (discount)
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status": true,
-        "data": gin.H{
-            "cartitems":   CartItems,
-            "totalamount": sum,
-			"discountpercentage":Percentage,
-            "discount":    discount,
-            "finalamount": finalamount,
-        },
-        "message": "Cart items retrieved successfully",
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data": gin.H{
+			"cartitems":          CartItems,
+			"totalamount":        sum,
+			"discountpercentage": Percentage,
+			"discount":           discount,
+			"finalamount":        finalamount,
+		},
+		"message": "Cart items retrieved successfully",
+	})
 }
 
 func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool, string) {
-
 
 	if order.CouponCode != "" {
 		errMsg := fmt.Sprintf("%v coupon already exists, remove this coupon to add a new coupon", order.CouponCode)
@@ -312,7 +331,7 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 	order.DiscountAmount = discountAmount
 	order.FinalAmount = finalAmount
 
-	if err := database.DB.Where("order_id = ?",order.OrderID).Updates(&order).Error; err != nil {
+	if err := database.DB.Where("order_id = ?", order.OrderID).Updates(&order).Error; err != nil {
 		return false, "failed to apply coupon to order"
 	}
 
@@ -328,7 +347,7 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 		}
 	} else {
 		couponUsage.UsageCount++
-		if err := database.DB.Where("order_id = ?",order.OrderID).Save(&couponUsage).Error; err != nil {
+		if err := database.DB.Where("order_id = ?", order.OrderID).Save(&couponUsage).Error; err != nil {
 			return false, "failed to update coupon usage record"
 		}
 	}
@@ -342,7 +361,7 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 
 func CheckCouponExists(code string) bool {
 	var Coupons []model.CouponInventory
-	if err:= database.DB.Find(&Coupons).Error;err!=nil{
+	if err := database.DB.Find(&Coupons).Error; err != nil {
 		return false
 	}
 	fmt.Println(&Coupons)

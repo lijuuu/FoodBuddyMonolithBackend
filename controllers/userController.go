@@ -15,15 +15,30 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+func UserIDfromEmail(Email string)(ID uint,ok bool){
+	var User model.User
+	if err:=database.DB.Where("email = ?",Email).First(&User).Error;err!=nil{
+		return User.ID,false
+	}
+	return User.ID,true
+}
 
 func GetUserProfile(c *gin.Context) {
 
-	//get id
-	userIDStr := c.Param("userid")
+   //check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 
 	//check user info and save it on struct
 	var UserProfile model.User
-	if err := database.DB.Where("id = ?", userIDStr).First(&UserProfile).Error; err != nil {
+	if err := database.DB.Where("id = ?", UserID).First(&UserProfile).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
@@ -51,6 +66,16 @@ func GetUserProfile(c *gin.Context) {
 func GetUserList(c *gin.Context) {
 	var users []model.User
 
+	//check admin api authentication
+	_,role,err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized request",
+		})
+		return
+	}
+
 	tx := database.DB.Select("*").Find(&users)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -72,6 +97,16 @@ func GetUserList(c *gin.Context) {
 func GetBlockedUserList(c *gin.Context) {
 
 	var blockedUsers []model.User
+
+	//check admin api authentication
+	_,role,err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized request",
+		})
+		return
+	}
 
 	tx := database.DB.Where("deleted_at IS NULL AND blocked =?", true).Find(&blockedUsers)
 	if tx.Error != nil {
@@ -104,6 +139,16 @@ func GetBlockedUserList(c *gin.Context) {
 func BlockUser(c *gin.Context) {
 
 	var user model.User
+
+	//check admin api authentication
+	_,role,err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized request",
+		})
+		return
+	}
 
 	userIdStr := c.Param("userid")
 
@@ -157,6 +202,16 @@ func UnblockUser(c *gin.Context) {
 
 	var user model.User
 
+	//check admin api authentication
+	_,role,err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":     false,
+			"message":    "unauthorized request",
+		})
+		return
+	}
+
 	userIdStr := c.Param("userid")
 
 	userId, err := strconv.Atoi(userIdStr)
@@ -205,8 +260,19 @@ func UnblockUser(c *gin.Context) {
 }
 
 func AddUserAddress(c *gin.Context) {
-	var UserAddress model.Address
 
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+
+	var UserAddress model.Address
 	//bind the json to the struct
 	if err := c.BindJSON(&UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -216,6 +282,7 @@ func AddUserAddress(c *gin.Context) {
 		})
 		return
 	}
+	UserAddress.UserID = UserID
 
 	if err := validate(UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -226,24 +293,6 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 
-	//checking the user sending is performing in his/her account..
-	email, ok := EmailFromUserID(UserAddress.UserID)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to get user email from the database",
-			"error_code": http.StatusNotFound,
-		})
-		return
-	}
-	if err := VerifyJWT(c, model.UserRole, email); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized user",
-			"error_code": http.StatusUnauthorized,
-		})
-		return
-	}
 
 	//to make sure the addressid is autoincremented by the gorm
 	UserAddress.AddressID = 0
@@ -291,6 +340,7 @@ func AddUserAddress(c *gin.Context) {
 	}
 
 	//create the address, provide address_id similar to serial numbers...no 1,2,3 for addresses based on user_id
+	UserAddress.UserID = UserID
 	if err := database.DB.Create(&UserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -312,18 +362,16 @@ func AddUserAddress(c *gin.Context) {
 
 func GetUserAddress(c *gin.Context) {
 
-	//get the userid from the param
-	userIDStr := c.Param("userid")
-	UserID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to process the request data",
-			"error_code": http.StatusBadRequest,
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
-
+	UserID, _ := UserIDfromEmail(email)
 	//get the addresses where user_id == UserID
 	var UserAddresses []model.Address
 	if err := database.DB.Where("user_id = ?", UserID).Find(&UserAddresses).Error; err != nil {
@@ -376,7 +424,19 @@ func GetUserAddress(c *gin.Context) {
 }
 
 func EditUserAddress(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+
 	var updateUserAddress model.Address
+	updateUserAddress.UserID = UserID
 
 	// Bind the incoming JSON to the updateUserAddress struct
 	if err := c.BindJSON(&updateUserAddress); err != nil {
@@ -446,8 +506,17 @@ func EditUserAddress(c *gin.Context) {
 }
 
 func DeleteUserAddress(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 	var AddressInfo model.Address
-
 	// Bind the incoming JSON to the updateUserAddress struct
 	if err := c.BindJSON(&AddressInfo); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -457,7 +526,7 @@ func DeleteUserAddress(c *gin.Context) {
 		})
 		return
 	}
-
+    AddressInfo.UserID = UserID
 	//check the userid and addressid
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
@@ -508,13 +577,23 @@ func DeleteUserAddress(c *gin.Context) {
 }
 
 func UpdateUserInformation(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
 	//bind json
 	var Request model.UpdateUserInformation
 
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": "failed to bind the json",
+			"message": err.Error(),
 		})
 		return
 	}
@@ -528,7 +607,7 @@ func UpdateUserInformation(c *gin.Context) {
 		return
 	}
 
-	if ok := CheckUser(Request.ID); !ok {
+	if ok := CheckUser(UserID); !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "user doesnt exist",
@@ -537,7 +616,7 @@ func UpdateUserInformation(c *gin.Context) {
 	}
 
 	//update the user information
-	if err := database.DB.Model(&model.User{}).Where("id = ?", Request.ID).Updates(&Request).Error; err != nil {
+	if err := database.DB.Model(&model.User{}).Where("id = ?", UserID).Updates(&Request).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to update user profile",

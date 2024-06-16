@@ -13,10 +13,9 @@ type EmailLoginRequest struct {
 }
 
 type UpdateUserInformation struct {
-	ID          uint   `validate:"required"`
-	Name        string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
-	PhoneNumber int    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
-	Picture     string `gorm:"column:picture;type:text" json:"picture"`
+	Name        string `json:"name"`
+	PhoneNumber string    `validate:"number" json:"phone_number"`
+	Picture     string `json:"picture"`
 }
 
 type RestaurantSignupRequest struct {
@@ -40,26 +39,24 @@ type AdminLoginRequest struct {
 }
 
 type AddToCartReq struct {
-	UserID         uint   `gorm:"column:user_id" validate:"required,number" json:"user_id"`
 	ProductID      uint   `gorm:"column:product_id" validate:"required,number" json:"product_id"`
 	Quantity       uint   `validate:"required,number" json:"quantity"`
 	CookingRequest string `json:"cooking_request"` // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 
 type RemoveItem struct {
-	UserID    uint `validate:"required,number" json:"user_id"`
 	ProductID uint `validate:"required,number" json:"product_id"`
 }
 
 type PlaceOrder struct {
-	UserID        uint   `validate:"required,number" json:"user_id"`
+	UserID        uint   `json:"user_id"`
 	AddressID     uint   `validate:"required,number" json:"address_id"`
 	PaymentMethod string `validate:"required" json:"payment_method"`
-	CouponCode string `json:"coupon_code"`
+	CouponCode    string `json:"coupon_code"`
 }
 
 type InitiatePayment struct {
-	OrderID string `json:"order_id"`
+	OrderID        string `json:"order_id"`
 	PaymentGateway string `json:"payment_gateway"`
 }
 
@@ -70,7 +67,6 @@ type RazorpayPayment struct {
 }
 
 type OrderHistoryRestaurants struct {
-	RestaurantID uint   `json:"restaurant_id"`
 	OrderStatus  string `json:"order_status"`
 }
 
@@ -132,8 +128,54 @@ type CouponInventoryRequest struct {
 	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
 }
 
-type ApplyCouponOnOrderRequest struct{
-	UserID        uint   `validate:"required" json:"user_id"`
-	CouponCode   string `validate:"required" json:"coupon_code"`
-    OrderID    string  `validate:"required" json:"order_id"`
+type ApplyCouponOnOrderRequest struct {
+	UserID     uint   `validate:"required" json:"user_id"`
+	CouponCode string `validate:"required" json:"coupon_code"`
+	OrderID    string `validate:"required" json:"order_id"`
+}
+
+// changes
+type AddCategoryRequest struct {
+	Name        string `validate:"required" json:"name"`
+	Description string `validate:"required" json:"description"`
+	ImageURL    string `validate:"required,url" json:"image_url"`
+}
+
+type EditCategoryRequest struct {
+	ID          uint   `validate:"required,number"`
+	Name        string `validate:"required" json:"name"`
+	Description string `validate:"required" json:"description"`
+	ImageURL    string `validate:"required,url" json:"image_url"`
+}
+
+type EditRestaurantRequest struct {
+	Name           string `validate:"omitempty" json:"name"`
+	Description    string `validate:"omitempty" json:"description"`
+	Address        string `validate:"omitempty" json:"address"`
+	PhoneNumber    string `validate:"omitempty,number" json:"phone_number"`
+	ImageURL       string `validate:"omitempty,url" json:"image_url"`
+	CertificateURL string `validate:"omitempty,url" json:"certificate_url"`
+}
+
+type AddProductRequest struct {
+	RestaurantID uint
+	CategoryID   uint   `validate:"required,number" json:"category_id"`
+	Name         string `validate:"required" json:"name"`
+	Description  string `validate:"required" json:"description"`
+	ImageURL     string `validate:"required" json:"image_url"`
+	Price        uint   `validate:"required,number" json:"price"`
+	MaxStock     uint   `validate:"required,number" json:"max_stock"`
+	StockLeft    uint   `validate:"required,number" json:"stock_left"`
+}
+
+type EditProductRequest struct {
+	ProductID    uint `validate:"requried,number" json:"id"`
+	RestaurantID uint
+	CategoryID   uint   `validate:"required,number" json:"category_id"`
+	Name         string `validate:"required" json:"name"`
+	Description  string `validate:"required" json:"description"`
+	ImageURL     string `validate:"required" json:"image_url"`
+	Price        uint   `validate:"required,number" json:"price"`
+	MaxStock     uint   `validate:"required,number" json:"max_stock"`
+	StockLeft    uint   `validate:"required,number" json:"stock_left"`
 }

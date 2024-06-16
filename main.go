@@ -9,8 +9,6 @@ import (
 	_ "foodbuddy/docs"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func init() {
@@ -18,29 +16,19 @@ func init() {
 	database.AutoMigrate()
 }
 
-// @title FoodBuddy API
-// @version 1.0
-// @description Documentation
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
-// @host localhost:8080
-// @BasePath /
-// @query.collection.format multi
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 
 	router.Use(controllers.RateLimitMiddleware())
 	router.Use(utils.CorsMiddleware())
-	router.GET("/ping", func(c *gin.Context) {
+	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "hello, its working",
+			"message": "server status ok",
 		})
 	})
 
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler)) //https://github.com/swaggo/swag/issues/197#issuecomment-1100847754
+	// router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler)) //https://github.com/swaggo/swag/issues/197#issuecomment-1100847754
 
 	// Authentication routes
 	router.POST("/api/v1/auth/admin/login", controllers.AdminLogin)
@@ -94,6 +82,10 @@ func main() {
 		adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
 		adminRoutes.PUT("/restaurants/block/:restaurantid", controllers.BlockRestaurant)
 		adminRoutes.PUT("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant)
+
+		//coupons
+		adminRoutes.POST("/coupon/create", controllers.CreateCoupon)
+		adminRoutes.POST("/coupon/update", controllers.UpdateCoupon)
 	}
 
 	// Restaurant routes with restaurant middleware
@@ -106,61 +98,49 @@ func main() {
 
 		//order history
 		restaurantRoutes.POST("/order/history/", controllers.OrderHistoryRestaurants)
-		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
+		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //processing to delivered
 	}
 
 	userRoutes := router.Group("/api/v1/user")
 	{
 
-		userRoutes.GET("/:userid", controllers.GetUserProfile)
+		userRoutes.GET("/profile", controllers.GetUserProfile)
 		userRoutes.POST("/edit", controllers.UpdateUserInformation)
 
 		//favourite product by usedid
-		userRoutes.GET("/favorites/:userid", controllers.GetFavouriteProductByUserID)
+		userRoutes.GET("/favorites/all", controllers.GetUsersFavouriteProduct)
 		userRoutes.POST("/favorites/", controllers.AddFavouriteProduct)
 		userRoutes.DELETE("/favorites/", controllers.RemoveFavouriteProduct)
 
 		//user address
-		userRoutes.GET("/address/:userid", controllers.GetUserAddress)
+		userRoutes.GET("/address/all", controllers.GetUserAddress)
 		userRoutes.POST("/address/add", controllers.AddUserAddress)
 		userRoutes.PUT("/address/edit", controllers.EditUserAddress)
 		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress)
 
 		//cart management
-		userRoutes.POST("/cart/add", controllers.AddToCart)                      //add items to cart
-		userRoutes.GET("/cart/:userid", controllers.GetCartTotal)                //get everything that cart holds
-		userRoutes.DELETE("/cart/delete/:userid", controllers.ClearCartByUserID) //remove the entire cart
-		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart)        //remove specific products form the cart
+		userRoutes.POST("/cart/add", controllers.AddToCart)               //add items to cart
+		userRoutes.GET("/cart/all", controllers.GetCartTotal)             //get everything that cart holds
+		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //remove the entire cart
+		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //remove specific products form the cart
 		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity)
 
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
+		userRoutes.GET("/order/step3/stripecallback", controllers.HandleWebhookStripe)
+		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 
 		userRoutes.POST("/order/history", controllers.UserOrderHistory)
 		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
-		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
-
-		userRoutes.GET("/order/step3/stripecallback", controllers.HandleWebhookStripe)
+		userRoutes.GET("/coupon/all", controllers.GetAllCoupons)
+		userRoutes.GET("/coupon/cart/:couponcode", controllers.ApplyCouponOnCart)
 
 	}
-
-	//coupons
-	adminRoutes.POST("/coupon/create", controllers.CreateCoupon)
-	adminRoutes.POST("/coupon/update", controllers.UpdateCoupon)
-	userRoutes.GET("/coupon/all", controllers.GetAllCoupons)
-	userRoutes.GET("/coupon/cart/:userid/:couponcode", controllers.ApplyCouponOnCart)
-
-	//order management
-	//checkout
-	//createorder with address selection etc..
-	//intiatepayment
-	//retry payment
-	//cancel order
 
 	router.Run(":8080")
 }

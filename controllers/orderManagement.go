@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/jung-kurt/gofpdf/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jung-kurt/gofpdf/v2"
 	"gorm.io/gorm"
 )
 
@@ -112,6 +112,17 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 
 // user - check userid
 func PlaceOrder(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+
 	var PlaceOrder model.PlaceOrder
 	if err := c.BindJSON(&PlaceOrder); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -121,6 +132,7 @@ func PlaceOrder(c *gin.Context) {
 		})
 		return
 	}
+	PlaceOrder.UserID = UserID
 
 	if err := validate(&PlaceOrder); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -344,18 +356,28 @@ func CheckUser(UserID uint) bool {
 	}
 	return true
 }
-func RestaurantIDByProductID(ProductID uint) uint {
-
-	var Product model.Product
-	if err := database.DB.Where("id = ?", ProductID).First(&Product).Error; err != nil {
-		return 0
-	}
-	return Product.RestaurantID
-}
 
 // active orders of restaurants
 // restaurant
 func OrderHistoryRestaurants(c *gin.Context) {
+	//check restaurant api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	RestaurantID, ok := RestIDfromEmail(email)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to retrieve restaurant information",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
 	//Restaurant id, if order status is provided use it or get the whole history
 	var Request model.OrderHistoryRestaurants
 	if err := c.Bind(&Request); err != nil {
@@ -372,7 +394,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	if Request.OrderStatus != "" {
 		//condition one order status not empty
 		//return all the orders with order_id, restaurant_id,order_status is met with the condition
-		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", Request.RestaurantID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
+		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", RestaurantID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":     false,
 				"message":    "failed to fetch orders assigned to this restaurant",
@@ -383,7 +405,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	} else {
 		//condition two order status empty
 		//return all the orders with order_id, restaurant_id is met with the condition
-		if err := database.DB.Where("restaurant_id = ?", Request.RestaurantID).Find(&OrderItems).Error; err != nil {
+		if err := database.DB.Where("restaurant_id = ?", RestaurantID).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":     false,
 				"message":    "failed to fetch orders assigned to this restaurant",
@@ -403,6 +425,17 @@ func OrderHistoryRestaurants(c *gin.Context) {
 
 // user
 func UserOrderHistory(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+
 	//same like restaurant
 	var Request model.UserOrderHistory
 	if err := c.BindJSON(&Request); err != nil {
@@ -412,6 +445,7 @@ func UserOrderHistory(c *gin.Context) {
 		})
 		return
 	}
+	Request.UserID =UserID
 	var Orders []model.Order
 
 	if Request.PaymentStatus != "" {
@@ -503,12 +537,38 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 		return
 	}
 
+	//check restaurant api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	RestaurantID, ok := RestIDfromEmail(email)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	
+
 	var OrderItemDetail model.OrderItem
 	if err := database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).First(&OrderItemDetail).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information for the specific product",
-			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
+	if RestaurantID != OrderItemDetail.RestaurantID{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -564,8 +624,27 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	})
 }
 
+func UserIDfromOrderID(OrderID string)(uint,bool){
+    var Order model.Order
+	if err:=database.DB.Where("order_id = ?",OrderID).First(&Order).Error;err!=nil{
+		return Order.UserID,false
+	}
+	return Order.UserID,true
+}
+
 // user - check userid by order.userid
 func CancelOrderedProduct(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	JWTUserID, _ := UserIDfromEmail(email)
+
 	//get orderid product
 	var Request model.CancelOrderedProduct
 	if err := c.BindJSON(&Request); err != nil {
@@ -573,6 +652,16 @@ func CancelOrderedProduct(c *gin.Context) {
 			"status":     false,
 			"message":    "failed to bind request",
 			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	oUserID,_ := UserIDfromOrderID(Request.OrderID)
+
+	if JWTUserID != oUserID{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -594,6 +683,14 @@ func CancelOrderedProduct(c *gin.Context) {
 			})
 			return
 		}
+	}
+
+	if OrderItem.OrderStatus == model.OrderStatusCancelled{
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  false,
+			"message": "Order already cancelled",
+		})
+		return
 	}
 
 	//check order status is processing
@@ -781,6 +878,17 @@ func DecrementStock(OrderID string) bool {
 
 // user - check userid by order.userid
 func UserReviewonOrderItem(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	JWTUserID, _ := UserIDfromEmail(email)
+
 	//orderid, productid,review text
 	var Request model.UserReviewonOrderItem
 	if err := c.BindJSON(&Request); err != nil {
@@ -790,7 +898,15 @@ func UserReviewonOrderItem(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(Request)
+	oUserID,_ :=  UserIDfromOrderID(Request.OrderID)
+	if JWTUserID !=oUserID{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
 	//get orderitem
 	var OrderItem model.OrderItem
 	if err := database.DB.Where("order_id = ? AND product_id = ?", Request.OrderID, Request.ProductID).First(&OrderItem).Error; err != nil {
@@ -817,10 +933,30 @@ func UserReviewonOrderItem(c *gin.Context) {
 
 // user - check userid by order.userid
 func UserRatingOrderItem(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	JWTUserID, _ := UserIDfromEmail(email)
+
 	//get the orderid,productid,rating
 	var Request model.UserRatingOrderItem
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "failed to bind the json"})
+		return
+	}
+
+	oUserID,_ :=  UserIDfromOrderID(Request.OrderID)
+	if JWTUserID !=oUserID{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
 		return
 	}
 
@@ -1028,3 +1164,4 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		"data":    "invoice.pdf",
 	})
 }
+
