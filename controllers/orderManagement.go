@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/jung-kurt/gofpdf/v2"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -109,7 +110,7 @@ func CartToOrderItems(UserID uint, OrderID string) bool {
 	return true
 }
 
-//user - check userid
+// user - check userid
 func PlaceOrder(c *gin.Context) {
 	var PlaceOrder model.PlaceOrder
 	if err := c.BindJSON(&PlaceOrder); err != nil {
@@ -270,7 +271,7 @@ func PlaceOrder(c *gin.Context) {
 }
 
 // get response from place order render the pay button with initiate payment logic
-//user - check userid by order.userid
+// user - check userid by order.userid
 func InitiatePayment(c *gin.Context) {
 	// Get order id from request body
 	var initiatePayment model.InitiatePayment
@@ -353,7 +354,7 @@ func RestaurantIDByProductID(ProductID uint) uint {
 }
 
 // active orders of restaurants
-//restaurant
+// restaurant
 func OrderHistoryRestaurants(c *gin.Context) {
 	//Restaurant id, if order status is provided use it or get the whole history
 	var Request model.OrderHistoryRestaurants
@@ -400,7 +401,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	})
 }
 
-//user
+// user
 func UserOrderHistory(c *gin.Context) {
 	//same like restaurant
 	var Request model.UserOrderHistory
@@ -436,37 +437,6 @@ func UserOrderHistory(c *gin.Context) {
 		"message": "successfully fetched order history",
 		"data": gin.H{
 			"orderhistory": Orders,
-		},
-	})
-}
-
-func GetOrderInfoByOrderID(c *gin.Context) {
-	//get order id
-	var Request model.GetOrderInfoByOrderID
-	if err := c.Bind(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind request",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
-
-	var OrderItems []model.OrderItem
-	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch order information",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "Successfully retrieved OrderInformation",
-		"data": gin.H{
-			"orderitems": OrderItems,
 		},
 	})
 }
@@ -520,7 +490,7 @@ func PaymentDetailsByOrderID(c *gin.Context) {
 	})
 }
 
-//restaurant - check restid with product.rest id
+// restaurant - check restid with product.rest id
 func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	var Request model.UpdateOrderStatusForRestaurant
 
@@ -594,7 +564,7 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	})
 }
 
-//user - check userid by order.userid
+// user - check userid by order.userid
 func CancelOrderedProduct(c *gin.Context) {
 	//get orderid product
 	var Request model.CancelOrderedProduct
@@ -809,7 +779,7 @@ func DecrementStock(OrderID string) bool {
 	return true
 }
 
-//user - check userid by order.userid
+// user - check userid by order.userid
 func UserReviewonOrderItem(c *gin.Context) {
 	//orderid, productid,review text
 	var Request model.UserReviewonOrderItem
@@ -845,7 +815,7 @@ func UserReviewonOrderItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully added the review"})
 }
 
-//user - check userid by order.userid
+// user - check userid by order.userid
 func UserRatingOrderItem(c *gin.Context) {
 	//get the orderid,productid,rating
 	var Request model.UserRatingOrderItem
@@ -899,10 +869,162 @@ func UserRatingOrderItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully updated rating"})
 }
 
-
 func UpdatePaymentGatewayMethod(OrderID string, PaymentGateway string) bool {
 	if err := database.DB.Model(&model.Payment{}).Where("order_id = ?", OrderID).Update("payment_gateway", PaymentGateway).Error; err != nil {
 		return false
 	}
 	return true
+}
+
+func GetOrderInfoByOrderID(c *gin.Context) {
+	//get order id
+	var Request model.GetOrderInfoByOrderID
+	if err := c.Bind(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var Order model.Order
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
+	var OrderItems []model.OrderItem
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "Successfully retrieved OrderInformation",
+		"data": gin.H{
+			"order": Order,
+			"items": OrderItems,
+		},
+	})
+}
+
+// Function to generate PDF invoice
+func GeneratePDFInvoice(c *gin.Context, order model.Order, orderItems []model.OrderItem) error {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	// Add a page
+	pdf.AddPage()
+
+	// Set font
+	pdf.SetFont("Arial", "B", 16)
+
+	// Title
+	pdf.Cell(40, 10, "Invoice")
+
+	// Line break
+	pdf.Ln(20)
+
+	// Order Information
+	pdf.SetFont("Arial", "", 12)
+	pdf.Cell(40, 10, fmt.Sprintf("Order ID: %s", order.OrderID))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("User ID: %d", order.UserID))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Address ID: %d", order.AddressID))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Payment Method: %s", order.PaymentMethod))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Payment Status: %s", order.PaymentStatus))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Ordered At: %s", order.OrderedAt.Format(time.RFC1123)))
+	pdf.Ln(20)
+
+	// Table header
+	pdf.SetFont("Arial", "B", 12)
+	pdf.Cell(40, 10, "Product ID")
+	pdf.Cell(40, 10, "Quantity")
+	pdf.Cell(40, 10, "Amount")
+	pdf.Ln(10)
+
+	// Table body
+	pdf.SetFont("Arial", "", 12)
+	for _, item := range orderItems {
+		pdf.Cell(40, 10, fmt.Sprintf("%d", item.ProductID))
+		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
+		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Amount))
+		pdf.Ln(10)
+	}
+
+	// Total amount
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Total Amount: %.2f", order.TotalAmount))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Final Amount: %.2f", order.FinalAmount))
+
+	// Save the PDF to file
+	err := pdf.OutputFileAndClose("invoice.pdf")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Handler to get order info and generate PDF
+func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
+	var Request model.GetOrderInfoByOrderID
+	if err := c.Bind(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	var Order model.Order
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusNotFound,
+		})
+		return
+	}
+
+	var OrderItems []model.OrderItem
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Generate the PDF
+	if err := GeneratePDFInvoice(c, Order, OrderItems); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to generate PDF",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "Successfully generated PDF",
+		"data":    "invoice.pdf",
+	})
 }

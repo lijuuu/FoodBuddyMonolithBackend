@@ -138,7 +138,7 @@ func main() {
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
 
 		userRoutes.POST("/order/history", controllers.UserOrderHistory)
-		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderID)
+		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 
