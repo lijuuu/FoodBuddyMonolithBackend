@@ -59,6 +59,7 @@ func GetUserProfile(c *gin.Context) {
 			"picture":      UserProfile.Picture,
 			"login_method": UserProfile.LoginMethod,
 			"blocked":      UserProfile.Blocked,
+			"wallet":UserProfile.WalletAmount,
 		},
 	})
 }

@@ -84,6 +84,7 @@ func CreateCoupon(c *gin.Context) { //admin
 		return
 	}
 
+
 	Coupon := model.CouponInventory{
 		CouponCode:   Request.CouponCode,
 		Expiry:       Request.Expiry,
@@ -172,13 +173,6 @@ func UpdateCoupon(c *gin.Context) { //admin
 	existingCoupon.Percentage = request.Percentage
 	existingCoupon.MaximumUsage = request.MaximumUsage
 
-	if time.Now().Unix()+12*3600 > int64(request.Expiry) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  false,
-			"message": "please change the expiry time to more than a day",
-		})
-		return
-	}
 
 	if err := database.DB.Save(&existingCoupon).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -266,6 +260,16 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 			return
 		}
 
+		//check minimum amount
+		if sum < coupon.MinimumAmount {
+			errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon",coupon.MinimumAmount)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  false,
+				"message": errmsg,
+			})
+			return
+		}
+
 		// Check coupon usage
 		var usage model.CouponUsage
 		if err := database.DB.Where("user_id = ? AND coupon_code = ?", UserID, CouponCode).First(&usage).Error; err == nil {
@@ -337,7 +341,6 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 
 	if err == gorm.ErrRecordNotFound {
 		couponUsage = model.CouponUsage{
-			OrderID:    order.OrderID,
 			UserID:     UserID,
 			CouponCode: CouponCode,
 			UsageCount: 1,

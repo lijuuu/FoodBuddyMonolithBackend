@@ -151,18 +151,6 @@ type Order struct {
 	PaymentStatus  string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
 	OrderedAt      time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
-
-type Payment struct {
-	OrderID           string `validate:"required"`
-	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`
-	StripePaymentID   string `json:"stripe_payment_id" column:"stripe_payment_id"`
-	RazorpayOrderID   string `validate:"required" json:"razorpay_order_id" gorm:"column:razorpay_order_id"`
-	RazorpayPaymentID string `validate:"required" json:"razorpay_payment_id" gorm:"column:razorpay_payment_id"`
-	RazorpaySignature string `validate:"required" json:"razorpay_signature" gorm:"column:razorpay_signature"`
-	PaymentGateway    string `json:"payment_gateway" gorm:"payment_gateway"`
-	PaymentStatus     string `validate:"required" json:"payment_status" gorm:"column:payment_status"`
-}
-
 type OrderItem struct {
 	OrderID        string `validate:"required"`
 	RestaurantID   uint   `validate:"required,number" json:"restaurant_id"`
@@ -174,6 +162,16 @@ type OrderItem struct {
 	OrderReview    string
 	OrderRating    float64
 }
+type Payment struct {
+	OrderID           string `validate:"required"`
+	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`
+	StripePaymentID   string `json:"stripe_payment_id" column:"stripe_payment_id"`
+	RazorpayOrderID   string `validate:"required" json:"razorpay_order_id" gorm:"column:razorpay_order_id"`
+	RazorpayPaymentID string `validate:"required" json:"razorpay_payment_id" gorm:"column:razorpay_payment_id"`
+	RazorpaySignature string `validate:"required" json:"razorpay_signature" gorm:"column:razorpay_signature"`
+	PaymentGateway    string `json:"payment_gateway" gorm:"payment_gateway"`
+	PaymentStatus     string `validate:"required" json:"payment_status" gorm:"column:payment_status"`
+}
 
 type UserPasswordReset struct {
 	gorm.Model
@@ -183,15 +181,15 @@ type UserPasswordReset struct {
 }
 
 type CouponInventory struct {
-	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
-	Expiry       uint   `validate:"required" json:"expiry"`
-	Percentage   uint   `validate:"required" json:"percentage"`
-	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
+	CouponCode    string `validate:"required" json:"coupon_code" gorm:"primary_key"`
+	Expiry        uint   `validate:"required" json:"expiry"`
+	Percentage    uint   `validate:"required" json:"percentage"`
+	MaximumUsage  uint   `validate:"required" json:"maximum_usage"`
+	MinimumAmount float64   `validate:"required" json:"minimum_amount"`
 }
 
 type CouponUsage struct {
 	gorm.Model
-	OrderID    string `json:"order_id"`
 	UserID     uint   `json:"user_id"`
 	CouponCode string `json:"coupon_code"`
 	UsageCount uint   `json:"usage_count"`

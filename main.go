@@ -56,6 +56,21 @@ func main() {
 	router.GET("/api/v1/public/restaurants", controllers.GetRestaurants)
 	router.GET("/api/v1/public/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID)
 
+	//sales report
+		// /sales-report/overall
+		// /sales-report/product/{product_id}
+		// /sales-report/restaurant/{restaurant_id}
+		// /sales-report/mostsold
+		// /sales-report/newusercount
+		// /sales-report/restaurantstotal
+		// /sales-report/productstotal
+		// /sales-report/categoriestotal
+		// /sales-report/bestsellingproduct
+		// /sales-report/bestsellingcategory
+
+	router.GET("/api/v1/public/report/product/:productid",controllers.ProductReport)
+	router.GET("/api/v1/public/report/product/best",controllers.BestSellingProduct)
+
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
 	router.POST("/api/v1/uploadimage", utils.ImageUpload)
@@ -89,7 +104,7 @@ func main() {
 	}
 
 	// Restaurant routes with restaurant middleware
-	restaurantRoutes := router.Group("/api/v1/restaurants")
+	restaurantRoutes := router.Group("/api/v1/restaurants")  //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImRlbW9AcmVzdC5jb20iLCJleHAiOjE3MjExOTE0NjAsInJvbGUiOiJyZXN0YXVyYW50In0.74bz4--y2X42XIOU-YaxdFDZt-7FXY3EgrIy4cdPcDo
 	{
 		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)
@@ -101,7 +116,7 @@ func main() {
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //processing to delivered
 	}
 
-	userRoutes := router.Group("/api/v1/user")
+	userRoutes := router.Group("/api/v1/user") //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxpanV0aG9tYXNsaWp1MDNAZ21haWwuY29tIiwiZXhwIjoxNzIxMTkxNTc4LCJyb2xlIjoidXNlciJ9.y8Xi8kODipa0f2IDcSfMKUONB7tJi7-vyMHburtzc5Q
 	{
 
 		userRoutes.GET("/profile", controllers.GetUserProfile)
@@ -128,7 +143,7 @@ func main() {
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
-		userRoutes.GET("/order/step3/stripecallback", controllers.HandleWebhookStripe)
+		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
 		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 
 		userRoutes.POST("/order/history", controllers.UserOrderHistory)

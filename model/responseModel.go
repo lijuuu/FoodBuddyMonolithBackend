@@ -20,3 +20,11 @@ type ErrorResponse struct {
 	Status  bool        `json:"status" example:"false"`
 	Message string      `json:"message" example:"Error message"`
 }
+
+
+type ProductSales struct {
+    TotalAmount          int           `json:"total_amount"`
+    TotalOrders          int           `json:"total_orders"`
+    AvgRating            float64      `json:"avg_rating"` // Pointer to allow for NULL values
+    Quantity             int           `json:"quantity"`
+}

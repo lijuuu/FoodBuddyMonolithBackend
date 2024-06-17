@@ -166,18 +166,16 @@ func RazorPayGatewayCallback(c *gin.Context) {
 }
 
 func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order model.Order) {
-	// Set your Stripe secret key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	// Calculate the total amount in the smallest currency unit (e.g., cents for USD, paise for INR)
-	totalAmount := order.FinalAmount * 100 // Assuming FinalAmount is in the base currency unit (e.g., dollars for USD, rupees for INR)
+	totalAmount := order.FinalAmount * 100//for inr in paise, same as razorpay
 
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			&stripe.CheckoutSessionLineItemParams{
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency: stripe.String("inr"), // Assuming INR currency
+					Currency: stripe.String("inr"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
 						Name:        stripe.String(order.OrderID),
 						Description: stripe.String(order.PaymentMethod),
@@ -214,7 +212,7 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 	if err := database.DB.Create(&StripePaymentDetail).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
-			"message": "Failed to store stripe payment information",
+			"message": "failed to store stripe payment information",
 			"error":   err.Error(),
 		})
 		return
@@ -223,7 +221,7 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 	// Return the URL to the client
 	c.JSON(http.StatusSeeOther, gin.H{"url": s.URL})
 }
-func HandleWebhookStripe(c *gin.Context) {
+func StripeCallback(c *gin.Context) {
 	sessionID := c.Query("session_id")
 
 	if sessionID == "" {
@@ -234,7 +232,7 @@ func HandleWebhookStripe(c *gin.Context) {
 	// Set your Stripe secret key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	// Fetch session details from Stripe
+	//using session id get the stripe session info, payment information and its id
 	stripeSession, err := session.Get(sessionID, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -322,7 +320,6 @@ func HandleWebhookStripe(c *gin.Context) {
 			"currency":             stripeSession.Currency,
 			"customer_email":       stripeSession.CustomerDetails.Email,
 			"customer_name":        stripeSession.CustomerDetails.Name,
-			"payment_method_types": stripeSession.PaymentMethodTypes,
 			"payment_status":       stripeSession.PaymentStatus,
 			"success_url":          stripeSession.SuccessURL,
 			"cancel_url":           stripeSession.CancelURL,

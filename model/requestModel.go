@@ -126,6 +126,7 @@ type CouponInventoryRequest struct {
 	Expiry       uint   `validate:"required" json:"expiry"`
 	Percentage   uint   `validate:"required" json:"percentage"`
 	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
+	MinimumAmount uint `validate:"required" json:"minimum_amount"`
 }
 
 type ApplyCouponOnOrderRequest struct {
