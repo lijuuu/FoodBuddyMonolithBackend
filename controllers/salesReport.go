@@ -5,6 +5,7 @@ import (
 	"foodbuddy/database"
 	"foodbuddy/model"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,7 @@ func IndividualProductReport(ProductID string) model.ProductSales {
 	return report
 }
 
-func GeneratePDFInvoice(c *gin.Context, order model.Order, orderItems []model.OrderItem,address model.Address) error {
+func GeneratePDFInvoice(c *gin.Context, order model.Order, orderItems []model.OrderItem, address model.Address) error {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 
 	// Add a page
@@ -111,7 +112,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	}
 
 	var Order model.Order
-	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil{
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
@@ -121,7 +122,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	}
 
 	var OrderItems []model.OrderItem
-	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil{
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
@@ -130,7 +131,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 	var User model.User
-	if err:=database.DB.Where("id =?",Order.UserID).First(&User).Error;err!=nil{
+	if err := database.DB.Where("id =?", Order.UserID).First(&User).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get user information",
@@ -140,7 +141,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	}
 
 	var Address model.Address
-    if err:=database.DB.Where("address_id = ?",Order.AddressID).First(&Address).Error;err!=nil{
+	if err := database.DB.Where("address_id = ?", Order.AddressID).First(&Address).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get address",
@@ -149,7 +150,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 
-	if err := GeneratePDFInvoice(c, Order, OrderItems,Address); err != nil{
+	if err := GeneratePDFInvoice(c, Order, OrderItems, Address); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to generate PDF",
@@ -159,68 +160,209 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	}
 
 	response := gin.H{
-        "order_id":          Order.OrderID,
-        "discount_amount":   Order.DiscountAmount,
-        "coupon_code":       Order.CouponCode,
-        "total_amount":      Order.TotalAmount,
-        "final_amount":      Order.FinalAmount,
-        "payment_method":    Order.PaymentMethod,
-        "payment_status":    Order.PaymentStatus,
-        "Ordered_at":        Order.OrderedAt.Format(time.RFC3339),
-        
-        "address": gin.H{
-            "Address_type":  Address.AddressType,
-            "street_name":   Address.StreetName,
-            "street_number": Address.StreetNumber,
-            "city":          Address.City,
-            "state":         Address.State,
-            "postal_code":   Address.PostalCode,
-        },
-        
-        "order_item": OrderItems,
-    }
+		"order_id":        Order.OrderID,
+		"discount_amount": Order.DiscountAmount,
+		"coupon_code":     Order.CouponCode,
+		"total_amount":    Order.TotalAmount,
+		"final_amount":    Order.FinalAmount,
+		"payment_method":  Order.PaymentMethod,
+		"payment_status":  Order.PaymentStatus,
+		"Ordered_at":      Order.OrderedAt.Format(time.RFC3339),
+
+		"address": gin.H{
+			"Address_type":  Address.AddressType,
+			"street_name":   Address.StreetName,
+			"street_number": Address.StreetNumber,
+			"city":          Address.City,
+			"state":         Address.State,
+			"postal_code":   Address.PostalCode,
+		},
+
+		"order_item": OrderItems,
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "Successfully generated PDF",
-		"data":    gin.H{
-			"OrderInformation":response,
-
+		"data": gin.H{
+			"OrderInformation": response,
 		},
 	})
 }
 
+func BestSellingProducts(c *gin.Context) {
+	index := c.Query("index")
+	indexNum, _ := strconv.Atoi(index)
 
-func BestSellingProduct(c *gin.Context)  {
-	var BestProduct struct{
-		ProductID uint
-	}
-	
+	var BestProduct []model.BestProduct
+
 	tx := database.DB.Table("order_items").
-	Select("product_id, COUNT(product_id) AS product_count").
-	Group("product_id").
-	Order("product_count desc").
-	First(&BestProduct)
+		Select("product_id, COUNT(product_id) AS TotalSales").
+		Group("product_id").
+		Order("TotalSales desc").
+		Find(&BestProduct)
 
-	if tx.Error!=nil{
-	   c.JSON(http.StatusInternalServerError,gin.H{
-		"status":false,
-		"message":"failed to get best selling product",
-	   })
-	   return
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to get best selling product"})
+		return
 	}
 
-	var Product model.Product
-    if err:=database.DB.Where("id = ?",BestProduct.ProductID).First(&Product).Error;err!=nil{
- 	   c.JSON(http.StatusInternalServerError,gin.H{
-		"status":false,
-		"message":"failed to get product information",
-	   })
-	   return
+	if indexNum > len(BestProduct) || indexNum == 0 {
+		indexNum = len(BestProduct)
 	}
 
-	c.JSON(http.StatusOK,gin.H{
-		"status":true,
-		"data":Product,
-	   })
+	for i, product := range BestProduct {
+		var dbProduct model.Product
+		if err := database.DB.Where("id =?", product.ProductID).First(&dbProduct).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to find product information"})
+			return
+		}
+
+		var dbCategory model.Category
+		if err := database.DB.Where("id =?", dbProduct.CategoryID).First(&dbCategory).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to find category information"})
+			return
+		}
+
+		BestProduct[i].Name = dbProduct.Name
+		BestProduct[i].CategoryName = dbCategory.Name
+		BestProduct[i].Description = dbProduct.Description
+		BestProduct[i].ImageURL = dbProduct.ImageURL
+		BestProduct[i].Price = float64(dbProduct.Price)
+		BestProduct[i].Rating = dbProduct.AverageRating
+	}
+
+	data := BestProduct[:indexNum]
+	c.JSON(http.StatusOK, gin.H{"status": true, "data": data})
 }
+
+func PriceLowToHigh(c *gin.Context) {
+	var Products []model.Product
+
+	tx := database.DB.Table("products").Select("*").Order("price ASC").Find(&Products)
+	if tx.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get product information"})
+		return
+	}
+
+	var Response []model.ProductResponse
+	for _, product := range Products {
+		var dbCategory model.Category
+		var dbRestaurant model.Restaurant
+
+		if err := database.DB.Where("id =?", product.CategoryID).First(&dbCategory).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
+			return
+		}
+
+		if err := database.DB.Where("id =?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
+			return
+		}
+
+		Response = append(Response, model.ProductResponse{
+			ID:             product.ID,
+			RestaurantName: dbRestaurant.Name,
+			CategoryName:   dbCategory.Name,
+			Name:           product.Name,
+			Description:    product.Description,
+			ImageURL:       product.ImageURL,
+			Price:          product.Price,
+			StockLeft:      product.StockLeft,
+			AverageRating:  product.AverageRating,
+			Veg:            product.Veg,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "data": Response})
+}
+
+func PriceHighToLow(c *gin.Context) {
+	var Products []model.Product
+
+	tx := database.DB.Table("products").Select("*").Order("price ASC").Find(&Products)
+	if tx.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get product information"})
+		return
+	}
+
+	var Response []model.ProductResponse
+	for _, product := range Products {
+		var dbCategory model.Category
+		var dbRestaurant model.Restaurant
+
+		if err := database.DB.Where("id =?", product.CategoryID).First(&dbCategory).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
+			return
+		}
+
+		if err := database.DB.Where("id =?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
+			return
+		}
+
+		Response = append(Response, model.ProductResponse{
+			ID:             product.ID,
+			RestaurantName: dbRestaurant.Name,
+			CategoryName:   dbCategory.Name,
+			Name:           product.Name,
+			Description:    product.Description,
+			ImageURL:       product.ImageURL,
+			Price:          product.Price,
+			StockLeft:      product.StockLeft,
+			AverageRating:  product.AverageRating,
+			Veg:            product.Veg,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "data": Response})
+}
+
+func NewArrivals(c *gin.Context) {
+	var products []model.Product
+	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
+
+	tx := database.DB.Where("created_at >= ?", sevenDaysAgo).
+		Order("price ASC").
+		Find(&products)
+
+	if tx.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get product information",
+		})
+		return
+	}
+
+	var response []model.ProductResponse
+	for _, product := range products {
+		var dbCategory model.Category
+		var dbRestaurant model.Restaurant
+
+		if err := database.DB.Where("id = ?", product.CategoryID).First(&dbCategory).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
+			return
+		}
+
+		if err := database.DB.Where("id = ?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
+			return
+		}
+
+		response = append(response, model.ProductResponse{
+			ID:             product.ID,
+			RestaurantName: dbRestaurant.Name,
+			CategoryName:   dbCategory.Name,
+			Name:           product.Name,
+			Description:    product.Description,
+			ImageURL:       product.ImageURL,
+			Price:          product.Price,
+			StockLeft:      product.StockLeft,
+			AverageRating:  product.AverageRating,
+			Veg:            product.Veg,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
+}
+

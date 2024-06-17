@@ -98,6 +98,7 @@ type Product struct {
 	MaxStock      uint    `validate:"required,number" json:"max_stock"`
 	StockLeft     uint    `validate:"required,number" json:"stock_left"`
 	AverageRating float64 `json:"average_rating"`
+	Veg           bool    `validate:"required" json:"veg" gorm:"column:veg"`
 }
 
 type Restaurant struct {
@@ -181,11 +182,11 @@ type UserPasswordReset struct {
 }
 
 type CouponInventory struct {
-	CouponCode    string `validate:"required" json:"coupon_code" gorm:"primary_key"`
-	Expiry        uint   `validate:"required" json:"expiry"`
-	Percentage    uint   `validate:"required" json:"percentage"`
-	MaximumUsage  uint   `validate:"required" json:"maximum_usage"`
-	MinimumAmount float64   `validate:"required" json:"minimum_amount"`
+	CouponCode    string  `validate:"required" json:"coupon_code" gorm:"primary_key"`
+	Expiry        uint    `validate:"required" json:"expiry"`
+	Percentage    uint    `validate:"required" json:"percentage"`
+	MaximumUsage  uint    `validate:"required" json:"maximum_usage"`
+	MinimumAmount float64 `validate:"required" json:"minimum_amount"`
 }
 
 type CouponUsage struct {

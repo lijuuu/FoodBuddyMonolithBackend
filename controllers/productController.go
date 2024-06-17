@@ -552,3 +552,50 @@ func RestaurantIDByProductID(ProductID uint) uint {
 	}
 	return Product.RestaurantID
 }
+
+func OnlyVegProducts(c *gin.Context) {
+	var products []model.Product
+
+	tx := database.DB.Where("veg = ?", true).
+		Order("price ASC").
+		Find(&products)
+
+	if tx.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get product information",
+		})
+		return
+	}
+
+	var response []model.ProductResponse
+	for _, product := range products {
+		var dbCategory model.Category
+		var dbRestaurant model.Restaurant
+
+		if err := database.DB.Where("id = ?", product.CategoryID).First(&dbCategory).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
+			return
+		}
+
+		if err := database.DB.Where("id = ?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
+			return
+		}
+
+		response = append(response, model.ProductResponse{
+			ID:             product.ID,
+			RestaurantName: dbRestaurant.Name,
+			CategoryName:   dbCategory.Name,
+			Name:           product.Name,
+			Description:    product.Description,
+			ImageURL:       product.ImageURL,
+			Price:          product.Price,
+			StockLeft:      product.StockLeft,
+			AverageRating:  product.AverageRating,
+			Veg:            product.Veg,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
+}

@@ -14,7 +14,7 @@ type EmailLoginRequest struct {
 
 type UpdateUserInformation struct {
 	Name        string `json:"name"`
-	PhoneNumber string    `validate:"number" json:"phone_number"`
+	PhoneNumber string `validate:"number" json:"phone_number"`
 	Picture     string `json:"picture"`
 }
 
@@ -67,7 +67,7 @@ type RazorpayPayment struct {
 }
 
 type OrderHistoryRestaurants struct {
-	OrderStatus  string `json:"order_status"`
+	OrderStatus string `json:"order_status"`
 }
 
 type UserOrderHistory struct {
@@ -122,11 +122,11 @@ type UserRatingOrderItem struct {
 }
 
 type CouponInventoryRequest struct {
-	CouponCode   string `validate:"required" json:"coupon_code"`
-	Expiry       uint   `validate:"required" json:"expiry"`
-	Percentage   uint   `validate:"required" json:"percentage"`
-	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
-	MinimumAmount uint `validate:"required" json:"minimum_amount"`
+	CouponCode    string `validate:"required" json:"coupon_code"`
+	Expiry        uint   `validate:"required" json:"expiry"`
+	Percentage    uint   `validate:"required" json:"percentage"`
+	MaximumUsage  uint   `validate:"required" json:"maximum_usage"`
+	MinimumAmount uint   `validate:"required" json:"minimum_amount"`
 }
 
 type ApplyCouponOnOrderRequest struct {
@@ -167,6 +167,7 @@ type AddProductRequest struct {
 	Price        uint   `validate:"required,number" json:"price"`
 	MaxStock     uint   `validate:"required,number" json:"max_stock"`
 	StockLeft    uint   `validate:"required,number" json:"stock_left"`
+	Veg          bool   `validate:"required,number" json:"veg"`
 }
 
 type EditProductRequest struct {
@@ -179,4 +180,5 @@ type EditProductRequest struct {
 	Price        uint   `validate:"required,number" json:"price"`
 	MaxStock     uint   `validate:"required,number" json:"max_stock"`
 	StockLeft    uint   `validate:"required,number" json:"stock_left"`
+	Veg          bool   `validate:"required,number" json:"veg"`
 }

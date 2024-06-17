@@ -12,34 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type CouponInventoryRequest struct {
-	CouponCode   string `validate:"required" json:"coupon_code" gorm:"primary_key"`
-	Expiry       uint   `validate:"required" json:"expiry"`
-	Percentage   uint   `validate:"required" json:"percentage"`
-	MaximumUsage uint   `validate:"required" json:"maximum_usage"`
-}
-
-type CouponUsage struct {
-	gorm.Model
-	OrderID    uint   `json:"order_id"`
-	UserID     uint   `json:"user_id"`
-	CouponCode string `json:"coupon_code"`
-	UsageCount uint   `json:"usage_count"`
-}
-
-type Order struct {
-	OrderID        string    `validate:"required" json:"order_id"`
-	UserID         uint      `validate:"required,number" json:"user_id"`
-	AddressID      uint      `validate:"required,number" json:"address_id"`
-	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
-	CouponCode     string    `json:"coupon_code"`
-	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
-	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
-	PaymentMethod  string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
-	PaymentStatus  string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
-	OrderedAt      time.Time `gorm:"autoCreateTime" json:"ordered_at"`
-}
-
 // create coupons -admin side
 func CreateCoupon(c *gin.Context) { //admin
 	// check admin api authentication
@@ -328,6 +300,12 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 		return false, "database error"
 	}
 
+	//check minimum amount
+	if order.TotalAmount < coupon.MinimumAmount {
+		errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon",coupon.MinimumAmount)
+		return false,errmsg
+	}
+
 	discountAmount := order.TotalAmount * float64(coupon.Percentage) / 100
 	finalAmount := order.TotalAmount - discountAmount
 
@@ -358,10 +336,6 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 	return true, "coupon applied successfully"
 }
 
-//add coupon on cart
-//remove coupon on cart
-//on place order change the amount according to the coupon
-
 func CheckCouponExists(code string) bool {
 	var Coupons []model.CouponInventory
 	if err := database.DB.Find(&Coupons).Error; err != nil {
@@ -375,13 +349,3 @@ func CheckCouponExists(code string) bool {
 	}
 	return false
 }
-
-//update coupons -admin side
-//add coupon -user side on the cart side //check conditions
-//calculate and add the finalamount discount amount on the place order
-//remove coupon - user side on the cart side //check conditions
-
-//add one more payment method if possible
-//june 13 - authentication on each endpoints and add request model if possible
-//june 14 - sales report, order report etc... pdf,excel file generation
-//june 15 - fix all issues...make swagger if possible
