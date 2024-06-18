@@ -280,7 +280,7 @@ func PriceLowToHigh(c *gin.Context) {
 func PriceHighToLow(c *gin.Context) {
 	var Products []model.Product
 
-	tx := database.DB.Table("products").Select("*").Order("price ASC").Find(&Products)
+	tx := database.DB.Table("products").Select("*").Order("price DESC").Find(&Products)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get product information"})
 		return

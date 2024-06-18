@@ -767,5 +767,11 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 	}
 
 	return true, nil
+}
+
+
+func GenerateRefferalCode(c *gin.Context)  {
+	// var User model.User
+
 
 }

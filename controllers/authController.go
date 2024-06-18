@@ -254,6 +254,8 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
+	
+
 	//add the data to user struct
 	User := model.User{
 		Name:           EmailSignupRequest.Name,
@@ -730,4 +732,5 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
+
 

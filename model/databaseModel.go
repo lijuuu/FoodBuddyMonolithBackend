@@ -63,6 +63,10 @@ type User struct {
 	PhoneNumber    string `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string `gorm:"column:picture;type:text" json:"picture"`
 	WalletAmount   uint   `gorm:"column:wallet_amount;" json:"wallet_amount"`
+	ReferralCode   string `gorm:"column:referral_code" json:"referral_code"`
+	ReferredBy     string `gorm:"column:referred_by" json:"referred_by"`
+	ReferClaimed   bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
+	TotalReferrals string `gorm:"column:total_referrals" json:"total_referrals"`
 	LoginMethod    string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
 	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
 	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
@@ -79,11 +83,12 @@ type VerificationTable struct {
 
 type Category struct {
 	gorm.Model
-	ID          uint
-	Name        string    `validate:"required" json:"name"`
-	Description string    `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL    string    `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Products    []Product `gorm:"foreignKey:CategoryID"`
+	ID              uint
+	Name            string    `validate:"required" json:"name"`
+	Description     string    `gorm:"column:description" validate:"required" json:"description"`
+	ImageURL        string    `gorm:"column:image_url" validate:"required" json:"image_url"`
+	OfferPercentage uint      `gorm:"column:offer_percentage" json:"offer_percentage"`
+	Products        []Product `gorm:"foreignKey:CategoryID"`
 }
 
 type Product struct {
@@ -144,8 +149,9 @@ type Order struct {
 	OrderID        string    `validate:"required" json:"order_id"`
 	UserID         uint      `validate:"required,number" json:"user_id"`
 	AddressID      uint      `validate:"required,number" json:"address_id"`
-	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
 	CouponCode     string    `json:"coupon_code"`
+	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
+	OfferAmount    float64   `json:"offer_amount"`
 	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
 	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
 	PaymentMethod  string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`

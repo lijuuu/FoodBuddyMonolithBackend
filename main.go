@@ -57,13 +57,13 @@ func main() {
 	router.GET("/api/v1/public/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID)
 	router.GET("/api/v1/public/products/onlyveg",controllers.OnlyVegProducts)
 	router.GET("/api/v1/public/products/newarrivals",controllers.NewArrivals)
+	router.GET("/api/v1/public/product/lowtohigh",controllers.PriceLowToHigh)
+	router.GET("/api/v1/public/product/hightolow",controllers.PriceHighToLow)
+	
 
 	
 	router.GET("/api/v1/public/report/product/:productid",controllers.ProductReport)
 	router.GET("/api/v1/public/report/product/best/",controllers.BestSellingProducts)//query ?index
-	router.GET("/api/v1/public/report/product/lowtohigh",controllers.PriceLowToHigh)
-	router.GET("/api/v1/public/report/product/hightolow",controllers.PriceHighToLow)
-	
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)

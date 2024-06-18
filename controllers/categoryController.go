@@ -24,7 +24,7 @@ func GetCategoryList(c *gin.Context) { //public
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "category list is fetched successfully",
 		"data": gin.H{
@@ -245,4 +245,17 @@ func DeleteCategory(c *gin.Context) { //admin
 		"status":  true,
 		"message": "Successfully deleted category from the database",
 	})
+}
+
+func GetCategoryOfferfromProductID(ProductID uint) (bool,uint,uint) { //ok,id,offerpercentage
+	var Product model.Product
+	if err:=database.DB.Where("id = ?",ProductID).First(&Product).Error;err!=nil{
+		return false,Product.CategoryID,0
+	}
+    var Category model.Category
+	if err:=database.DB.Where("id = ?",Product.CategoryID).First(&Category).Error;err!=nil{
+		return false,Product.CategoryID,0
+	}
+
+	return true,Product.CategoryID,Category.OfferPercentage
 }
