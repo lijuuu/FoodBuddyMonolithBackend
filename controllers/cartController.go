@@ -108,7 +108,7 @@ func AddToCart(c *gin.Context) {
 			return
 		}
 	} else {
-	
+
 		if CartItem.Quantity+Request.Quantity > model.MaxUserQuantity {
 			c.JSON(http.StatusConflict, gin.H{
 				"status":     false,
@@ -151,16 +151,6 @@ func GetCartTotal(c *gin.Context) {
 		return
 	}
 	UserID, _ := UserIDfromEmail(email)
-	//bind the json
-	var Request model.AddToCartReq
-	if err := c.BindJSON(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "Failed to fetch incoming request. Please provide valid JSON data.",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
 
 	var CartItems []model.CartItems
 
@@ -183,6 +173,7 @@ func GetCartTotal(c *gin.Context) {
 	}
 	//total price of the cart
 	sum := 0
+	var ProductOffer float64
 	for _, item := range CartItems {
 		var Product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
@@ -194,14 +185,18 @@ func GetCartTotal(c *gin.Context) {
 			return
 		}
 
+		ProductOffer += Product.OfferAmount * float64(item.Quantity)
 		sum += int(Product.Price) * int(item.Quantity)
 	}
 
+	FinalAmount := sum - int(ProductOffer)
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
-			"cartitems":   CartItems,
-			"totalamount": sum,
+			"cartitems":    CartItems,
+			"productoffer": ProductOffer,
+			"totalamount":  sum,
+			"finalamount":  FinalAmount,
 		},
 		"message": "Cart items retrieved successfully",
 	})
@@ -357,25 +352,25 @@ func UpdateQuantity(c *gin.Context) {
 	})
 }
 
-func CalculateCartTotal(userID uint) (int, error) {
+func CalculateCartTotal(userID uint) (TotalAmount float64, ProductOffer float64, err error) {
 	var cartItems []model.CartItems
-	var totalAmount int
 
 	if err := database.DB.Where("user_id = ?", userID).Find(&cartItems).Error; err != nil {
-		return 0, errors.New("failed to fetch cart items")
+		return 0, 0, errors.New("failed to fetch cart items")
 	}
 
 	if len(cartItems) == 0 {
-		return 0, errors.New("your cart is empty")
+		return 0, 0, errors.New("your cart is empty")
 	}
 
 	for _, item := range cartItems {
 		var product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&product).Error; err != nil {
-			return 0, errors.New("failed to fetch product information")
+			return 0,0, errors.New("failed to fetch product information")
 		}
-		totalAmount += int(product.Price) * int(item.Quantity)
+		TotalAmount += (product.Price) * float64(item.Quantity)
+		ProductOffer += product.OfferAmount * float64(item.Quantity)
 	}
 
-	return totalAmount, nil
+	return TotalAmount, ProductOffer, nil
 }

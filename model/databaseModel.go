@@ -15,6 +15,8 @@ const (
 	AdminRole                  = "admin"
 	RestaurantRole             = "restaurant"
 	MaxUserQuantity            = 50
+	YES                        = "YES"
+	NO                         = "NO"
 
 	CashOnDelivery = "COD"
 	OnlinePayment  = "ONLINE"
@@ -99,11 +101,12 @@ type Product struct {
 	Name          string  `validate:"required" json:"name"`
 	Description   string  `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL      string  `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price         uint    `validate:"required,number" json:"price"`
+	Price         float64    `validate:"required,number" json:"price"`
 	MaxStock      uint    `validate:"required,number" json:"max_stock"`
+	OfferAmount   float64    `gorm:"column:offer_amount" json:"offer_amount"`
 	StockLeft     uint    `validate:"required,number" json:"stock_left"`
 	AverageRating float64 `json:"average_rating"`
-	Veg           bool    `validate:"required" json:"veg" gorm:"column:veg"`
+	Veg           string  `validate:"required" json:"veg" gorm:"column:veg"`
 }
 
 type Restaurant struct {
@@ -146,28 +149,30 @@ type CartItems struct {
 	CookingRequest string // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 type Order struct {
-	OrderID        string    `validate:"required" json:"order_id"`
-	UserID         uint      `validate:"required,number" json:"user_id"`
-	AddressID      uint      `validate:"required,number" json:"address_id"`
-	CouponCode     string    `json:"coupon_code"`
-	DiscountAmount float64   `validate:"required,number" json:"discount_amount"`
-	OfferAmount    float64   `json:"offer_amount"`
-	TotalAmount    float64   `validate:"required,number" json:"total_amount"`
-	FinalAmount    float64   `validate:"required,number" json:"final_amount"`
-	PaymentMethod  string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
-	PaymentStatus  string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
-	OrderedAt      time.Time `gorm:"autoCreateTime" json:"ordered_at"`
+	OrderID              string    `validate:"required" json:"order_id"`
+	UserID               uint      `validate:"required,number" json:"user_id"`
+	AddressID            uint      `validate:"required,number" json:"address_id"`
+	ItemCount            uint      `json:"item_count"`
+	CouponCode           string    `json:"coupon_code"`
+	CouponDiscountAmount float64   `validate:"required,number" json:"coupon_discount_amount"`
+	ProductOfferAmount   float64   `json:"product_offer_amount"`
+	TotalAmount          float64   `validate:"required,number" json:"total_amount"`
+	FinalAmount          float64   `validate:"required,number" json:"final_amount"`
+	PaymentMethod        string    `validate:"required" json:"payment_method" gorm:"column:payment_method"`
+	PaymentStatus        string    `validate:"required" json:"payment_status" gorm:"column:payment_status"`
+	OrderedAt            time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
 type OrderItem struct {
-	OrderID        string `validate:"required"`
-	RestaurantID   uint   `validate:"required,number" json:"restaurant_id"`
-	ProductID      uint   ` validate:"required,number" json:"product_id"`
-	Quantity       uint   ` validate:"required,number" json:"quantity"`
-	Amount         uint   ` validate:"required,number" json:"amount"`
-	CookingRequest string
-	OrderStatus    string `json:"order_status" gorm:"column:order_status"`
-	OrderReview    string
-	OrderRating    float64
+	OrderID            string  `validate:"required"`
+	RestaurantID       uint    `validate:"required,number" json:"restaurant_id"`
+	ProductID          uint    ` validate:"required,number" json:"product_id"`
+	Quantity           uint    ` validate:"required,number" json:"quantity"`
+	Amount             float64    ` validate:"required,number" json:"amount"`
+	ProductOfferAmount float64 `json:"product_offer_amount"`
+	CookingRequest     string
+	OrderStatus        string `json:"order_status" gorm:"column:order_status"`
+	OrderReview        string
+	OrderRating        float64
 }
 type Payment struct {
 	OrderID           string `validate:"required"`

@@ -71,14 +71,14 @@ func AddProduct(c *gin.Context) {
 
 	//check restaurant api authentication
 	email, role, err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
+	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized request",
 		})
 		return
 	}
-	RestaurantID, ok := RestIDfromEmail(email)
+	JWTRestaurantID, ok := RestIDfromEmail(email)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
@@ -108,9 +108,28 @@ func AddProduct(c *gin.Context) {
 		return
 	}
 
+	if Request.Veg != model.YES && Request.Veg != model.NO{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+
+	if Request.Price < Request.OfferAmount{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "offer amount should not be more than the product price",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
 	// Check if the restaurant ID is correct and present in the database
 	var restaurant model.Restaurant
-	if err := database.DB.First(&restaurant, Request.RestaurantID).Error; err != nil {
+	if err := database.DB.First(&restaurant, JWTRestaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "restaurant not found",
@@ -132,7 +151,7 @@ func AddProduct(c *gin.Context) {
 
 	// Check if the product name already exists within the same restaurant
 	var existingProduct model.Product
-	if err := database.DB.Where("name =? AND restaurant_id =? AND deleted_at IS NULL", Request.Name, Request.RestaurantID).First(&existingProduct).Error; err == nil {
+	if err := database.DB.Where("name =? AND restaurant_id =? AND deleted_at IS NULL", Request.Name, JWTRestaurantID).First(&existingProduct).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "product with the same name already exists in this restaurant",
@@ -140,10 +159,18 @@ func AddProduct(c *gin.Context) {
 		})
 		return
 	}
+	existingProduct = model.Product{
+        RestaurantID: JWTRestaurantID,
+        CategoryID:   Request.CategoryID,
+        Name:         Request.Name,
+        Description:  Request.Description,
+        ImageURL:     Request.ImageURL,
+        Price:        Request.Price,
+        MaxStock:     Request.MaxStock,
+        StockLeft:    Request.StockLeft,
+    }
 
-	// Proceed with adding the product if all checks pass
-	Request.RestaurantID = RestaurantID
-	if err := database.DB.Create(&Request).Error; err != nil {
+	if err := database.DB.Create(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to create product",
@@ -204,12 +231,13 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 
+
 	//check jwt rest id and product rest id
-	Request.RestaurantID = RestaurantIDByProductID(Request.ProductID)
-	if JWTRestaurantID != Request.RestaurantID {
+	pRestID := RestaurantIDByProductID(Request.ProductID)
+	if JWTRestaurantID != pRestID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
-			"message": "unauthorized request",
+			"message": "unauthorized request, product is not yours",
 		})
 		return
 	}
@@ -225,28 +253,34 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 
-	//check if the restaurant id exists
-	var restaurant model.Restaurant
-	if err := database.DB.First(&restaurant, Request.RestaurantID).Error; err != nil {
+	if Request.Veg != model.YES && Request.Veg != model.NO{
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "restaurant doesn't exist",
+			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
 			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
-	// Check if the category is present
-	var category model.Category
-	if err := database.DB.First(&category, Request.CategoryID).Error; err != nil {
+
+	if Request.Price < Request.OfferAmount{
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "category doesn't exist",
+			"message":    "offer amount should not be more than the product price",
 			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
+
+	existingProduct.Name = Request.Name
+	existingProduct.Description = Request.Description
+	existingProduct.ImageURL = Request.ImageURL
+	existingProduct.Price = Request.Price
+	existingProduct.MaxStock = Request.MaxStock
+	existingProduct.StockLeft = Request.StockLeft
+	existingProduct.Veg = Request.Veg
+
 	// Update product details
-	if err := database.DB.Updates(&Request).Error; err != nil {
+	if err := database.DB.Where("id = ?",Request.ProductID).Updates(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update product",
@@ -556,7 +590,7 @@ func RestaurantIDByProductID(ProductID uint) uint {
 func OnlyVegProducts(c *gin.Context) {
 	var products []model.Product
 
-	tx := database.DB.Where("veg = ?", true).
+	tx := database.DB.Where("veg = ?", model.YES).
 		Order("price ASC").
 		Find(&products)
 
@@ -598,4 +632,147 @@ func OnlyVegProducts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
+}
+
+func AddProductOffer(c *gin.Context) {
+    var request model.AddOfferRequest
+
+    if err := c.ShouldBindJSON(&request); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "status":  false,
+            "message": "Invalid request body: ",
+        })
+        return
+    }
+
+    email, role, err := utils.GetJWTClaim(c)
+    if role != model.RestaurantRole || err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "status":  false,
+            "message": "unauthorized request",
+        })
+        return
+    }
+
+    pRestID := RestaurantIDByProductID(request.ProductID)
+    RestID, _ := RestIDfromEmail(email)
+    if pRestID != RestID {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "status":  false,
+            "message": "StatusUnauthorized",
+        })
+        return
+    }
+
+    exist, Product := CheckProduct(int(request.ProductID))
+    if !exist {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":  false,
+            "message": "failed to find the product",
+        })
+        return
+    }
+
+    Product.OfferAmount = request.OfferAmount
+    if err := database.DB.Model(&Product).Where("id = ?", request.ProductID).Update("offer_amount", request.OfferAmount).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "status":  false,
+            "message": "failed to add the offer amount",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  true,
+        "message": "successfully added the offer amount",
+        "data":    Product,
+    })
+}
+
+
+
+func RemoveProductOffer(c *gin.Context) {
+
+	ProductID, err := strconv.Atoi(c.Param("productid"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ProductID",
+		})
+		return
+	}
+
+	//check restaurant api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.RestaurantRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	pRestID := RestaurantIDByProductID(uint(ProductID))
+	RestID,_ := RestIDfromEmail(email)
+	if pRestID != RestID{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "StatusUnauthorized",
+		})
+		return
+	}
+
+	exist, Product := CheckProduct(ProductID)
+	if !exist {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to find the product",
+		})
+		return
+	}
+
+	Product.OfferAmount = 0
+	if err := database.DB.Model(&Product).Where("id = ?", ProductID).Update("offer_amount",0).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to remove the offer amount",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully removed the offer amount",
+		"data":    Product,
+	})
+
+}
+
+func CheckProduct(ProductID int) (bool, model.Product) {
+	var Product model.Product
+
+	if err := database.DB.Where("id = ?", ProductID).First(&Product).Error; err != nil {
+		return false, model.Product{}
+	}
+
+	return true, Product
+
+}
+
+
+func GetProductOffers(c *gin.Context){
+	//get products with more than 0 in offer_amount
+	var Products []model.Product
+
+	if err:=database.DB.Where("offer_amount > ?",0).Find(&Products).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{
+			"status":false,"message":"failed to get product details",
+		})
+
+		return
+	}
+
+
+	c.JSON(http.StatusOK,gin.H{
+		"status":true,"data":Products,
+	})
 }

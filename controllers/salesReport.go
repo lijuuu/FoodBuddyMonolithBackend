@@ -13,8 +13,14 @@ import (
 )
 
 func ProductReport(c *gin.Context) {
-	ProductID := c.Param("productid")
-	report := IndividualProductReport(ProductID)
+	productID, err := strconv.Atoi(c.Param("productid"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ProductID",
+		})
+		return
+	}
+	report := IndividualProductReport(strconv.Itoa(productID))
 	c.JSON(http.StatusOK, gin.H{
 		"data": report,
 	})
@@ -161,7 +167,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 
 	response := gin.H{
 		"order_id":        Order.OrderID,
-		"discount_amount": Order.DiscountAmount,
+		"discount_amount": Order.CouponDiscountAmount,
 		"coupon_code":     Order.CouponCode,
 		"total_amount":    Order.TotalAmount,
 		"final_amount":    Order.FinalAmount,
@@ -267,7 +273,7 @@ func PriceLowToHigh(c *gin.Context) {
 			Name:           product.Name,
 			Description:    product.Description,
 			ImageURL:       product.ImageURL,
-			Price:          product.Price,
+			Price:         (product.Price),
 			StockLeft:      product.StockLeft,
 			AverageRating:  product.AverageRating,
 			Veg:            product.Veg,
@@ -308,7 +314,7 @@ func PriceHighToLow(c *gin.Context) {
 			Name:           product.Name,
 			Description:    product.Description,
 			ImageURL:       product.ImageURL,
-			Price:          product.Price,
+			Price:          (product.Price),
 			StockLeft:      product.StockLeft,
 			AverageRating:  product.AverageRating,
 			Veg:            product.Veg,
@@ -356,7 +362,7 @@ func NewArrivals(c *gin.Context) {
 			Name:           product.Name,
 			Description:    product.Description,
 			ImageURL:       product.ImageURL,
-			Price:          product.Price,
+			Price:          (product.Price),
 			StockLeft:      product.StockLeft,
 			AverageRating:  product.AverageRating,
 			Veg:            product.Veg,

@@ -56,7 +56,6 @@ func CreateCoupon(c *gin.Context) { //admin
 		return
 	}
 
-
 	Coupon := model.CouponInventory{
 		CouponCode:   Request.CouponCode,
 		Expiry:       Request.Expiry,
@@ -145,7 +144,6 @@ func UpdateCoupon(c *gin.Context) { //admin
 	existingCoupon.Percentage = request.Percentage
 	existingCoupon.MaximumUsage = request.MaximumUsage
 
-
 	if err := database.DB.Save(&existingCoupon).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
@@ -170,7 +168,7 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 		})
 		return
 	}
-	UserID,_ := UserIDfromEmail(email)
+	UserID, _ := UserIDfromEmail(email)
 	CouponCode := c.Param("couponcode")
 
 	var CartItems []model.CartItems
@@ -194,7 +192,7 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 	}
 
 	// Total price of the cart
-	var sum float64
+	var sum, ProductOfferAmount float64
 	for _, item := range CartItems {
 		var Product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
@@ -206,12 +204,13 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 			return
 		}
 
-		sum += float64((Product.Price) * (item.Quantity))
+		ProductOfferAmount += float64(Product.OfferAmount)  * float64((item.Quantity))
+		sum += ((Product.Price) * float64(item.Quantity))
 	}
 
 	// Apply coupon if provided
-	var discount float64
-	var Percentage, finalamount float64
+	var CouponDiscount float64
+	var FinalAmount float64
 	if CouponCode != "" {
 		var coupon model.CouponInventory
 		if err := database.DB.Where("coupon_code = ?", CouponCode).First(&coupon).Error; err != nil {
@@ -234,7 +233,7 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 
 		//check minimum amount
 		if sum < coupon.MinimumAmount {
-			errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon",coupon.MinimumAmount)
+			errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon", coupon.MinimumAmount)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status":  false,
 				"message": errmsg,
@@ -255,19 +254,18 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 		}
 
 		// Calculate discount
-		Percentage = float64(coupon.Percentage)
-		discount = float64(sum) * (float64(coupon.Percentage) / 100.0)
-		finalamount = sum - (discount)
+		CouponDiscount = float64(sum) * (float64(coupon.Percentage) / 100.0)
+		FinalAmount = sum - (CouponDiscount + ProductOfferAmount)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
-			"cartitems":          CartItems,
-			"totalamount":        sum,
-			"discountpercentage": Percentage,
-			"discount":           discount,
-			"finalamount":        finalamount,
+			"CartItems":            CartItems,
+			"TotalAmount":          sum,
+			"CouponDiscount":       CouponDiscount,
+			"ProductOfferDiscount": ProductOfferAmount,
+			"FinalAmount":          FinalAmount,
 		},
 		"message": "Cart items retrieved successfully",
 	})
@@ -302,15 +300,15 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 
 	//check minimum amount
 	if order.TotalAmount < coupon.MinimumAmount {
-		errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon",coupon.MinimumAmount)
-		return false,errmsg
+		errmsg := fmt.Sprintf("minimum of %v is needed for using this coupon", coupon.MinimumAmount)
+		return false, errmsg
 	}
 
 	discountAmount := order.TotalAmount * float64(coupon.Percentage) / 100
-	finalAmount := order.TotalAmount - discountAmount
+	finalAmount := order.TotalAmount - (discountAmount + order.ProductOfferAmount)
 
 	order.CouponCode = CouponCode
-	order.DiscountAmount = discountAmount
+	order.CouponDiscountAmount = discountAmount
 	order.FinalAmount = finalAmount
 
 	if err := database.DB.Where("order_id = ?", order.OrderID).Updates(&order).Error; err != nil {

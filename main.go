@@ -59,7 +59,7 @@ func main() {
 	router.GET("/api/v1/public/products/newarrivals",controllers.NewArrivals)
 	router.GET("/api/v1/public/product/lowtohigh",controllers.PriceLowToHigh)
 	router.GET("/api/v1/public/product/hightolow",controllers.PriceHighToLow)
-	
+	router.GET("/api/v1/public/product/offerproducts",controllers.GetProductOffers)
 
 	
 	router.GET("/api/v1/public/report/product/:productid",controllers.ProductReport)
@@ -108,6 +108,10 @@ func main() {
 		//order history
 		restaurantRoutes.POST("/order/history/", controllers.OrderHistoryRestaurants)
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //processing to delivered
+
+		//offer 
+		restaurantRoutes.PATCH("/product/offer/add",controllers.AddProductOffer)
+		restaurantRoutes.PATCH("/product/offer/remove/:productid",controllers.RemoveProductOffer)
 	}
 
 	userRoutes := router.Group("/api/v1/user") //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxpanV0aG9tYXNsaWp1MDNAZ21haWwuY29tIiwiZXhwIjoxNzIxMTkxNTc4LCJyb2xlIjoidXNlciJ9.y8Xi8kODipa0f2IDcSfMKUONB7tJi7-vyMHburtzc5Q

@@ -46,8 +46,8 @@ type ProductResponse struct {
 	Name           string  `json:"product_name"`
 	Description    string  `json:"description"`
 	ImageURL       string  `json:"image_url"`
-	Price          uint    `json:"price"`
+	Price          float64    `json:"price"`
 	StockLeft      uint    `json:"stock_left"`
 	AverageRating  float64 `json:"average_rating"`
-	Veg            bool    `json:"veg"`
+	Veg            string    `json:"veg"`
 }
