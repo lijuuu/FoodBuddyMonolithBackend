@@ -502,10 +502,11 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		return
 	}
 
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
-			"paymentdata": "ok",
+			"payment": OrderID + " Status : Payment Confirmed, Payment Method :"+model.Wallet,
 		},
 	})
 }
