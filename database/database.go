@@ -47,5 +47,6 @@ func AutoMigrate() {
 	DB.AutoMigrate(&model.CouponUsage{})
 	DB.AutoMigrate(&model.UserWalletHistory{})
 	DB.AutoMigrate(&model.RestaurantWalletHistory{})
+	DB.AutoMigrate(&model.UserReferralHistory{})
 
 }

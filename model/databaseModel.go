@@ -69,14 +69,18 @@ type User struct {
 	PhoneNumber    string  `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string  `gorm:"column:picture;type:text" json:"picture"`
 	WalletAmount   float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
-	ReferralCode   string  `gorm:"column:referral_code" json:"referral_code"`
-	ReferredBy     string  `gorm:"column:referred_by" json:"referred_by"`
-	ReferClaimed   bool    `gorm:"column:refer_claimed" json:"refer_claimed"`
-	TotalReferrals string  `gorm:"column:total_referrals" json:"total_referrals"`
 	LoginMethod    string  `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
 	Blocked        bool    `gorm:"column:blocked;type:bool" json:"blocked"`
 	Salt           string  `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
 	HashedPassword string  `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
+}
+
+type UserReferralHistory struct {
+	UserID         uint   `gorm:"column:user_id" json:"user_id"`
+	ReferralCode   string `gorm:"column:referral_code" json:"referral_code"`
+	ReferredBy     string `gorm:"column:referred_by" json:"referred_by"`
+	ReferClaimed   bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
+	TotalReferrals string `gorm:"column:total_referrals" json:"total_referrals"`
 }
 
 type VerificationTable struct {
@@ -225,7 +229,7 @@ type RestaurantWalletHistory struct {
 	TransactionTime time.Time `gorm:"autoCreateTime"`
 	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
 	OrderID         string    `gorm:"column:order_id" json:"order_id"`
-	RestaurantID    uint    `gorm:"column:restaurant_id" json:"restaurant_id"`
+	RestaurantID    uint      `gorm:"column:restaurant_id" json:"restaurant_id"`
 	Amount          float64   `gorm:"column:amount" json:"amount"`
 	CurrentBalance  float64   `gorm:"column:current_balance" json:"current_balance"`
 	Reason          string    `gorm:"column:reason" json:"reason"`
