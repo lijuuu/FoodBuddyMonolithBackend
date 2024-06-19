@@ -119,6 +119,7 @@ func main() {
 
 		userRoutes.GET("/profile", controllers.GetUserProfile)
 		userRoutes.POST("/edit", controllers.UpdateUserInformation)
+		userRoutes.GET("/wallet/balance",controllers.UserWalletBalance)
 
 		//favourite product by usedid
 		userRoutes.GET("/favorites/all", controllers.GetUsersFavouriteProduct)

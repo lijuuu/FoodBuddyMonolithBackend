@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
+	"foodbuddy/utils"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/razorpay/razorpay-go"
@@ -168,7 +170,7 @@ func RazorPayGatewayCallback(c *gin.Context) {
 func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order model.Order) {
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	totalAmount := order.FinalAmount * 100//for inr in paise, same as razorpay
+	totalAmount := order.FinalAmount * 100 //for inr in paise, same as razorpay
 
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
@@ -313,21 +315,21 @@ func StripeCallback(c *gin.Context) {
 		"message": "Payment complete",
 		"status":  "complete",
 		"stripe": gin.H{
-			"payment_id":           stripeSession.PaymentIntent.ID,
-			"amount_subtotal":      stripeSession.AmountSubtotal,
-			"amount_total":         stripeSession.AmountTotal,
-			"payment_mode":         stripeSession.PaymentMethodTypes,
-			"currency":             stripeSession.Currency,
-			"customer_email":       stripeSession.CustomerDetails.Email,
-			"customer_name":        stripeSession.CustomerDetails.Name,
-			"payment_status":       stripeSession.PaymentStatus,
-			"success_url":          stripeSession.SuccessURL,
-			"cancel_url":           stripeSession.CancelURL,
-			"created":              stripeSession.Created,
-			"expires_at":           stripeSession.ExpiresAt,
-			"id":                   stripeSession.ID,
-			"mode":                 stripeSession.Mode,
-			"order_id":             stripeSession.Metadata["order_id"],
+			"payment_id":      stripeSession.PaymentIntent.ID,
+			"amount_subtotal": stripeSession.AmountSubtotal,
+			"amount_total":    stripeSession.AmountTotal,
+			"payment_mode":    stripeSession.PaymentMethodTypes,
+			"currency":        stripeSession.Currency,
+			"customer_email":  stripeSession.CustomerDetails.Email,
+			"customer_name":   stripeSession.CustomerDetails.Name,
+			"payment_status":  stripeSession.PaymentStatus,
+			"success_url":     stripeSession.SuccessURL,
+			"cancel_url":      stripeSession.CancelURL,
+			"created":         stripeSession.Created,
+			"expires_at":      stripeSession.ExpiresAt,
+			"id":              stripeSession.ID,
+			"mode":            stripeSession.Mode,
+			"order_id":        stripeSession.Metadata["order_id"],
 		},
 	}
 
@@ -359,6 +361,158 @@ func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
 	var PaymentDetails model.Payment
 	PaymentDetails.PaymentStatus = model.OnlinePaymentFailed
 	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
+		return false
+	}
+	return true
+}
+
+func UserWalletBalance(c *gin.Context) {
+	//check user api authentication
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+
+	var User model.User
+	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": false, "message": "failed to get wallet balance",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true, "data": gin.H{"wallet_balance": User.WalletAmount},
+	})
+
+}
+
+
+func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
+	// Verify if user has sufficient wallet balance
+	var user model.User
+	if err := database.DB.Where("id = ?", UserID).First(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch user details",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	var order model.Order
+	if err := database.DB.Where("order_id = ?", OrderID).First(&order).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to fetch order information",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	if float64(user.WalletAmount) < order.FinalAmount {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusPaymentRequired, gin.H{
+			"status":     false,
+			"message":    "insufficient wallet balance",
+			"error_code": http.StatusPaymentRequired,
+		})
+		return
+	}
+
+	// Deduct amount from user wallet
+	newBalance := float64(user.WalletAmount) - order.FinalAmount
+	if err := database.DB.Model(&user).Update("wallet_amount", newBalance).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to deduct wallet balance",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Record the wallet transaction
+	walletHistory := model.UserWalletHistory{
+		TransactionTime: time.Now(),
+		Type:            model.WalletOutgoing,
+		Amount:          order.FinalAmount,
+	    CurrentBalance: newBalance,
+		OrderID: OrderID,
+		Reason:          "Order Payment",
+	}
+
+	if err := database.DB.Create(&walletHistory).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to record wallet transaction",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Update payment status
+	PaymentDetails := model.Payment{
+		OrderID:        OrderID,
+		PaymentStatus:  model.OnlinePaymentConfirmed,
+		PaymentGateway: model.Wallet,
+	}
+	if err := database.DB.Model(&model.Payment{}).Where("order_id = ?", OrderID).Updates(&PaymentDetails).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to update payment information",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	if err := database.DB.Model(&order).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentConfirmed).Error; err != nil {
+		PaymentFailedOrderTable(OrderID)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":     false,
+			"message":    "failed to update payment status",
+			"error_code": http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Decrement stock based on order ID
+	if !DecrementStock(OrderID) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to decrement order stock",
+		})
+		return
+	}
+
+	// Split payment for each restaurant
+	if !SplitMoneyToRestaurants(OrderID) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to split payment for restaurants",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data": gin.H{
+			"paymentdata": "ok",
+		},
+	})
+}
+
+
+func CreateRestaurantWalletHistory(r model.RestaurantWalletHistory) bool  {
+	if err:=database.DB.Create(&r).Error;err!=nil{
 		return false
 	}
 	return true

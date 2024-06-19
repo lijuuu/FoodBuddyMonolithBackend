@@ -23,6 +23,10 @@ const (
 
 	Razorpay = "RAZORPAY"
 	Stripe   = "STRIPE"
+	Wallet   = "WALLET"
+
+	WalletIncoming = "INCOMING"
+	WalletOutgoing = "OUTGOING"
 
 	OnlinePaymentPending   = "ONLINE_PENDING"
 	OnlinePaymentConfirmed = "ONLINE_CONFIRMED"
@@ -59,20 +63,20 @@ type Admin struct {
 
 type User struct {
 	gorm.Model
-	ID             uint   `validate:"required"`
-	Name           string `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
-	Email          string `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber    string `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
-	Picture        string `gorm:"column:picture;type:text" json:"picture"`
-	WalletAmount   uint   `gorm:"column:wallet_amount;" json:"wallet_amount"`
-	ReferralCode   string `gorm:"column:referral_code" json:"referral_code"`
-	ReferredBy     string `gorm:"column:referred_by" json:"referred_by"`
-	ReferClaimed   bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
-	TotalReferrals string `gorm:"column:total_referrals" json:"total_referrals"`
-	LoginMethod    string `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
-	Blocked        bool   `gorm:"column:blocked;type:bool" json:"blocked"`
-	Salt           string `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
-	HashedPassword string `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
+	ID             uint    `validate:"required"`
+	Name           string  `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
+	Email          string  `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
+	PhoneNumber    string  `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	Picture        string  `gorm:"column:picture;type:text" json:"picture"`
+	WalletAmount   float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
+	ReferralCode   string  `gorm:"column:referral_code" json:"referral_code"`
+	ReferredBy     string  `gorm:"column:referred_by" json:"referred_by"`
+	ReferClaimed   bool    `gorm:"column:refer_claimed" json:"refer_claimed"`
+	TotalReferrals string  `gorm:"column:total_referrals" json:"total_referrals"`
+	LoginMethod    string  `gorm:"column:login_method;type:varchar(255)" validate:"required" json:"login_method"`
+	Blocked        bool    `gorm:"column:blocked;type:bool" json:"blocked"`
+	Salt           string  `gorm:"column:salt;type:varchar(255)" validate:"required" json:"salt"`
+	HashedPassword string  `gorm:"column:hashed_password;type:varchar(255)" validate:"required,min=8" json:"hashed_password"`
 }
 
 type VerificationTable struct {
@@ -101,9 +105,9 @@ type Product struct {
 	Name          string  `validate:"required" json:"name"`
 	Description   string  `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL      string  `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price         float64    `validate:"required,number" json:"price"`
+	Price         float64 `validate:"required,number" json:"price"`
 	MaxStock      uint    `validate:"required,number" json:"max_stock"`
-	OfferAmount   float64    `gorm:"column:offer_amount" json:"offer_amount"`
+	OfferAmount   float64 `gorm:"column:offer_amount" json:"offer_amount"`
 	StockLeft     uint    `validate:"required,number" json:"stock_left"`
 	AverageRating float64 `json:"average_rating"`
 	Veg           string  `validate:"required" json:"veg" gorm:"column:veg"`
@@ -117,9 +121,9 @@ type Restaurant struct {
 	Address            string
 	Email              string
 	PhoneNumber        string
-	WalletAmount       int    `gorm:"column:wallet_amount;" json:"wallet_amount"`
-	ImageURL           string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	CertificateURL     string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
+	WalletAmount       float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
+	ImageURL           string  `gorm:"column:image_url" validate:"required" json:"image_url"`
+	CertificateURL     string  `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
 	VerificationStatus string
 	Blocked            bool
 	Salt               string
@@ -167,8 +171,9 @@ type OrderItem struct {
 	RestaurantID       uint    `validate:"required,number" json:"restaurant_id"`
 	ProductID          uint    ` validate:"required,number" json:"product_id"`
 	Quantity           uint    ` validate:"required,number" json:"quantity"`
-	Amount             float64    ` validate:"required,number" json:"amount"`
+	Amount             float64 ` validate:"required,number" json:"amount"`
 	ProductOfferAmount float64 `json:"product_offer_amount"`
+	AfterDeduction     float64 `gorm:"column:after_deduction" json:"after_deduction"`
 	CookingRequest     string
 	OrderStatus        string `json:"order_status" gorm:"column:order_status"`
 	OrderReview        string
@@ -205,4 +210,23 @@ type CouponUsage struct {
 	UserID     uint   `json:"user_id"`
 	CouponCode string `json:"coupon_code"`
 	UsageCount uint   `json:"usage_count"`
+}
+
+type UserWalletHistory struct {
+	TransactionTime time.Time `gorm:"autoCreateTime"`
+	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
+	OrderID         string    `gorm:"column:order_id" json:"order_id"`
+	Amount          float64   `gorm:"column:amount" json:"amount"`
+	CurrentBalance  float64   `gorm:"column:current_balance" json:"current_balance"`
+	Reason          string    `gorm:"column:reason" json:"reason"`
+}
+
+type RestaurantWalletHistory struct {
+	TransactionTime time.Time `gorm:"autoCreateTime"`
+	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
+	OrderID         string    `gorm:"column:order_id" json:"order_id"`
+	RestaurantID    uint    `gorm:"column:restaurant_id" json:"restaurant_id"`
+	Amount          float64   `gorm:"column:amount" json:"amount"`
+	CurrentBalance  float64   `gorm:"column:current_balance" json:"current_balance"`
+	Reason          string    `gorm:"column:reason" json:"reason"`
 }
