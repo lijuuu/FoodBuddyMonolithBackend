@@ -14,18 +14,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
-func UserIDfromEmail(Email string)(ID uint,ok bool){
+
+func UserIDfromEmail(Email string) (ID uint, ok bool) {
 	var User model.User
-	if err:=database.DB.Where("email = ?",Email).First(&User).Error;err!=nil{
-		return User.ID,false
+	if err := database.DB.Where("email = ?", Email).First(&User).Error; err != nil {
+		return User.ID, false
 	}
-	return User.ID,true
+	return User.ID, true
 }
 
 func GetUserProfile(c *gin.Context) {
 
-   //check user api authentication
+	//check user api authentication
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -59,7 +61,7 @@ func GetUserProfile(c *gin.Context) {
 			"picture":      UserProfile.Picture,
 			"login_method": UserProfile.LoginMethod,
 			"blocked":      UserProfile.Blocked,
-			"wallet":UserProfile.WalletAmount,
+			"wallet":       UserProfile.WalletAmount,
 		},
 	})
 }
@@ -68,11 +70,11 @@ func GetUserList(c *gin.Context) {
 	var users []model.User
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -100,11 +102,11 @@ func GetBlockedUserList(c *gin.Context) {
 	var blockedUsers []model.User
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -142,11 +144,11 @@ func BlockUser(c *gin.Context) {
 	var user model.User
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -204,11 +206,11 @@ func UnblockUser(c *gin.Context) {
 	var user model.User
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := utils.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -293,7 +295,6 @@ func AddUserAddress(c *gin.Context) {
 		})
 		return
 	}
-
 
 	//to make sure the addressid is autoincremented by the gorm
 	UserAddress.AddressID = 0
@@ -527,7 +528,7 @@ func DeleteUserAddress(c *gin.Context) {
 		})
 		return
 	}
-    AddressInfo.UserID = UserID
+	AddressInfo.UserID = UserID
 	//check the userid and addressid
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
@@ -769,8 +770,235 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 	return true, nil
 }
 
+func GetRefferalCode(c *gin.Context) {
 
-func GenerateRefferalCode(c *gin.Context)  {
-	// var User model.User
+	email, role, _ := utils.GetJWTClaim(c)
+	if role != model.UserRole {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 
+	var User model.User
+	if err := database.DB.Where("email = ?", email).First(&User).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get user information",
+		})
+		return
+	}
+
+	if User.ReferralCode != "" {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  true,
+			"message": "referral code : " + User.ReferralCode,
+		})
+		return
+	}
+
+	refCode := utils.GenerateRandomString(5)
+
+	if err := database.DB.Model(&User).Where("email = ?", email).Update("referral_code", refCode).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to generate referral code",
+		})
+		return
+	}
+
+	if !CreateReferralEntry(User.ID) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to save referral history",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "referral code : " + refCode,
+	})
+
+}
+
+func ActivateReferral(c *gin.Context) {
+	RefCode := c.Query("referralcode")
+	email, role, _ := utils.GetJWTClaim(c)
+	if role!= model.UserRole {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	var User model.User
+	if err := database.DB.Where("email =?", email).First(&User).Error; err!= nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get user information",
+		})
+		return
+	}
+
+	fmt.Println(User)
+
+	var UserReferralHistory model.UserReferralHistory
+	if err := database.DB.Where("referral_code =?", User.ReferralCode).First(&UserReferralHistory).Error; err!= nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get user referral information",
+		})
+		return
+	}
+
+	fmt.Println(UserReferralHistory)
+
+	if UserReferralHistory.ReferredBy!= ""  {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "user already been referred",
+		})
+		return
+	}
+
+	if UserReferralHistory.ReferredBy!= RefCode{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "user's cannot refer each other",
+		})
+		return
+	}
+	
+	if RefCode == User.ReferralCode {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"status":  false,
+			"message": "usage of same referral code restricted",
+		})
+		return
+	}
+
+	if err := database.DB.Where("referral_code =?", User.ReferralCode).First(&UserReferralHistory).Update("referred_by", RefCode).Error; err!= nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to update user referral information",
+		})
+		return
+	}
+
+	if err := database.DB.Model(&UserReferralHistory).Where("referral_code = ?",RefCode).UpdateColumn("total_referrals",gorm.Expr("total_referrals + ?", 1)).Error; err!= nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to increment total referrals",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully finished refer process",
+	})
+}
+
+func CreateReferralEntry(UserID uint) bool {
+	var User model.User
+	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
+		return false
+	}
+	RefHistory := model.UserReferralHistory{
+		UserID:       UserID,
+		ReferralCode: User.ReferralCode,
+	}
+	if err := database.DB.Where("user_id = ?", UserID).Save(&RefHistory).Error; err != nil {
+		return false
+	}
+	return true
+}
+
+
+func ClaimReferralRewards(c *gin.Context)  {
+	email, role, _ := utils.GetJWTClaim(c)
+	if role!= model.UserRole {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	var User model.User
+	if err := database.DB.Where("email =?", email).First(&User).Error; err!= nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get user information",
+		})
+		return
+	}
+
+	var ClaimableReferrals []model.UserReferralHistory
+
+	if err := database.DB.Where("referred_by = ? AND refer_claimed = ?",User.ReferralCode,false).Find(&ClaimableReferrals).Error;err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to get user refer history",
+		})
+		return
+	}
+
+
+	PossibleClaimCount := len(ClaimableReferrals)
+
+	if PossibleClaimCount < 1 {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"status":  false,
+			"message": "need a minimum of 3 referrals to claim reward",
+		})
+		return
+	}
+
+	fmt.Println(User)
+
+	if err := database.DB.Model(&model.UserReferralHistory{}).Where("referred_by =? AND refer_claimed =?", User.ReferralCode, false).Update("refer_claimed", 1).Error; err!= nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to update user refer history",
+		})
+		return
+	}
+	
+
+	PossibleClaimAmount := PossibleClaimCount * model.ReferralClaimAmount
+
+	UserWalletHistory :=  model.UserWalletHistory{
+		TransactionTime: time.Now(),
+		UserID: User.ID,
+		Type: model.WalletIncoming,
+		Amount: float64(PossibleClaimAmount),
+		CurrentBalance: float64(PossibleClaimAmount) + User.WalletAmount,
+		Reason: "Referral Claim amount,Total Claims : ",
+	}
+
+	User.WalletAmount += float64(PossibleClaimAmount)
+	if err :=database.DB.Updates(&User).Error;err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to update user",
+		})
+		return
+	}
+	
+	if err:=database.DB.Create(&UserWalletHistory).Error;err!=nil{
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to  create user refer history",
+		})
+       return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully updated user refer history",
+	})
 }

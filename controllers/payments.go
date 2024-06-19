@@ -441,6 +441,7 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 	// Record the wallet transaction
 	walletHistory := model.UserWalletHistory{
 		TransactionTime: time.Now(),
+		UserID: UserID,
 		Type:            model.WalletOutgoing,
 		Amount:          order.FinalAmount,
 	    CurrentBalance: newBalance,

@@ -154,6 +154,9 @@ func main() {
 		userRoutes.GET("/coupon/all", controllers.GetAllCoupons)
 		userRoutes.GET("/coupon/cart/:couponcode", controllers.ApplyCouponOnCart)
 
+		userRoutes.GET("/referral/code",controllers.GetRefferalCode)
+		userRoutes.PATCH("/referral/activate",controllers.ActivateReferral)
+		userRoutes.GET("/referral/claim",controllers.ClaimReferralRewards)
 	}
 
 	router.Run(":8080")

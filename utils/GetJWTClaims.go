@@ -9,7 +9,7 @@ import (
 )
 
 // GetJWTEmailClaim attempts to extract the email claim from a JWT token.
-func GetJWTClaim(c *gin.Context) (string,string, error) {
+func GetJWTClaim(c *gin.Context) (email string,role string,err error) {
 	JWTToken, err := c.Cookie("Authorization")
 	if JWTToken == "" || err != nil {
 		return "","", errors.New("no authorization token available")
