@@ -864,7 +864,7 @@ func ActivateReferral(c *gin.Context) {
 		return
 	}
 
-	if UserReferralHistory.ReferredBy!= RefCode{
+	if UserReferralHistory.ReferredBy == RefCode{
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "user's cannot refer each other",
@@ -903,20 +903,26 @@ func ActivateReferral(c *gin.Context) {
 }
 
 func CreateReferralEntry(UserID uint) bool {
-	var User model.User
-	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
-		return false
-	}
-	RefHistory := model.UserReferralHistory{
-		UserID:       UserID,
-		ReferralCode: User.ReferralCode,
-	}
-	if err := database.DB.Where("user_id = ?", UserID).Save(&RefHistory).Error; err != nil {
-		return false
-	}
-	return true
-}
+    var User model.User
+    if err := database.DB.Where("id =?", UserID).First(&User).Error; err!= nil {
+        return false
+    }
+    var existingEntry model.UserReferralHistory
+    if err := database.DB.Where("user_id =?", UserID).First(&existingEntry).Error; err == nil {
+        return true
+    } else if err!= gorm.ErrRecordNotFound {
+        return false
+    }
 
+    RefHistory := model.UserReferralHistory{
+        UserID:       UserID,
+        ReferralCode: User.ReferralCode,
+    }
+    if err := database.DB.Create(&RefHistory).Error; err!= nil {
+        return false
+    }
+    return true
+}
 
 func ClaimReferralRewards(c *gin.Context)  {
 	email, role, _ := utils.GetJWTClaim(c)
@@ -950,7 +956,7 @@ func ClaimReferralRewards(c *gin.Context)  {
 
 	PossibleClaimCount := len(ClaimableReferrals)
 
-	if PossibleClaimCount < 1 {
+	if PossibleClaimCount < model.ReferralClaimLimit {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{
 			"status":  false,
 			"message": "need a minimum of 3 referrals to claim reward",
@@ -1001,4 +1007,27 @@ func ClaimReferralRewards(c *gin.Context)  {
 		"status":  true,
 		"message": "successfully updated user refer history",
 	})
+}
+
+func GenerateReferralCodeForUser(email string) (string, error) {
+    var User model.User
+    if err := database.DB.Where("email =?", email).First(&User).Error; err!= nil {
+        return "", err
+    }
+
+    if User.ReferralCode!= "" {
+        return User.ReferralCode, nil
+    }
+
+    refCode := utils.GenerateRandomString(5)
+
+    if err := database.DB.Model(&User).Where("email =?", email).Update("referral_code", refCode).Error; err!= nil {
+        return "", err
+    }
+
+    if!CreateReferralEntry(User.ID) {
+        return "", errors.New("failed to save referral history")
+    }
+
+    return refCode, nil
 }

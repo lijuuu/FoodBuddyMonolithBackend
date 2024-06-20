@@ -44,6 +44,7 @@ const (
 	OrderStatusCancelled     = "CANCELLED"
 
 	ReferralClaimAmount = 30
+	ReferralClaimLimit = 2
 )
 
 type EnvVariables struct {

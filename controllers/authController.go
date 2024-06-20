@@ -178,6 +178,9 @@ func GoogleHandleCallback(c *gin.Context) {
 		return
 	}
 
+	_, _ = GenerateReferralCodeForUser(User.Email)
+	CreateReferralEntry(existingUser.ID)
+
 	// Return success response
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -189,7 +192,6 @@ func GoogleHandleCallback(c *gin.Context) {
 	})
 
 }
-
 
 // @Summary Email signup
 // @Description Signup a new user using email
@@ -253,8 +255,6 @@ func EmailSignup(c *gin.Context) {
 		})
 		return
 	}
-
-	
 
 	//add the data to user struct
 	User := model.User{
@@ -455,6 +455,8 @@ func EmailLogin(c *gin.Context) {
 		return
 	}
 
+	_, _ = GenerateReferralCodeForUser(user.Email)
+	CreateReferralEntry(user.ID)
 	// Return success response
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -732,5 +734,3 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
-
-
