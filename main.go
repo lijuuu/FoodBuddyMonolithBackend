@@ -157,6 +157,7 @@ func main() {
 		userRoutes.GET("/referral/code",controllers.GetRefferalCode)
 		userRoutes.PATCH("/referral/activate",controllers.ActivateReferral)
 		userRoutes.GET("/referral/claim",controllers.ClaimReferralRewards)
+		userRoutes.GET("/referral/stats",controllers.GetReferralStats)
 	}
 
 	router.Run(":8080")

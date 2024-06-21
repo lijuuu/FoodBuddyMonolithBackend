@@ -92,6 +92,7 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 
 		OrderItem := model.OrderItem{
 			OrderID:            Order.OrderID,
+			UserID: UserID,
 			ProductID:          v.ProductID,
 			Quantity:           v.Quantity,
 			Amount:             (float64(v.Quantity) * Product.Price),

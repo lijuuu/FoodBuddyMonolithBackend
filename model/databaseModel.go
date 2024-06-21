@@ -44,7 +44,7 @@ const (
 	OrderStatusCancelled     = "CANCELLED"
 
 	ReferralClaimAmount = 30
-	ReferralClaimLimit = 2
+	ReferralClaimLimit = 1
 )
 
 type EnvVariables struct {
@@ -84,7 +84,6 @@ type UserReferralHistory struct {
 	ReferralCode   string `gorm:"column:referral_code" json:"referral_code"`
 	ReferredBy     string `gorm:"column:referred_by" json:"referred_by"`
 	ReferClaimed   bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
-	TotalReferrals uint   `gorm:"column:total_referrals" json:"total_referrals"`
 }
 
 type VerificationTable struct {
@@ -176,6 +175,7 @@ type Order struct {
 }
 type OrderItem struct {
 	OrderID            string  `validate:"required"`
+	UserID               uint      `validate:"required,number" json:"user_id"`
 	RestaurantID       uint    `validate:"required,number" json:"restaurant_id"`
 	ProductID          uint    ` validate:"required,number" json:"product_id"`
 	Quantity           uint    ` validate:"required,number" json:"quantity"`
