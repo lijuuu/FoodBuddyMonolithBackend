@@ -514,8 +514,8 @@ func ClaimReferralRewards(c *gin.Context) {
 		return
 	}
 
-	var ClaimableReferrals []model.UserReferralHistory
-	if err := database.DB.Where("referred_by =? AND refer_claimed =?", User.ReferralCode, false).Find(&ClaimableReferrals).Error; err != nil {
+	var Referrals []model.UserReferralHistory
+	if err := database.DB.Where("referred_by =? AND refer_claimed =?", User.ReferralCode, false).Find(&Referrals).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get user refer history",
@@ -524,7 +524,7 @@ func ClaimReferralRewards(c *gin.Context) {
 	}
 
 	var eligibleClaims int64
-	for _, v := range ClaimableReferrals {
+	for _, v := range Referrals {
 		if err := database.DB.Model(&model.OrderItem{}).Where("user_id =? AND order_status =?", v.UserID, model.OrderStatusDelivered).Count(&eligibleClaims).Error; err != nil {
 			continue
 		}
@@ -631,8 +631,8 @@ func GetReferralStats(c *gin.Context) {
 
 	fmt.Println(User)
 
-	var ClaimableReferrals []model.UserReferralHistory
-	if err := database.DB.Where("referred_by =? AND refer_claimed =?", User.ReferralCode, false).Find(&ClaimableReferrals).Error; err != nil {
+	var Referrals []model.UserReferralHistory
+	if err := database.DB.Where("referred_by = ?", User.ReferralCode).Find(&Referrals).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get user refer history",
@@ -641,14 +641,14 @@ func GetReferralStats(c *gin.Context) {
 	}
 
 	var eligibleClaims int64
-	for _, v := range ClaimableReferrals {
+	for _, v := range Referrals {
 		if err := database.DB.Model(&model.OrderItem{}).Where("user_id =? AND order_status =?", v.UserID, model.OrderStatusDelivered).Count(&eligibleClaims).Error; err != nil {
 			continue
 		}
 	}
 
 	var totalClaims int64
-	if err := database.DB.Model(&model.UserReferralHistory{}).Where("referred_by =?", User.ReferralCode).Count(&totalClaims).Error; err != nil {
+	if err := database.DB.Model(&model.UserReferralHistory{}).Where("referred_by = ? AND refer_claimed = ?", User.ReferralCode, true).Count(&totalClaims).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to retrieve total claims",
@@ -671,14 +671,20 @@ func GetReferralStats(c *gin.Context) {
 	}
 
 	referralStats := gin.H{
-		"totalReferrals":     len(ClaimableReferrals),
-		"eligibleReferrals":  eligibleClaims,
-		"totalClaims":        totalClaims,
-		"totalClaimedAmount": totalClaimedAmount,
+		"TotalReferrals":     len(Referrals),
+		"IneligibleReferrals":  len(Referrals) - (int(totalClaims) + int(eligibleClaims)),
+		"EligibleReferrals":  eligibleClaims,
+		"ClaimsDone":        totalClaims,
+		"TotalClaimsDone": totalClaimedAmount,
 	}
+
+	// referralInfo := gin.H{
+		
+	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data":   referralStats,
+		"ReferralHistory":Referrals,
 	})
 }
