@@ -273,7 +273,7 @@ func PriceLowToHigh(c *gin.Context) {
 			Name:           product.Name,
 			Description:    product.Description,
 			ImageURL:       product.ImageURL,
-			Price:         (product.Price),
+			Price:          (product.Price),
 			StockLeft:      product.StockLeft,
 			AverageRating:  product.AverageRating,
 			Veg:            product.Veg,
@@ -372,3 +372,6 @@ func NewArrivals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
 }
 
+func RestaurantOverallReport(c *gin.Context) {
+
+}

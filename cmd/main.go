@@ -21,7 +21,6 @@ func main() {
 	//middleware for cors and api rate limiting
 	router.Use(helper.RateLimitMiddleware())
 	router.Use(helper.CorsMiddleware())
-	
 
 	//access all the routes
 	ServerHealth(router)
@@ -33,6 +32,8 @@ func main() {
 	AdditionalRoutes(router)
 
 	//run the server at port :8080
-	router.Run(":8080")
+	err := router.Run(":8080")
+	if err != nil {
+		panic(err)
+	}
 }
-
