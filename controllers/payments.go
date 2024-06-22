@@ -366,7 +366,7 @@ func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
 	return true
 }
 
-func UserWalletBalance(c *gin.Context) {
+func GetUserWalletData(c *gin.Context) {
 	//check user api authentication
 	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
@@ -386,8 +386,20 @@ func UserWalletBalance(c *gin.Context) {
 		return
 	}
 
+	var Result []model.UserWalletHistory
+	if err:=database.DB.Where("user_id = ?",UserID).Find(&Result).Error;err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": false, "message": "failed to get wallet history",
+		})
+		return
+	}
+	
+
 	c.JSON(http.StatusOK, gin.H{
-		"status": true, "data": gin.H{"wallet_balance": User.WalletAmount},
+		"status": true, "data": gin.H{
+			"walletbalance": User.WalletAmount,
+			"history":Result,
+		},
 	})
 
 }

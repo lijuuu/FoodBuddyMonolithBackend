@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,14 @@ func CreateCoupon(c *gin.Context) { //admin
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "coupon code already exists",
+		})
+		return
+	}
+
+	if Request.Percentage > model.CouponDiscountPercentageLimit {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "coupon discount percentage should not exceed more than "+ strconv.Itoa(model.CouponDiscountPercentageLimit),
 		})
 		return
 	}

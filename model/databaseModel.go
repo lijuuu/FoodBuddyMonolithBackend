@@ -43,6 +43,9 @@ const (
 	OrderStatusDelivered     = "DELIVERED"
 	OrderStatusCancelled     = "CANCELLED"
 
+
+	CouponDiscountPercentageLimit = 50
+
 	ReferralClaimAmount = 30
 	ReferralClaimLimit  = 1
 )
@@ -223,7 +226,7 @@ type CouponUsage struct {
 }
 
 type UserWalletHistory struct {
-	TransactionTime time.Time `gorm:"autoCreateTime"`
+	TransactionTime time.Time `gorm:"autoCreateTime" json:"transaction_time"`
 	UserID          uint      `gorm:"column:user_id" json:"user_id"`
 	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
 	OrderID         string    `gorm:"column:order_id" json:"order_id"`

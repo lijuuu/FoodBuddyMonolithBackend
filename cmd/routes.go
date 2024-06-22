@@ -22,7 +22,7 @@ func UserRoutes(router *gin.Engine) {
         // User Profile Management
         userRoutes.GET("/profile", controllers.GetUserProfile)
         userRoutes.POST("/edit", controllers.UpdateUserInformation)
-        userRoutes.GET("/wallet/balance", controllers.UserWalletBalance)
+        userRoutes.GET("/wallet/all", controllers.GetUserWalletData)
 
         // Favorite Products
         userRoutes.GET("/favorites/all", controllers.GetUsersFavouriteProduct)
@@ -141,7 +141,7 @@ func AuthenticationRoutes(router *gin.Engine) {
 
 	//additional endpoints for email verification and password reset
     router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP)
-	
+
     router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset)
     router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)
     router.POST("/api/v1/auth/passwordreset/step2", controllers.Step2PasswordReset)

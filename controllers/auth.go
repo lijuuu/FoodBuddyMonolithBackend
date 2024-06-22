@@ -32,14 +32,6 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-// GoogleHandleLogin godoc
-// @Summary Google login
-// @Description Login using Google authentication
-// @Tags authentication
-// @Produce json
-// @Success 200 {object} model.SuccessResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/google/login [get]
 func GoogleHandleLogin(c *gin.Context) {
 	helper.NoCache(c)
 	url := googleOauthConfig.AuthCodeURL("hjdfyuhadVFYU6781235")
@@ -193,17 +185,7 @@ func GoogleHandleCallback(c *gin.Context) {
 
 }
 
-// @Summary Email signup
-// @Description Signup a new user using email
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param EmailSignup body model.EmailSignupRequest true "Email Signup"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 401 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/user/email/signup [post]
+
 func EmailSignup(c *gin.Context) {
 
 	helper.NoCache(c)
@@ -717,20 +699,13 @@ func VerifyUserPasswordReset(email string) bool {
 	var User model.User
 	err := database.DB.Where("email =?", email).First(&User).Error
 
-	if err !=nil {
-		return false
-	}
-
-	return true
+	return err == nil
+	
 }
 
 func VerifyRestaurantPasswordReset(email string) bool {
 	var Restaurant model.Restaurant
 	err := database.DB.Where("email =?", email).First(&Restaurant).Error
 
-	if err !=nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
