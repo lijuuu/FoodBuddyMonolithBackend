@@ -44,7 +44,7 @@ const (
 	OrderStatusCancelled     = "CANCELLED"
 
 	ReferralClaimAmount = 30
-	ReferralClaimLimit = 1
+	ReferralClaimLimit  = 1
 )
 
 type EnvVariables struct {
@@ -80,10 +80,10 @@ type User struct {
 }
 
 type UserReferralHistory struct {
-	UserID         uint   `gorm:"column:user_id" json:"user_id"`
-	ReferralCode   string `gorm:"column:referral_code" json:"referral_code"`
-	ReferredBy     string `gorm:"column:referred_by" json:"referred_by"`
-	ReferClaimed   bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
+	UserID       uint   `gorm:"column:user_id" json:"user_id"`
+	ReferralCode string `gorm:"column:referral_code" json:"referral_code"`
+	ReferredBy   string `gorm:"column:referred_by" json:"referred_by"`
+	ReferClaimed bool   `gorm:"column:refer_claimed" json:"refer_claimed"`
 }
 
 type VerificationTable struct {
@@ -175,7 +175,7 @@ type Order struct {
 }
 type OrderItem struct {
 	OrderID            string  `validate:"required"`
-	UserID               uint      `validate:"required,number" json:"user_id"`
+	UserID             uint    `validate:"required,number" json:"user_id"`
 	RestaurantID       uint    `validate:"required,number" json:"restaurant_id"`
 	ProductID          uint    ` validate:"required,number" json:"product_id"`
 	Quantity           uint    ` validate:"required,number" json:"quantity"`
@@ -198,10 +198,12 @@ type Payment struct {
 	PaymentStatus     string `validate:"required" json:"payment_status" gorm:"column:payment_status"`
 }
 
-type UserPasswordReset struct {
+type PasswordReset struct {
 	gorm.Model
 	Email      string `validate:"email"`
+	Role       string `validate:"required"`
 	ResetToken string `gorm:"column:reset_token" json:"reset_token"`
+	Active       string   `json:"active"`
 	ExpiryTime uint   `gorm:"expiry_time" json:"expiry_time"`
 }
 

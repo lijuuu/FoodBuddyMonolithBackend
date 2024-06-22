@@ -42,7 +42,7 @@ func AutoMigrate() {
 	DB.AutoMigrate(&model.Order{})
 	DB.AutoMigrate(&model.OrderItem{})
 	DB.AutoMigrate(&model.Payment{})
-	DB.AutoMigrate(&model.UserPasswordReset{})
+	DB.AutoMigrate(&model.PasswordReset{})
 	DB.AutoMigrate(&model.CouponInventory{})
 	DB.AutoMigrate(&model.CouponUsage{})
 	DB.AutoMigrate(&model.UserWalletHistory{})

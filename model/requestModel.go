@@ -100,10 +100,12 @@ type IncrementStock struct {
 
 type Step1PasswordReset struct {
 	Email string `validate:"required,email"`
+	Role  string `validate:"required"`
 }
 
 type Step2PasswordReset struct {
 	Email           string `form:"email" binding:"required,email" json:"email"`
+	Role            string `form:"role" binding:"required" `
 	Token           string `form:"token" binding:"required" json:"token"`
 	Password        string `form:"password1" binding:"required" json:"password1"`
 	ConfirmPassword string `form:"password2" binding:"required" json:"password2"`
@@ -159,30 +161,30 @@ type EditRestaurantRequest struct {
 }
 
 type AddProductRequest struct {
-	CategoryID  uint   `validate:"required,number" json:"category_id"`
-	Name        string `validate:"required" json:"name"`
-	Description string `validate:"required" json:"description"`
-	ImageURL    string `validate:"required" json:"image_url"`
-	Price       float64   `validate:"required,number" json:"price"`
+	CategoryID  uint    `validate:"required,number" json:"category_id"`
+	Name        string  `validate:"required" json:"name"`
+	Description string  `validate:"required" json:"description"`
+	ImageURL    string  `validate:"required" json:"image_url"`
+	Price       float64 `validate:"required,number" json:"price"`
 	OfferAmount float64 `json:"offer_amount"`
-	MaxStock    uint   `validate:"required,number" json:"max_stock"`
-	StockLeft   uint   `validate:"required,number" json:"stock_left"`
-	Veg         string `validate:"required" json:"veg"`
+	MaxStock    uint    `validate:"required,number" json:"max_stock"`
+	StockLeft   uint    `validate:"required,number" json:"stock_left"`
+	Veg         string  `validate:"required" json:"veg"`
 }
 
 type EditProductRequest struct {
-	ProductID   uint   `validate:"required,number" json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ImageURL    string `json:"image_url"`
-	Price       float64   `json:"price"`
+	ProductID   uint    `validate:"required,number" json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	ImageURL    string  `json:"image_url"`
+	Price       float64 `json:"price"`
 	OfferAmount float64 `json:"offer_amount"`
-	MaxStock    uint   `json:"max_stock"`
-	StockLeft   uint   `json:"stock_left"`
-	Veg         string   `json:"veg"`
+	MaxStock    uint    `json:"max_stock"`
+	StockLeft   uint    `json:"stock_left"`
+	Veg         string  `json:"veg"`
 }
 
 type AddOfferRequest struct {
-    ProductID   uint `json:"product_id" binding:"required"`
-    OfferAmount float64 `json:"offer_amount" binding:"required"`
+	ProductID   uint    `json:"product_id" binding:"required"`
+	OfferAmount float64 `json:"offer_amount" binding:"required"`
 }

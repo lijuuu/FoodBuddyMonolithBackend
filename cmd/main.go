@@ -13,17 +13,18 @@ func init() {
 }
 
 func main() {
+	//start server with default logger and recovery
 	router := gin.Default()
+	//load html from templates folder
 	router.LoadHTMLGlob("../templates/*")
 
+	//middleware for cors and api rate limiting
 	router.Use(helper.RateLimitMiddleware())
 	router.Use(helper.CorsMiddleware())
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "server status ok",
-		})
-	})
+	
 
+	//access all the routes
+	ServerHealth(router)
 	PublicRoutes(router)
 	AuthenticationRoutes(router)
 	AdminRoutes(router)
@@ -31,6 +32,7 @@ func main() {
 	RestaurantRoutes(router)
 	AdditionalRoutes(router)
 
+	//run the server at port :8080
 	router.Run(":8080")
 }
 

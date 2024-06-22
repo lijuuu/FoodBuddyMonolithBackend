@@ -8,6 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func ServerHealth(router *gin.Engine)  {
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "server status ok",
+		})
+	})
+}
+
 func UserRoutes(router *gin.Engine) {
     userRoutes := router.Group("/api/v1/user")
     {
@@ -70,8 +78,11 @@ func RestaurantRoutes(router *gin.Engine) {
         restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
 
         // Product Offers
-        restaurantRoutes.PATCH("/product/offer/add", controllers.AddProductOffer)
+        restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)
         restaurantRoutes.PATCH("/product/offer/remove/:productid", controllers.RemoveProductOffer)
+
+		//restaurant wallet balance and history
+		restaurantRoutes.GET("/wallet/all",controllers.GetRestaurantWalletData)
     }
 }
 
@@ -119,15 +130,23 @@ func PublicRoutes(router *gin.Engine) {
 
 func AuthenticationRoutes(router *gin.Engine) {
     // Authentication Endpoints
+	//admin
     router.POST("/api/v1/auth/admin/login", controllers.AdminLogin)
+
+	//user
     router.POST("/api/v1/auth/user/email/login", controllers.EmailLogin)
     router.POST("/api/v1/auth/user/email/signup", controllers.EmailSignup)
+	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin)
+    router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback)
+
+	//additional endpoints for email verification and password reset
     router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP)
+	
     router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset)
     router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)
     router.POST("/api/v1/auth/passwordreset/step2", controllers.Step2PasswordReset)
-    router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin)
-    router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback)
+
+	//restaurant
     router.POST("/api/v1/auth/restaurant/signup", controllers.RestaurantSignup)
     router.POST("/api/v1/auth/restaurant/login", controllers.RestaurantLogin)
 }

@@ -710,3 +710,27 @@ func Logout(c *gin.Context) {
 	})
 	c.Next()
 }
+
+
+
+func VerifyUserPasswordReset(email string) bool {
+	var User model.User
+	err := database.DB.Where("email =?", email).First(&User).Error
+
+	if err !=nil {
+		return false
+	}
+
+	return true
+}
+
+func VerifyRestaurantPasswordReset(email string) bool {
+	var Restaurant model.Restaurant
+	err := database.DB.Where("email =?", email).First(&Restaurant).Error
+
+	if err !=nil {
+		return false
+	}
+
+	return true
+}

@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"net/http"
 	"strconv"
 
@@ -265,7 +265,7 @@ func EditRestaurant(c *gin.Context) {
 
 	//check restaurant api authentication
 	email, role, err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
+	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized request",
@@ -521,4 +521,46 @@ func RestIDfromEmail(email string) (uint, bool) {
 		return 0, false
 	}
 	return Restaurant.ID, true
+}
+
+func RestaurantWalletBalance(email string) (float64, bool) {
+	var Restaurant model.Restaurant
+	if err := database.DB.Where("email = ?", email).First(&Restaurant).Error; err != nil {
+		return 0, false
+	}
+	return Restaurant.WalletAmount, true
+}
+
+func GetRestaurantWalletData(c *gin.Context) {
+	//check restaurant api authentication
+	email, role, err := helper.GetJWTClaim(c)
+	if role != model.RestaurantRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	RestID, _ := RestIDfromEmail(email)
+	WalletBalance,_ := RestaurantWalletBalance(email)
+
+	var Result []model.RestaurantWalletHistory
+	if err := database.DB.Where("restaurant_id = ?", RestID).Find(&Result).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant wallet history"})
+		return
+	}
+
+	type Response struct{
+       WalletBalance float64
+	   History []model.RestaurantWalletHistory
+	}
+	
+	c.JSON(http.StatusOK,gin.H{
+		"status":true,
+		"data": Response{
+			WalletBalance: WalletBalance,
+			History: Result,
+		},
+	})
 }

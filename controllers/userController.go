@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -643,22 +643,35 @@ func Step1PasswordReset(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "failed to bind the request"})
 		return
 	}
-	//check if the user exists
-	var User model.User
-	if err := database.DB.Where("email = ?", Request.Email).First(&User).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "user doesnt exists"})
+
+	if Request.Role != model.UserRole && Request.Role != model.RestaurantRole{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "role should be either user or restaurant"})
 		return
+	}
+
+
+	switch Request.Role {
+	case model.UserRole:
+		if !VerifyUserPasswordReset(Request.Email){
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request"})
+			return
+		}
+	case model.RestaurantRole:
+		if !VerifyRestaurantPasswordReset(Request.Email){
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request"})
+			return
+		}
 	}
 
 	//generate token,expiry etc
 	ResetToken := helper.GenerateRandomString(10)
 	ExpiryTime := time.Now().Unix() + 1*60
-	//sent email  use smtp with token as query
 
+	//sent email  use smtp with token as que
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v", Request.Email, ResetToken)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", Request.Email, ResetToken,Request.Role)
 	mail := fmt.Sprintf("FoodBuddy Password Reset \n Click here to reset your password %v", url)
 
 	//send the otp to the specified email
@@ -669,21 +682,23 @@ func Step1PasswordReset(c *gin.Context) {
 	}
 
 	//save it on the server
-	var UserPasswordReset model.UserPasswordReset
-	UserPasswordReset.Email = Request.Email
-	UserPasswordReset.ResetToken = ResetToken
-	UserPasswordReset.ExpiryTime = uint(ExpiryTime)
+	var PasswordReset model.PasswordReset
+	PasswordReset.Email = Request.Email
+	PasswordReset.Role = Request.Role
+	PasswordReset.ResetToken = ResetToken
+	PasswordReset.Active = model.YES
+	PasswordReset.ExpiryTime = uint(ExpiryTime)
 
-	var CheckUser model.UserPasswordReset
-	if err := database.DB.Where("email = ?", Request.Email).First(&CheckUser).Error; err != nil {
+	var CheckEntity model.PasswordReset
+	if err := database.DB.Where("email = ? AND role = ?", Request.Email, Request.Role).First(&CheckEntity).Error; err != nil {
 		//email row doesnt exist create new entry
-		if err := database.DB.Create(&UserPasswordReset).Error; err != nil {
+		if err := database.DB.Create(&PasswordReset).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to save password reset information, try again"})
 			return
 		}
 	} else {
 		//update the mail if it exists
-		if err := database.DB.Where("email = ?", Request.Email).Updates(&UserPasswordReset).Error; err != nil {
+		if err := database.DB.Where("email = ? AND role = ?", Request.Email, Request.Role).Updates(&PasswordReset).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to save password reset information, try again"})
 			return
 		}
@@ -694,12 +709,26 @@ func Step1PasswordReset(c *gin.Context) {
 
 func LoadPasswordReset(c *gin.Context) {
 	email := c.Query("email")
+	role := c.Query("role")
 	token := c.Query("token")
+
+	var PasswordReset model.PasswordReset
+	if err := database.DB.Where("email = ? AND role =?", email,role).First(&PasswordReset).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
+		return
+	}
+
+	if PasswordReset.Active == model.NO{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "link is expired"})
+		return
+	}
+
 
 	fmt.Println(email, ": ", token)
 
 	c.HTML(http.StatusOK, "passwordreset.html", gin.H{
 		"email": email,
+		 "role":role,
 		"token": token,
 	})
 }
@@ -718,26 +747,31 @@ func Step2PasswordReset(c *gin.Context) {
 	}
 	// this function recieves email, token, passwords(check for password match)
 	//check email
-	var UserPasswordReset model.UserPasswordReset
-	if err := database.DB.Where("email = ?", Request.Email).First(&UserPasswordReset).Error; err != nil {
+	var PasswordReset model.PasswordReset
+	if err := database.DB.Where("email = ? AND role =?", Request.Email,Request.Role).First(&PasswordReset).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
 		return
 	}
 
-	if Request.ConfirmPassword != Request.Password{
+	if PasswordReset.Active == model.NO{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "link is expired"})
+		return
+	}
+
+	if Request.ConfirmPassword != Request.Password {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "password doesnt match"})
 		return
 	}
 
-	if Request.Token != UserPasswordReset.ResetToken{
+	if Request.Token != PasswordReset.ResetToken {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "password token doesnt match"})
 		return
 	}
-	
+
 	//call step3
 	ok, err := Step3PasswordReset(Request)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": err.Error()})
 		return
 	}
 
@@ -760,20 +794,38 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 		return false, errors.New("failed to hash the password")
 	}
 
-	// create a new user instance with updated password and salt
-	user := model.User{
-		Email:          Request.Email,
-		Salt:           salt,
-		HashedPassword: string(hashedPassword),
+    switch Request.Role {
+	case model.UserRole:
+		// create a new user instance with updated password and salt
+		user := model.User{
+			Email:          Request.Email,
+			Salt:           salt,
+			HashedPassword: string(hashedPassword),
+		}
+		// save the updated user record
+		if err := database.DB.Model(&user).Where("email = ?", user.Email).Updates(user).Error; err != nil {
+			return false, errors.New("failed to update the password")
+		}
+	case model.RestaurantRole:
+		// create a new user instance with updated password and salt
+		restaurant := model.Restaurant{
+			Email:          Request.Email,
+			Salt:           salt,
+			HashedPassword: string(hashedPassword),
+		}
+		// save the updated user record
+		if err := database.DB.Model(&restaurant).Where("email = ?", restaurant.Email).Updates(restaurant).Error; err != nil {
+			return false, errors.New("failed to update the password")
+		}
 	}
 
-	// save the updated user record
-	if err := database.DB.Model(&user).Where("email = ?", user.Email).Updates(user).Error; err != nil {
-		return false, errors.New("failed to update the password")
+	//change active status to no
+	if err:=database.DB.Model(&model.PasswordReset{}).Where("email = ? AND role = ?",Request.Email,Request.Role).Update("active",model.NO).Error;err!=nil{
+		return false, errors.New("something went wrong")
 	}
 
 	//change verification status to pending in the verification table as well
-	if err := database.DB.Model(&model.VerificationTable{}).Where("email = ?", Request.Email).Update("verification_status", model.VerificationStatusPending).Error; err != nil {
+	if err := database.DB.Model(&model.VerificationTable{}).Where("email = ? AND role = ?", Request.Email,Request.Role).Update("verification_status", model.VerificationStatusPending).Error; err != nil {
 		return false, errors.New("failed to update the verification status")
 	}
 
