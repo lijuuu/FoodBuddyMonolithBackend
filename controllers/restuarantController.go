@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"strconv"
 
@@ -73,7 +73,7 @@ func RestaurantSignup(c *gin.Context) {
 	}
 
 	// generate salt and hash password
-	salt := utils.GenerateRandomString(7)
+	salt := helper.GenerateRandomString(7)
 	saltedPassword := salt + restaurantSignup.Password
 	hash, err := bcrypt.GenerateFromPassword([]byte(saltedPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -264,7 +264,7 @@ func GetRestaurants(c *gin.Context) {
 func EditRestaurant(c *gin.Context) {
 
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -336,7 +336,7 @@ func EditRestaurant(c *gin.Context) {
 func DeleteRestaurant(c *gin.Context) {
 
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -388,7 +388,7 @@ func DeleteRestaurant(c *gin.Context) {
 // admin
 func BlockRestaurant(c *gin.Context) {
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -452,7 +452,7 @@ func BlockRestaurant(c *gin.Context) {
 // admin
 func UnblockRestaurant(c *gin.Context) {
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,

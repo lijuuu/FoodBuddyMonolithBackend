@@ -4,7 +4,7 @@ import (
 	"errors"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +12,7 @@ import (
 )
 
 func CheckAdmin(c *gin.Context)(string,error) {
-	email,_,err := utils.GetJWTClaim(c)
+	email,_,err := helper.GetJWTClaim(c)
 	if err !=nil{
 		return email,errors.New("request unauthorized")
 	}

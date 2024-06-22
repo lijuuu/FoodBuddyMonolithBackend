@@ -3,7 +3,7 @@ package main
 import (
 	"foodbuddy/controllers"
 	"foodbuddy/database"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"foodbuddy/view"
 
 	_ "foodbuddy/docs"
@@ -21,7 +21,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	router.Use(controllers.RateLimitMiddleware())
-	router.Use(utils.CorsMiddleware())
+	router.Use(helper.CorsMiddleware())
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "server status ok",
@@ -67,7 +67,7 @@ func main() {
 
 	// Image upload route
 	router.GET("/api/v1/uploadimage", view.LoadUpload)
-	router.POST("/api/v1/uploadimage", utils.ImageUpload)
+	router.POST("/api/v1/uploadimage", helper.ImageUpload)
 
 	// Logout route
 	router.GET("/api/v1/logout", controllers.Logout)

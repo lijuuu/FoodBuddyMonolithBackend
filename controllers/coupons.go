@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 // create coupons -admin side
 func CreateCoupon(c *gin.Context) { //admin
 	// check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -98,7 +98,7 @@ func GetAllCoupons(c *gin.Context) { //public
 // update coupon
 func UpdateCoupon(c *gin.Context) { //admin
 	// check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -161,7 +161,7 @@ func UpdateCoupon(c *gin.Context) { //admin
 
 func ApplyCouponOnCart(c *gin.Context) { //user
 	// check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -351,7 +351,7 @@ func CheckCouponExists(code string) bool {
 
 func GetRefferalCode(c *gin.Context) {
 
-	email, role, _ := utils.GetJWTClaim(c)
+	email, role, _ := helper.GetJWTClaim(c)
 	if role != model.UserRole {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -377,7 +377,7 @@ func GetRefferalCode(c *gin.Context) {
 		return
 	}
 
-	refCode := utils.GenerateRandomString(5)
+	refCode := helper.GenerateRandomString(5)
 
 	if err := database.DB.Model(&User).Where("email = ?", email).Update("referral_code", refCode).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -404,7 +404,7 @@ func GetRefferalCode(c *gin.Context) {
 
 func ActivateReferral(c *gin.Context) {
 	RefCode := c.Query("referralcode")
-	email, role, _ := utils.GetJWTClaim(c)
+	email, role, _ := helper.GetJWTClaim(c)
 	if role != model.UserRole {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -496,7 +496,7 @@ func CreateReferralEntry(UserID uint) bool {
 }
 
 func ClaimReferralRewards(c *gin.Context) {
-	email, role, _ := utils.GetJWTClaim(c)
+	email, role, _ := helper.GetJWTClaim(c)
 	if role != model.UserRole {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -597,7 +597,7 @@ func GenerateReferralCodeForUser(email string) (string, error) {
 		return User.ReferralCode, nil
 	}
 
-	refCode := utils.GenerateRandomString(5)
+	refCode := helper.GenerateRandomString(5)
 
 	if err := database.DB.Model(&User).Where("email =?", email).Update("referral_code", refCode).Error; err != nil {
 		return "", err
@@ -611,7 +611,7 @@ func GenerateReferralCodeForUser(email string) (string, error) {
 }
 
 func GetReferralStats(c *gin.Context) {
-	email, role, _ := utils.GetJWTClaim(c)
+	email, role, _ := helper.GetJWTClaim(c)
 	if role != model.UserRole {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,

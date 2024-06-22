@@ -1,7 +1,7 @@
 package view
 
 import (
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,15 +9,15 @@ import (
 
 
 func LoadLoginPage(c *gin.Context) {
-	utils.NoCache(c)
-	utils.CheckCookie(c)
+	helper.NoCache(c)
+	helper.CheckCookie(c)
 	c.HTML(http.StatusOK, "login.html", nil)
 	c.Next()
 }
 
 func LoadSignupPage(c *gin.Context) {
-	utils.NoCache(c)
-	utils.CheckCookie(c)
+	helper.NoCache(c)
+	helper.CheckCookie(c)
 	c.HTML(http.StatusOK, "signup.html", nil)
 }
 

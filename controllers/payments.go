@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"os"
 	"time"
@@ -368,7 +368,7 @@ func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
 
 func UserWalletBalance(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,

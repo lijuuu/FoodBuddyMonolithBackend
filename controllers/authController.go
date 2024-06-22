@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"io"
 	"math/rand"
 	"net/http"
@@ -26,8 +26,8 @@ import (
 
 var googleOauthConfig = &oauth2.Config{
 	RedirectURL:  "http://localhost:8080/api/v1/googlecallback",
-	ClientID:     utils.GetEnvVariables().ClientID,
-	ClientSecret: utils.GetEnvVariables().ClientSecret,
+	ClientID:     helper.GetEnvVariables().ClientID,
+	ClientSecret: helper.GetEnvVariables().ClientSecret,
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 	Endpoint:     google.Endpoint,
 }
@@ -41,14 +41,14 @@ var googleOauthConfig = &oauth2.Config{
 // @Failure 500 {object} model.ErrorResponse
 // @Router /api/v1/auth/google/login [get]
 func GoogleHandleLogin(c *gin.Context) {
-	utils.NoCache(c)
+	helper.NoCache(c)
 	url := googleOauthConfig.AuthCodeURL("hjdfyuhadVFYU6781235")
 	c.Redirect(http.StatusTemporaryRedirect, url)
 	c.Next()
 }
 
 func GoogleHandleCallback(c *gin.Context) {
-	utils.NoCache(c)
+	helper.NoCache(c)
 	fmt.Println("Starting to handle callback")
 	code := c.Query("code")
 
@@ -206,7 +206,7 @@ func GoogleHandleCallback(c *gin.Context) {
 // @Router /api/v1/auth/user/email/signup [post]
 func EmailSignup(c *gin.Context) {
 
-	utils.NoCache(c)
+	helper.NoCache(c)
 
 	//get the body
 	var EmailSignupRequest model.EmailSignupRequest
@@ -241,7 +241,7 @@ func EmailSignup(c *gin.Context) {
 	}
 
 	//create salt and add it to the password
-	Salt := utils.GenerateRandomString(7)
+	Salt := helper.GenerateRandomString(7)
 	//salt+password
 	saltedPassword := Salt + EmailSignupRequest.Password
 
@@ -649,7 +649,7 @@ func GenerateJWT(c *gin.Context, email string, role string) (string, error) {
 	})
 
 	//sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(utils.GetEnvVariables().JWTSecret))
+	tokenString, err := token.SignedString([]byte(helper.GetEnvVariables().JWTSecret))
 	if err != nil {
 		return "", err
 	}
@@ -660,7 +660,7 @@ func GenerateJWT(c *gin.Context, email string, role string) (string, error) {
 }
 
 func VerifyJWT(c *gin.Context, role string, useremail string) error {
-	utils.NoCache(c)
+	helper.NoCache(c)
 
 	// Attempt to retrieve the JWT token from the cookie
 	tokenString, err := c.Cookie("Authorization")
@@ -673,7 +673,7 @@ func VerifyJWT(c *gin.Context, role string, useremail string) error {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(utils.GetEnvVariables().JWTSecret), nil
+		return []byte(helper.GetEnvVariables().JWTSecret), nil
 	})
 
 	if err != nil {
@@ -727,7 +727,7 @@ func EmailFromUserID(UserID uint) (string, bool) {
 
 // removing cookie "authorization"
 func Logout(c *gin.Context) {
-	utils.RemoveCookies(c)
+	helper.RemoveCookies(c)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "successfully logged out",
 		"ok":      true,

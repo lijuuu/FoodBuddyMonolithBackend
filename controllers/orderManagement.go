@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"regexp"
 	"time"
@@ -29,7 +29,7 @@ func CreateOrderID(UserID uint) (string, error) {
 
 	var OrderID string
 	for {
-		random := utils.GenerateRandomString(10)
+		random := helper.GenerateRandomString(10)
 		OrderID = fmt.Sprintf("%v_%v", cleanedName, random)
 
 		var existingOrder model.Order
@@ -129,7 +129,7 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 // user - check userid
 func PlaceOrder(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -383,7 +383,7 @@ func CheckUser(UserID uint) bool {
 // restaurant
 func OrderHistoryRestaurants(c *gin.Context) {
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -448,7 +448,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 // user
 func UserOrderHistory(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -560,7 +560,7 @@ func UpdateOrderStatusForRestaurant(c *gin.Context) {
 	}
 
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -655,7 +655,7 @@ func UserIDfromOrderID(OrderID string) (uint, bool) {
 
 // user - check userid by order.userid
 func CancelOrderedProduct(c *gin.Context) {
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role!= model.UserRole || err!= nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -920,7 +920,7 @@ func DecrementStock(OrderID string) bool {
 // user - check userid by order.userid
 func UserReviewonOrderItem(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -975,7 +975,7 @@ func UserReviewonOrderItem(c *gin.Context) {
 // user - check userid by order.userid
 func UserRatingOrderItem(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,

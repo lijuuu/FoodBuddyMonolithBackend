@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +14,7 @@ import (
 
 func AddToCart(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -142,7 +142,7 @@ func AddToCart(c *gin.Context) {
 
 func GetCartTotal(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -205,7 +205,7 @@ func GetCartTotal(c *gin.Context) {
 func ClearCart(c *gin.Context) {
 
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -232,7 +232,7 @@ func ClearCart(c *gin.Context) {
 
 func RemoveItemFromCart(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -287,7 +287,7 @@ func RemoveItemFromCart(c *gin.Context) {
 
 func UpdateQuantity(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,

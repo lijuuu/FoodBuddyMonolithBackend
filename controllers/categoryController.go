@@ -3,7 +3,7 @@ package controllers
 import (
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"strconv"
 	"strings"
@@ -59,7 +59,7 @@ func AddCategory(c *gin.Context) { //admin
 	var existingcategory model.Category
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
+	_,role,err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil{
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
@@ -143,7 +143,7 @@ func EditCategory(c *gin.Context) { //admin
 	var existingcategory model.Category
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
+	_,role,err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil{
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
@@ -204,7 +204,7 @@ func DeleteCategory(c *gin.Context) { //admin
 	catergoryIDStr := c.Param("categoryid")
 
 	//check admin api authentication
-	_,role,err := utils.GetJWTClaim(c)
+	_,role,err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil{
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -27,7 +27,7 @@ func UserIDfromEmail(Email string) (ID uint, ok bool) {
 func GetUserProfile(c *gin.Context) {
 
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -69,7 +69,7 @@ func GetUserList(c *gin.Context) {
 	var users []model.User
 
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -101,7 +101,7 @@ func GetBlockedUserList(c *gin.Context) {
 	var blockedUsers []model.User
 
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -143,7 +143,7 @@ func BlockUser(c *gin.Context) {
 	var user model.User
 
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -205,7 +205,7 @@ func UnblockUser(c *gin.Context) {
 	var user model.User
 
 	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
+	_, role, err := helper.GetJWTClaim(c)
 	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -264,7 +264,7 @@ func UnblockUser(c *gin.Context) {
 func AddUserAddress(c *gin.Context) {
 
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -364,7 +364,7 @@ func AddUserAddress(c *gin.Context) {
 func GetUserAddress(c *gin.Context) {
 
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -426,7 +426,7 @@ func GetUserAddress(c *gin.Context) {
 
 func EditUserAddress(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -508,7 +508,7 @@ func EditUserAddress(c *gin.Context) {
 
 func DeleteUserAddress(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -579,7 +579,7 @@ func DeleteUserAddress(c *gin.Context) {
 
 func UpdateUserInformation(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -651,7 +651,7 @@ func Step1PasswordReset(c *gin.Context) {
 	}
 
 	//generate token,expiry etc
-	ResetToken := utils.GenerateRandomString(10)
+	ResetToken := helper.GenerateRandomString(10)
 	ExpiryTime := time.Now().Unix() + 1*60
 	//sent email  use smtp with token as query
 
@@ -740,7 +740,7 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 	}
 
 	// generate salt
-	salt := utils.GenerateRandomString(7)
+	salt := helper.GenerateRandomString(7)
 
 	// combine salt and password and hash it
 	saltedPassword := salt + Request.Password

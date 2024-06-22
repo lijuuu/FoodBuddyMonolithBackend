@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
-	"foodbuddy/utils"
+	"foodbuddy/helper"
 	"net/http"
 	"strconv"
 
@@ -70,7 +70,7 @@ func GetProductsByRestaurantID(c *gin.Context) {
 func AddProduct(c *gin.Context) {
 
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -193,7 +193,7 @@ func AddProduct(c *gin.Context) {
 // restaurant id
 func EditProduct(c *gin.Context) {
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -301,7 +301,7 @@ func EditProduct(c *gin.Context) {
 // restaurant id
 func DeleteProduct(c *gin.Context) {
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -369,7 +369,7 @@ func DeleteProduct(c *gin.Context) {
 // user id
 func GetUsersFavouriteProduct(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -422,7 +422,7 @@ func GetUsersFavouriteProduct(c *gin.Context) {
 func AddFavouriteProduct(c *gin.Context) {
 
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -516,7 +516,7 @@ func AddFavouriteProduct(c *gin.Context) {
 // user id
 func RemoveFavouriteProduct(c *gin.Context) {
 	//check user api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
@@ -645,7 +645,7 @@ func AddProductOffer(c *gin.Context) {
         return
     }
 
-    email, role, err := utils.GetJWTClaim(c)
+    email, role, err := helper.GetJWTClaim(c)
     if role != model.RestaurantRole || err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{
             "status":  false,
@@ -702,7 +702,7 @@ func RemoveProductOffer(c *gin.Context) {
 	}
 
 	//check restaurant api authentication
-	email, role, err := utils.GetJWTClaim(c)
+	email, role, err := helper.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
