@@ -11,7 +11,7 @@ import (
 func GetEnvVariables() model.EnvVariables {
 
 	//checking for error, to find if there's any env file available
-	err := godotenv.Load()
+	err := godotenv.Load("../.env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}

@@ -34,8 +34,8 @@ func IndividualProductReport(ProductID string) model.ProductSales {
                          FROM order_items
                          JOIN orders ON order_items.order_id = orders.order_id
                          WHERE order_items.product_id = %s
-                         AND orders.ordered_at BETWEEN '2024-06-01' AND '2024-06-18'
-                         AND (order_items.order_status = 'PROCESSING' OR order_items.order_status IS NULL);`, ProductID)
+                         AND orders.ordered_at BETWEEN '2024-06-01' AND '2024-06-30'
+                         AND (order_items.order_status = 'DELIVERED' OR order_items.order_status IS NULL);`, ProductID)
 
 	var report model.ProductSales
 	err := database.DB.Raw(query).Scan(&report).Error
