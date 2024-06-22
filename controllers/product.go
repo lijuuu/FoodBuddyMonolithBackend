@@ -99,7 +99,7 @@ func AddProduct(c *gin.Context) {
 		return
 	}
 
-	if err := validate(Request); err != nil {
+	if err := helper.Validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -222,7 +222,7 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 
-	if err := validate(Request); err != nil {
+	if err := helper.Validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -447,7 +447,7 @@ func AddFavouriteProduct(c *gin.Context) {
 	}
 
 	// Extracted validation logic for clarity
-	if err := validate(request); err != nil {
+	if err := helper.Validate(request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err,
@@ -541,7 +541,7 @@ func RemoveFavouriteProduct(c *gin.Context) {
 	}
 
 	// Extracted validation logic for clarity
-	if err := validate(request); err != nil {
+	if err := helper.Validate(request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",

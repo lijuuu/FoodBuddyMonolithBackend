@@ -34,7 +34,7 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	if err := validate(&Request); err != nil {
+	if err := helper.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -252,7 +252,7 @@ func RemoveItemFromCart(c *gin.Context) {
 		return
 	}
 	//validate
-	if err := validate(&CartItems); err != nil {
+	if err := helper.Validate(&CartItems); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -308,7 +308,7 @@ func UpdateQuantity(c *gin.Context) {
 	}
 	CartItems.UserID = UserID
 	//validate
-	if err := validate(&CartItems); err != nil {
+	if err := helper.Validate(&CartItems); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),

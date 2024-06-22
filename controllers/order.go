@@ -150,7 +150,7 @@ func PlaceOrder(c *gin.Context) {
 	}
 	PlaceOrder.UserID = UserID
 
-	if err := validate(&PlaceOrder); err != nil {
+	if err := helper.Validate(&PlaceOrder); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),

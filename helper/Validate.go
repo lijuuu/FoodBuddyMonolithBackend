@@ -1,4 +1,4 @@
-package controllers
+package helper
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func validate(value interface{}) error {
+func Validate(value interface{}) error {
 	var translator = map[string]string{
 		"Name_required":            "Please enter  Name",
 		"Password_required":        "Please enter  Password",

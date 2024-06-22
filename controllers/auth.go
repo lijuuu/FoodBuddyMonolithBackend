@@ -220,7 +220,7 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
-	err := validate(EmailSignupRequest)
+	err := helper.Validate(EmailSignupRequest)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
@@ -330,17 +330,6 @@ func EmailSignup(c *gin.Context) {
 	c.Next()
 }
 
-// @Summary Email login
-// @Description Login a user using email
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param EmailLogin body model.EmailLoginRequest true "Email Login"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 401 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/user/email/login [post]
 func EmailLogin(c *gin.Context) {
 	var EmailLoginRequest model.EmailLoginRequest
 	//get the json from the request
@@ -354,7 +343,7 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	//validate the content of the json
-	err := validate(EmailLoginRequest)
+	err := helper.Validate(EmailLoginRequest)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
@@ -531,19 +520,6 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	return nil
 }
 
-// @Summary Verify OTP
-// @Description Verify OTP for email verification
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param role path string true "User role"
-// @Param email path string true "User email"
-// @Param otp path string true "OTP"
-// @Success 200 {object} model.SuccessResponse
-// @Failure 400 {object} model.ErrorResponse
-// @Failure 401 {object} model.ErrorResponse
-// @Failure 500 {object} model.ErrorResponse
-// @Router /api/v1/auth/verifyotp/{role}/{email}/{otp} [get]
 func VerifyOTP(c *gin.Context) {
 	///welcome?firstname=Jane&lastname=Doe
 	entityRole := c.Param("role")

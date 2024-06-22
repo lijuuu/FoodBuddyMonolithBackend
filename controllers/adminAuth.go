@@ -3,30 +3,29 @@ package controllers
 import (
 	"errors"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func CheckAdmin(c *gin.Context)(string,error) {
-	email,_,err := helper.GetJWTClaim(c)
-	if err !=nil{
-		return email,errors.New("request unauthorized")
+func CheckAdmin(c *gin.Context) (string, error) {
+	email, _, err := helper.GetJWTClaim(c)
+	if err != nil {
+		return email, errors.New("request unauthorized")
 	}
-	
+
 	if email == "" {
-		return email,errors.New("request unauthorized")
+		return email, errors.New("request unauthorized")
 	}
 
 	if err := VerifyJWT(c, model.AdminRole, email); err != nil {
-		return email,errors.New("request unauthorized")
+		return email, errors.New("request unauthorized")
 	}
-	return email,nil
+	return email, nil
 }
-
 
 func AdminLogin(c *gin.Context) {
 	// Get the email from the JSON request
@@ -38,18 +37,16 @@ func AdminLogin(c *gin.Context) {
 			"status":     false,
 			"message":    "Failed to process the incoming request",
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
 
 	// Validate the content of the JSON
-	if err := validate(form); err != nil {
+	if err := helper.Validate(form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
-			
 		})
 		return
 	}
@@ -62,7 +59,6 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Email not present in the admin table",
 				"error_code": http.StatusUnauthorized,
-				
 			})
 			return
 		} else {
@@ -70,7 +66,6 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Database error",
 				"error_code": http.StatusInternalServerError,
-				
 			})
 			return
 		}
@@ -91,7 +86,6 @@ func AdminLogin(c *gin.Context) {
 					"status":     false,
 					"message":    "Failed to create admin verification entry",
 					"error_code": http.StatusInternalServerError,
-					
 				})
 				return
 			}
@@ -100,7 +94,6 @@ func AdminLogin(c *gin.Context) {
 				"status":     false,
 				"message":    "Database error",
 				"error_code": http.StatusInternalServerError,
-				
 			})
 			return
 		}
@@ -113,7 +106,6 @@ func AdminLogin(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusAlreadyReported,
-			
 		})
 		return
 	}

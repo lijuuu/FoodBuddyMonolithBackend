@@ -286,7 +286,7 @@ func AddUserAddress(c *gin.Context) {
 	}
 	UserAddress.UserID = UserID
 
-	if err := validate(UserAddress); err != nil {
+	if err := helper.Validate(UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err,
@@ -299,7 +299,7 @@ func AddUserAddress(c *gin.Context) {
 	UserAddress.AddressID = 0
 
 	//validating the useraddress for required,number tag etc....
-	if errs := validate(UserAddress); errs != nil {
+	if errs := helper.Validate(UserAddress); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    errs,
@@ -600,7 +600,7 @@ func UpdateUserInformation(c *gin.Context) {
 	}
 
 	//validate
-	if err := validate(&Request); err != nil {
+	if err := helper.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err,
@@ -712,7 +712,7 @@ func Step2PasswordReset(c *gin.Context) {
 		return
 	}
 
-	if err := validate(&Request); err != nil {
+	if err := helper.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": err.Error()})
 		return
 	}
@@ -723,6 +723,17 @@ func Step2PasswordReset(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
 		return
 	}
+
+	if Request.ConfirmPassword != Request.Password{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "password doesnt match"})
+		return
+	}
+
+	if Request.Token != UserPasswordReset.ResetToken{
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "password token doesnt match"})
+		return
+	}
+	
 	//call step3
 	ok, err := Step3PasswordReset(Request)
 	if !ok {

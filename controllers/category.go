@@ -78,7 +78,7 @@ func AddCategory(c *gin.Context) { //admin
 	}
 
 	//validate the struct body
-	if err := validate(Request); err != nil {
+	if err := helper.Validate(Request); err != nil {
 		//add json response
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,

@@ -27,7 +27,7 @@ func RestaurantSignup(c *gin.Context) {
 	}
 
 	// validate input
-	if err := validate(&restaurantSignup); err != nil {
+	if err := helper.Validate(&restaurantSignup); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -144,7 +144,7 @@ func RestaurantLogin(c *gin.Context) {
 	}
 
 	// Validate
-	if err := validate(&restaurantLogin); err != nil {
+	if err := helper.Validate(&restaurantLogin); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
@@ -284,7 +284,7 @@ func EditRestaurant(c *gin.Context) {
 		return
 	}
 
-	if err := validate(Request); err != nil {
+	if err := helper.Validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),

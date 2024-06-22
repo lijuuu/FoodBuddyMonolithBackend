@@ -33,7 +33,7 @@ func CreateCoupon(c *gin.Context) { //admin
 		return
 	}
 
-	if err := validate(&Request); err != nil {
+	if err := helper.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err.Error(),
@@ -115,7 +115,7 @@ func UpdateCoupon(c *gin.Context) { //admin
 		return
 	}
 
-	if err := validate(&request); err != nil {
+	if err := helper.Validate(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err.Error(),
