@@ -18,7 +18,7 @@ func main() {
 	//load html from templates folder
 	router.LoadHTMLGlob("../templates/*")
 
-	//middleware for cors and api rate limiting
+	//middleware for cors and api rate limiting`
 	router.Use(helper.RateLimitMiddleware())
 	router.Use(helper.CorsMiddleware())
 

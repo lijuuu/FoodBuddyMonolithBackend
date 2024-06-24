@@ -481,6 +481,28 @@ func ActivateReferral(c *gin.Context) {
 		"message": "successfully finished refer process",
 	})
 }
+func GenerateReferralCodeForUser(email string) (string, error) {
+	var User model.User
+	if err := database.DB.Where("email =?", email).First(&User).Error; err != nil {
+		return "", err
+	}
+
+	if User.ReferralCode != "" {
+		return User.ReferralCode, nil
+	}
+
+	refCode := helper.GenerateRandomString(5)
+
+	if err := database.DB.Model(&User).Where("email =?", email).Update("referral_code", refCode).Error; err != nil {
+		return "", err
+	}
+
+	if !CreateReferralEntry(User.ID) {
+		return "", errors.New("failed to save referral history")
+	}
+
+	return refCode, nil
+}
 
 func CreateReferralEntry(UserID uint) bool {
 	var User model.User
@@ -540,7 +562,7 @@ func ClaimReferralRewards(c *gin.Context) {
 	}
 
 	if eligibleClaims < model.ReferralClaimLimit {
-		errMsg := fmt.Sprintf("need a minimum of %v referrals with at least one delivered to claim reward", model.ReferralClaimLimit)
+		errMsg := fmt.Sprintf("need a minimum of %v referrals with at least one order delivered to claim reward", model.ReferralClaimLimit)
 		c.JSON(http.StatusMethodNotAllowed, gin.H{
 			"status":  false,
 			"message": errMsg,
@@ -566,7 +588,7 @@ func ClaimReferralRewards(c *gin.Context) {
 		Type:            model.WalletIncoming,
 		Amount:          float64(PossibleClaimAmount),
 		CurrentBalance:  float64(PossibleClaimAmount) + User.WalletAmount,
-		Reason:          "Referral Claim amount,Total Claims : ",
+		Reason:          "Referral Claim amount,Total Claims : " + strconv.Itoa(int(PossibleClaimAmount)),
 	}
 
 	User.WalletAmount += float64(PossibleClaimAmount)
@@ -596,28 +618,6 @@ func ClaimReferralRewards(c *gin.Context) {
 	})
 }
 
-func GenerateReferralCodeForUser(email string) (string, error) {
-	var User model.User
-	if err := database.DB.Where("email =?", email).First(&User).Error; err != nil {
-		return "", err
-	}
-
-	if User.ReferralCode != "" {
-		return User.ReferralCode, nil
-	}
-
-	refCode := helper.GenerateRandomString(5)
-
-	if err := database.DB.Model(&User).Where("email =?", email).Update("referral_code", refCode).Error; err != nil {
-		return "", err
-	}
-
-	if !CreateReferralEntry(User.ID) {
-		return "", errors.New("failed to save referral history")
-	}
-
-	return refCode, nil
-}
 
 func GetReferralStats(c *gin.Context) {
 	email, role, _ := helper.GetJWTClaim(c)
@@ -640,8 +640,8 @@ func GetReferralStats(c *gin.Context) {
 
 	fmt.Println(User)
 
-	var Referrals []model.UserReferralHistory
-	if err := database.DB.Where("referred_by = ?", User.ReferralCode).Find(&Referrals).Error; err != nil {
+	var CompleteReferrals []model.UserReferralHistory
+	if err := database.DB.Where("referred_by = ?", User.ReferralCode).Find(&CompleteReferrals).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get user refer history",
@@ -649,15 +649,19 @@ func GetReferralStats(c *gin.Context) {
 		return
 	}
 
-	var eligibleClaims int64
-	for _, v := range Referrals {
-		if err := database.DB.Model(&model.OrderItem{}).Where("user_id =? AND order_status =?", v.UserID, model.OrderStatusDelivered).Count(&eligibleClaims).Error; err != nil {
+	var EligibleReferrals int64
+	for _, v := range CompleteReferrals {
+		if v.ReferClaimed == true{
+			continue
+		}
+
+		if err := database.DB.Model(&model.OrderItem{}).Where("user_id =? AND order_status =?", v.UserID, model.OrderStatusDelivered).Count(&EligibleReferrals).Error; err != nil {
 			continue
 		}
 	}
 
-	var totalClaims int64
-	if err := database.DB.Model(&model.UserReferralHistory{}).Where("referred_by = ? AND refer_claimed = ?", User.ReferralCode, true).Count(&totalClaims).Error; err != nil {
+	var claimsDone int64
+	if err := database.DB.Model(&model.UserReferralHistory{}).Where("referred_by = ? AND refer_claimed = ?", User.ReferralCode, true).Count(&claimsDone).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to retrieve total claims",
@@ -679,21 +683,29 @@ func GetReferralStats(c *gin.Context) {
 		totalClaimedAmount += history.Amount
 	}
 
+	fmt.Println("length is  :",len(CompleteReferrals))
+	var IneligibleReferrals int
+	if len(CompleteReferrals) == 0 {
+		IneligibleReferrals = 0
+	} else {
+		IneligibleReferrals = len(CompleteReferrals) - int(claimsDone) - int(EligibleReferrals)
+		if IneligibleReferrals < 0 {
+			IneligibleReferrals = 0
+		}
+	}
+
 	referralStats := gin.H{
-		"TotalReferrals":     len(Referrals),
-		"IneligibleReferrals":  len(Referrals) - (int(totalClaims) + int(eligibleClaims)),
-		"EligibleReferrals":  eligibleClaims,
-		"ClaimsDone":        totalClaims,
+		"TotalReferrals":     len(CompleteReferrals),
+		"IneligibleReferrals": IneligibleReferrals ,
+		"EligibleReferrals":  EligibleReferrals,
+		"ClaimsDone":        claimsDone,
 		"TotalClaimsDone": totalClaimedAmount,
 	}
 
-	// referralInfo := gin.H{
-		
-	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data":   referralStats,
-		"ReferralHistory":Referrals,
+		"ReferralHistory":CompleteReferrals,
 	})
 }

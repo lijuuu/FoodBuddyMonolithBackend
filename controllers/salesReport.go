@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"fmt"
 	"foodbuddy/database"
 	"foodbuddy/model"
@@ -45,80 +46,110 @@ func IndividualProductReport(ProductID string) model.ProductSales {
 	return report
 }
 
-func GeneratePDFInvoice(c *gin.Context, order model.Order, orderItems []model.OrderItem, address model.Address) error {
-	pdf := gofpdf.New("P", "mm", "A4", "")
 
-	// Add a page
-	pdf.AddPage()
+func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address model.Address,User model.User) ([]byte, error) {
+    pdf := gofpdf.New("P", "mm", "Tabloid", "")
+    // Add a page
+    pdf.AddPage()
 
-	// Set font
-	pdf.SetFont("Arial", "B", 16)
+    // Set font
+    pdf.SetFont("Arial", "B", 12)
 
-	// Title
-	pdf.Cell(40, 10, "Invoice")
-
-	// Line break
+    // Inserting an image
+    pdf.Image("/home/xstill/Desktop/Week8/onlyapi/FoodBuddy-Logo.png", 10, 10, 50, 0, false, "", 0, "")
 	pdf.Ln(20)
+    // Title
+    pdf.Cell(40, 10, "Order Invoice")
+    pdf.Ln(20)
 
-	// Order Information
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(40, 10, fmt.Sprintf("Order ID: %s", order.OrderID))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("User ID: %d", order.UserID))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Address Info: %s, %s, %s, %s, %s,%s", address.AddressType, address.StreetName, address.StreetNumber, address.City, address.State, address.PostalCode))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Payment Method: %s", order.PaymentMethod))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Payment Status: %s", order.PaymentStatus))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Ordered At: %s", order.OrderedAt.Format(time.RFC1123)))
-	pdf.Ln(20)
 
-	// Table header
+    // Order Information
+    pdf.SetFont("Arial", "", 12)
+    pdf.Cell(40, 10, fmt.Sprintf("Order ID: %s", order.OrderID))
+    pdf.Ln(10)
+    pdf.Cell(40, 10, fmt.Sprintf("Name  : %v", User.Name))
+    pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Email  : %v", User.Email))
+    pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Phone Number  : %v", User.PhoneNumber))
+    pdf.Ln(10)
+    pdf.Cell(40, 10, fmt.Sprintf("Address Info: %s, %s, %s, %s, %s,%s", address.AddressType, address.StreetName, address.StreetNumber, address.City, address.State, address.PostalCode))
+    pdf.Ln(10)
+    pdf.Cell(40, 10, fmt.Sprintf("Payment Method: %s", order.PaymentMethod))
+    pdf.Ln(10)
+    pdf.Cell(40, 10, fmt.Sprintf("Payment Status: %s", order.PaymentStatus))
+    pdf.Ln(10)
+    pdf.Cell(40, 10, fmt.Sprintf("Ordered At: %s", order.OrderedAt.Format(time.RFC1123)))
+    pdf.Ln(20)
+
+    // Table header
+    pdf.SetFont("Arial", "B", 10)
+    pdf.Cell(30, 10, "Product ID")
+	pdf.Cell(40, 10, "Product Name")
+    pdf.Cell(40, 10, "Product Offer")
+	pdf.Cell(40, 10, "Restaurant Name")
+    pdf.Cell(40, 10, "Quantity")
+    pdf.Cell(40, 10, "Amount")
+	pdf.Cell(40, 10, "Order Status")
+    pdf.Ln(10)
+
+	var Result model.Restaurant
+	var Product model.Product
+	
+    // Table body
+    pdf.SetFont("Arial", "", 12)
+    for _, item := range orderItems {
+		database.DB.Where("id = ?",item.RestaurantID).First(&Result)
+        pdf.Cell(30, 10, fmt.Sprintf("%d", item.ProductID))
+		database.DB.Where("id = ?",item.ProductID).First(&Product)
+		pdf.Cell(40, 10, fmt.Sprintf("%v", Product.Name))
+        pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
+		pdf.Cell(40, 10, fmt.Sprintf("%v", Result.Name))
+        pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
+        pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.Amount))
+		pdf.Cell(40, 10, fmt.Sprintf("%v", item.OrderStatus))
+        pdf.Ln(10)
+    }
+
+    //total amount before deduction
+	pdf.Ln(10)
 	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(40, 10, "Product ID")
-	pdf.Cell(40, 10, "Quantity")
-	pdf.Cell(40, 10, "Amount")
+	pdf.Cell(40, 10, fmt.Sprintf("Gross Amount: %.2f", order.TotalAmount))
 	pdf.Ln(10)
 
-	// Table body
+	//coupon discount
+	pdf.SetTextColor(255, 0, 0) //red for discount
+	pdf.Cell(40, 10, fmt.Sprintf("Coupon Discount Amount: %.2f", order.CouponDiscountAmount))
+	pdf.Ln(10)
+
+	//product disocunt
+	pdf.Cell(40, 10, fmt.Sprintf("Product Discount Amount: %.2f", order.ProductOfferAmount))
+	pdf.Ln(10)
+	pdf.SetTextColor(0, 0, 0) //reset to black
+
+	//final amount after dicounts
+	pdf.SetFont("Arial", "B", 12) 
+	pdf.Cell(40, 10, fmt.Sprintf("Net Amount: %.2f", order.FinalAmount))
+	pdf.Ln(10)
+
+	// Reset font settings
 	pdf.SetFont("Arial", "", 12)
-	for _, item := range orderItems {
-		pdf.Cell(40, 10, fmt.Sprintf("%d", item.ProductID))
-		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
-		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Amount))
-		pdf.Ln(10)
-	}
 
-	// Total amount
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Total Amount: %.2f", order.TotalAmount))
-	pdf.Ln(10)
-	pdf.Cell(40, 10, fmt.Sprintf("Final Amount: %.2f", order.FinalAmount))
+    var pdfBytes bytes.Buffer
+    err := pdf.Output(&pdfBytes)
+    if err!= nil {
+        return nil, err
+    }
 
-	// Save the PDF to file
-	err := pdf.OutputFileAndClose("invoice.pdf")
-	if err != nil {
-		return err
-	}
-
-	return nil
+    return pdfBytes.Bytes(), nil
 }
 
+
 func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
-	var Request model.GetOrderInfoByOrderID
-	if err := c.Bind(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind request",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
+	OrderID :=  c.Param("orderid")
 
 	var Order model.Order
-	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
+	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
@@ -128,7 +159,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	}
 
 	var OrderItems []model.OrderItem
-	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
+	if err := database.DB.Where("order_id = ?", OrderID).Find(&OrderItems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
@@ -156,7 +187,8 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 
-	if err := GeneratePDFInvoice(c, Order, OrderItems, Address); err != nil {
+	pdfBytes, err := GeneratePDFInvoice(Order, OrderItems, Address,User)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to generate PDF",
@@ -165,35 +197,9 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 
-	response := gin.H{
-		"order_id":        Order.OrderID,
-		"discount_amount": Order.CouponDiscountAmount,
-		"coupon_code":     Order.CouponCode,
-		"total_amount":    Order.TotalAmount,
-		"final_amount":    Order.FinalAmount,
-		"payment_method":  Order.PaymentMethod,
-		"payment_status":  Order.PaymentStatus,
-		"Ordered_at":      Order.OrderedAt.Format(time.RFC3339),
-
-		"address": gin.H{
-			"Address_type":  Address.AddressType,
-			"street_name":   Address.StreetName,
-			"street_number": Address.StreetNumber,
-			"city":          Address.City,
-			"state":         Address.State,
-			"postal_code":   Address.PostalCode,
-		},
-
-		"order_item": OrderItems,
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "Successfully generated PDF",
-		"data": gin.H{
-			"OrderInformation": response,
-		},
-	})
+	c.Writer.Header().Set("Content-type", "application/pdf")
+	c.Writer.Header().Set("Content-Disposition", "inline; filename=invoice.pdf") //https://blog.devgenius.io/tutorial-creating-an-endpoint-to-download-files-using-golang-and-gin-gonic-27abbcf75940
+	c.Writer.Write(pdfBytes)
 }
 
 func BestSellingProducts(c *gin.Context) {
@@ -372,6 +378,6 @@ func NewArrivals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
 }
 
-func RestaurantOverallReport(c *gin.Context) {
+func OverallSalesReport(c *gin.Context) {
 
 }

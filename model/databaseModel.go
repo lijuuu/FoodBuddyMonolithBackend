@@ -43,7 +43,6 @@ const (
 	OrderStatusDelivered     = "DELIVERED"
 	OrderStatusCancelled     = "CANCELLED"
 
-
 	CouponDiscountPercentageLimit = 50
 
 	ReferralClaimAmount = 30
@@ -109,18 +108,19 @@ type Category struct {
 
 type Product struct {
 	gorm.Model
-	ID            uint
-	RestaurantID  uint    `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
-	CategoryID    uint    `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
-	Name          string  `validate:"required" json:"name"`
-	Description   string  `gorm:"column:description" validate:"required" json:"description"`
-	ImageURL      string  `gorm:"column:image_url" validate:"required" json:"image_url"`
-	Price         float64 `validate:"required,number" json:"price"`
-	MaxStock      uint    `validate:"required,number" json:"max_stock"`
-	OfferAmount   float64 `gorm:"column:offer_amount" json:"offer_amount"`
-	StockLeft     uint    `validate:"required,number" json:"stock_left"`
-	AverageRating float64 `json:"average_rating"`
-	Veg           string  `validate:"required" json:"veg" gorm:"column:veg"`
+	ID              uint
+	RestaurantID    uint    `gorm:"foreignKey:RestaurantID" validate:"required" json:"restaurant_id"`
+	CategoryID      uint    `gorm:"foreignKey:CategoryID" validate:"required" json:"category_id"`
+	Name            string  `validate:"required" json:"name"`
+	Description     string  `gorm:"column:description" validate:"required" json:"description"`
+	ImageURL        string  `gorm:"column:image_url" validate:"required" json:"image_url"`
+	Price           float64 `validate:"required,number" json:"price"`
+	PreparationTime float64 `gorm:"column:preparation_time" validate:"required,number" json:"preparation_time"` //in mins
+	MaxStock        uint    `validate:"required,number" json:"max_stock"`
+	OfferAmount     float64 `gorm:"column:offer_amount" json:"offer_amount"`
+	StockLeft       uint    `validate:"required,number" json:"stock_left"`
+	AverageRating   float64 `json:"average_rating"`
+	Veg             string  `validate:"required" json:"veg" gorm:"column:veg"`
 }
 
 type Restaurant struct {
@@ -206,7 +206,7 @@ type PasswordReset struct {
 	Email      string `validate:"email"`
 	Role       string `validate:"required"`
 	ResetToken string `gorm:"column:reset_token" json:"reset_token"`
-	Active       string   `json:"active"`
+	Active     string `json:"active"`
 	ExpiryTime uint   `gorm:"expiry_time" json:"expiry_time"`
 }
 

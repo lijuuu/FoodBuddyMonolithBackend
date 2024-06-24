@@ -49,7 +49,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
 		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 		userRoutes.POST("/order/history", controllers.UserOrderHistory)
-		userRoutes.POST("/order/information", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
+		userRoutes.GET("/order/invoice/:orderid", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)

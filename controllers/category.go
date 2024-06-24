@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"net/http"
 	"strconv"
 	"strings"
@@ -59,11 +59,11 @@ func AddCategory(c *gin.Context) { //admin
 	var existingcategory model.Category
 
 	//check admin api authentication
-	_,role,err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := helper.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -137,17 +137,18 @@ func AddCategory(c *gin.Context) { //admin
 		},
 	})
 }
+
 func EditCategory(c *gin.Context) { //admin
 
 	var Request model.EditCategoryRequest
 	var existingcategory model.Category
 
 	//check admin api authentication
-	_,role,err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := helper.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -204,11 +205,11 @@ func DeleteCategory(c *gin.Context) { //admin
 	catergoryIDStr := c.Param("categoryid")
 
 	//check admin api authentication
-	_,role,err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil{
+	_, role, err := helper.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized request",
+			"status":  false,
+			"message": "unauthorized request",
 		})
 		return
 	}
@@ -247,15 +248,19 @@ func DeleteCategory(c *gin.Context) { //admin
 	})
 }
 
-func GetCategoryOfferfromProductID(ProductID uint) (bool,uint,uint) { //ok,id,offerpercentage
+func GetCategoryOfferfromProductID(ProductID uint) (bool, uint, uint) { //ok,id,offerpercentage
 	var Product model.Product
-	if err:=database.DB.Where("id = ?",ProductID).First(&Product).Error;err!=nil{
-		return false,Product.CategoryID,0
+	if err := database.DB.Where("id = ?", ProductID).First(&Product).Error; err != nil {
+		return false, Product.CategoryID, 0
 	}
-    var Category model.Category
-	if err:=database.DB.Where("id = ?",Product.CategoryID).First(&Category).Error;err!=nil{
-		return false,Product.CategoryID,0
+	var Category model.Category
+	if err := database.DB.Where("id = ?", Product.CategoryID).First(&Category).Error; err != nil {
+		return false, Product.CategoryID, 0
 	}
 
-	return true,Product.CategoryID,Category.OfferPercentage
+	return true, Product.CategoryID, Category.OfferPercentage
+}
+
+func GetOverallRestaurantOrderInfo(c *gin.Context) {
+
 }
