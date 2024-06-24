@@ -86,24 +86,27 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
     pdf.SetFont("Arial", "B", 10)
     pdf.Cell(30, 10, "Product ID")
 	pdf.Cell(40, 10, "Product Name")
-    pdf.Cell(40, 10, "Product Offer")
+    pdf.Cell(30, 10, "Product Offer")
 	pdf.Cell(40, 10, "Restaurant Name")
     pdf.Cell(40, 10, "Quantity")
     pdf.Cell(40, 10, "Amount")
 	pdf.Cell(40, 10, "Order Status")
     pdf.Ln(10)
 
-	var Result model.Restaurant
-	var Product model.Product
 	
     // Table body
     pdf.SetFont("Arial", "", 12)
     for _, item := range orderItems {
+		var Result model.Restaurant
+		var Product model.Product
+		//restaurant info
 		database.DB.Where("id = ?",item.RestaurantID).First(&Result)
         pdf.Cell(30, 10, fmt.Sprintf("%d", item.ProductID))
+		//product info
 		database.DB.Where("id = ?",item.ProductID).First(&Product)
 		pdf.Cell(40, 10, fmt.Sprintf("%v", Product.Name))
-        pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
+
+        pdf.Cell(30, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
 		pdf.Cell(40, 10, fmt.Sprintf("%v", Result.Name))
         pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
         pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.Amount))
@@ -378,6 +381,13 @@ func NewArrivals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
 }
 
-func OverallSalesReport(c *gin.Context) {
-
+func PlatformOverallSalesReport(c *gin.Context) {
+	//total orders  //oi
+	//total delivered  //oi
+	//total cancelled //oi
+	//revenue generated //oi
+	//coupon deductions //oi 
+	//product offer deductions //oi
+	//referral rewards given //oi
+	//week, month , year
 }

@@ -458,7 +458,7 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		Amount:          order.FinalAmount,
 	    CurrentBalance: newBalance,
 		OrderID: OrderID,
-		Reason:          "Order Payment",
+		Reason:         model.WalletTxTypeOrderPayment,
 	}
 
 	if err := database.DB.Create(&walletHistory).Error; err != nil {

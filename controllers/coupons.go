@@ -588,7 +588,7 @@ func ClaimReferralRewards(c *gin.Context) {
 		Type:            model.WalletIncoming,
 		Amount:          float64(PossibleClaimAmount),
 		CurrentBalance:  float64(PossibleClaimAmount) + User.WalletAmount,
-		Reason:          "Referral Claim amount,Total Claims : " + strconv.Itoa(int(PossibleClaimAmount)),
+		Reason:          model.WalletTxTypeReferralReward,
 	}
 
 	User.WalletAmount += float64(PossibleClaimAmount)
@@ -651,7 +651,7 @@ func GetReferralStats(c *gin.Context) {
 
 	var EligibleReferrals int64
 	for _, v := range CompleteReferrals {
-		if v.ReferClaimed == true{
+		if v.ReferClaimed {
 			continue
 		}
 
@@ -671,7 +671,7 @@ func GetReferralStats(c *gin.Context) {
 
 	var totalClaimedAmount float64
 	var userWalletHistories []model.UserWalletHistory
-	if err := database.DB.Where("reason LIKE? AND user_id =?", "%Referral Claim%", User.ID).Find(&userWalletHistories).Error; err != nil {
+	if err := database.DB.Where("reason = ? AND user_id =?", model.WalletTxTypeReferralReward, User.ID).Find(&userWalletHistories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to retrieve total claimed amount",

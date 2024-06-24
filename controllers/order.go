@@ -806,7 +806,7 @@ func ProvideWalletRefundToUser(UserID uint, OrderItems []model.OrderItem) bool {
 	WalletHistory.Amount = float64(sum)
 	WalletHistory.UserID = UserID
 	WalletHistory.OrderID = Order.OrderID
-	WalletHistory.Reason = "Order Refund"
+	WalletHistory.Reason = model.WalletTxTypeOrderRefund
 	WalletHistory.CurrentBalance = User.WalletAmount
 	WalletHistory.Type = model.WalletIncoming
 

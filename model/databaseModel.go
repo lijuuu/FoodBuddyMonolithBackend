@@ -28,6 +28,10 @@ const (
 	WalletIncoming = "INCOMING"
 	WalletOutgoing = "OUTGOING"
 
+	WalletTxTypeOrderRefund    = "ORDERREFUND"
+	WalletTxTypeReferralReward = "REFERRALREWARD"
+	WalletTxTypeOrderPayment   = "ORDERPAYMENT"
+
 	OnlinePaymentPending   = "ONLINE_PENDING"
 	OnlinePaymentConfirmed = "ONLINE_CONFIRMED"
 	OnlinePaymentFailed    = "ONLINE_FAILED"
