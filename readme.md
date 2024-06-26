@@ -1,4 +1,4 @@
-# FoodBuddy Platform
+# FoodBuddy Platform API
 
 FoodBuddy is a dynamic platform that bridges the gap between users, restaurants, and administrators, providing a robust set of features for effective communication and transaction management within the food industry.
 
