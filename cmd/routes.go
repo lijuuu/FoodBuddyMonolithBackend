@@ -128,6 +128,8 @@ func PublicRoutes(router *gin.Engine) {
 		publicRoute.GET("/product/offerproducts", controllers.GetProductOffers)
 		publicRoute.GET("/report/product/:productid", controllers.ProductReport)
 		publicRoute.GET("/report/product/best", controllers.BestSellingProducts)
+		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport)
+
 	}
 }
 

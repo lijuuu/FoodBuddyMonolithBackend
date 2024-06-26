@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type GoogleResponse struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`
@@ -50,4 +52,34 @@ type ProductResponse struct {
 	StockLeft      uint    `json:"stock_left"`
 	AverageRating  float64 `json:"average_rating"`
 	Veg            string    `json:"veg"`
+}
+
+
+type OrderCount struct {
+    TotalOrder uint
+	TotalProcessing uint
+	TotalInPreparation uint
+	TotalPrepared uint
+	TotalOnTheWay uint
+	TotalDelivered uint
+	TotalCancelled uint
+}
+
+type OrderSales struct{
+	TotalRevenue float64
+	CouponDiscounts float64
+	ProductOffers float64
+	TotalCancelOrderRefunds float64
+}
+
+type OverallOrderReport struct {
+    From time.Time
+    Till time.Time
+    Count OrderCount
+}
+
+type PlatformSalesReportInput struct {
+    StartDate time.Time `json:"start_date,omitempty" time_format:"2006-01-02"`
+    EndDate   time.Time `json:"end_date,omitempty" time_format:"2006-01-02"`
+    PaymentStatus string `json:"payment_status"`
 }

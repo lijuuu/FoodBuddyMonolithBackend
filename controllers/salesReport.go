@@ -46,75 +46,72 @@ func IndividualProductReport(ProductID string) model.ProductSales {
 	return report
 }
 
+func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address model.Address, User model.User) ([]byte, error) {
+	pdf := gofpdf.New("P", "mm", "Tabloid", "")
+	// Add a page
+	pdf.AddPage()
 
-func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address model.Address,User model.User) ([]byte, error) {
-    pdf := gofpdf.New("P", "mm", "Tabloid", "")
-    // Add a page
-    pdf.AddPage()
+	// Set font
+	pdf.SetFont("Arial", "B", 12)
 
-    // Set font
-    pdf.SetFont("Arial", "B", 12)
-
-    // Inserting an image
-    pdf.Image("/home/xstill/Desktop/Week8/onlyapi/FoodBuddy-Logo.png", 10, 10, 50, 0, false, "", 0, "")
+	// Inserting an image
+	pdf.Image("/home/xstill/Desktop/Week8/onlyapi/FoodBuddy-Logo.png", 10, 10, 50, 0, false, "", 0, "")
 	pdf.Ln(20)
-    // Title
-    pdf.Cell(40, 10, "Order Invoice")
-    pdf.Ln(20)
+	// Title
+	pdf.Cell(40, 10, "Order Invoice")
+	pdf.Ln(20)
 
-
-    // Order Information
-    pdf.SetFont("Arial", "", 12)
-    pdf.Cell(40, 10, fmt.Sprintf("Order ID: %s", order.OrderID))
-    pdf.Ln(10)
-    pdf.Cell(40, 10, fmt.Sprintf("Name  : %v", User.Name))
-    pdf.Ln(10)
+	// Order Information
+	pdf.SetFont("Arial", "", 12)
+	pdf.Cell(40, 10, fmt.Sprintf("Order ID: %s", order.OrderID))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Name  : %v", User.Name))
+	pdf.Ln(10)
 	pdf.Cell(40, 10, fmt.Sprintf("Email  : %v", User.Email))
-    pdf.Ln(10)
+	pdf.Ln(10)
 	pdf.Cell(40, 10, fmt.Sprintf("Phone Number  : %v", User.PhoneNumber))
-    pdf.Ln(10)
-    pdf.Cell(40, 10, fmt.Sprintf("Address Info: %s, %s, %s, %s, %s,%s", address.AddressType, address.StreetName, address.StreetNumber, address.City, address.State, address.PostalCode))
-    pdf.Ln(10)
-    pdf.Cell(40, 10, fmt.Sprintf("Payment Method: %s", order.PaymentMethod))
-    pdf.Ln(10)
-    pdf.Cell(40, 10, fmt.Sprintf("Payment Status: %s", order.PaymentStatus))
-    pdf.Ln(10)
-    pdf.Cell(40, 10, fmt.Sprintf("Ordered At: %s", order.OrderedAt.Format(time.RFC1123)))
-    pdf.Ln(20)
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Address Info: %s, %s, %s, %s, %s,%s", address.AddressType, address.StreetName, address.StreetNumber, address.City, address.State, address.PostalCode))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Payment Method: %s", order.PaymentMethod))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Payment Status: %s", order.PaymentStatus))
+	pdf.Ln(10)
+	pdf.Cell(40, 10, fmt.Sprintf("Ordered At: %s", order.OrderedAt.Format(time.RFC1123)))
+	pdf.Ln(20)
 
-    // Table header
-    pdf.SetFont("Arial", "B", 10)
-    pdf.Cell(30, 10, "Product ID")
+	// Table header
+	pdf.SetFont("Arial", "B", 10)
+	pdf.Cell(30, 10, "Product ID")
 	pdf.Cell(40, 10, "Product Name")
-    pdf.Cell(30, 10, "Product Offer")
+	pdf.Cell(30, 10, "Product Offer")
 	pdf.Cell(40, 10, "Restaurant Name")
-    pdf.Cell(40, 10, "Quantity")
-    pdf.Cell(40, 10, "Amount")
+	pdf.Cell(40, 10, "Quantity")
+	pdf.Cell(40, 10, "Amount")
 	pdf.Cell(40, 10, "Order Status")
-    pdf.Ln(10)
+	pdf.Ln(10)
 
-	
-    // Table body
-    pdf.SetFont("Arial", "", 12)
-    for _, item := range orderItems {
+	// Table body
+	pdf.SetFont("Arial", "", 12)
+	for _, item := range orderItems {
 		var Result model.Restaurant
 		var Product model.Product
 		//restaurant info
-		database.DB.Where("id = ?",item.RestaurantID).First(&Result)
-        pdf.Cell(30, 10, fmt.Sprintf("%d", item.ProductID))
+		database.DB.Where("id = ?", item.RestaurantID).First(&Result)
+		pdf.Cell(30, 10, fmt.Sprintf("%d", item.ProductID))
 		//product info
-		database.DB.Where("id = ?",item.ProductID).First(&Product)
+		database.DB.Where("id = ?", item.ProductID).First(&Product)
 		pdf.Cell(40, 10, fmt.Sprintf("%v", Product.Name))
 
-        pdf.Cell(30, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
+		pdf.Cell(30, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
 		pdf.Cell(40, 10, fmt.Sprintf("%v", Result.Name))
-        pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
-        pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.Amount))
+		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
+		pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.Amount))
 		pdf.Cell(40, 10, fmt.Sprintf("%v", item.OrderStatus))
-        pdf.Ln(10)
-    }
+		pdf.Ln(10)
+	}
 
-    //total amount before deduction
+	//total amount before deduction
 	pdf.Ln(10)
 	pdf.SetFont("Arial", "B", 12)
 	pdf.Cell(40, 10, fmt.Sprintf("Gross Amount: %.2f", order.TotalAmount))
@@ -131,25 +128,24 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 	pdf.SetTextColor(0, 0, 0) //reset to black
 
 	//final amount after dicounts
-	pdf.SetFont("Arial", "B", 12) 
+	pdf.SetFont("Arial", "B", 12)
 	pdf.Cell(40, 10, fmt.Sprintf("Net Amount: %.2f", order.FinalAmount))
 	pdf.Ln(10)
 
 	// Reset font settings
 	pdf.SetFont("Arial", "", 12)
 
-    var pdfBytes bytes.Buffer
-    err := pdf.Output(&pdfBytes)
-    if err!= nil {
-        return nil, err
-    }
+	var pdfBytes bytes.Buffer
+	err := pdf.Output(&pdfBytes)
+	if err != nil {
+		return nil, err
+	}
 
-    return pdfBytes.Bytes(), nil
+	return pdfBytes.Bytes(), nil
 }
 
-
 func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
-	OrderID :=  c.Param("orderid")
+	OrderID := c.Param("orderid")
 
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {
@@ -190,7 +186,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 
-	pdfBytes, err := GeneratePDFInvoice(Order, OrderItems, Address,User)
+	pdfBytes, err := GeneratePDFInvoice(Order, OrderItems, Address, User)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
@@ -382,12 +378,21 @@ func NewArrivals(c *gin.Context) {
 }
 
 func PlatformOverallSalesReport(c *gin.Context) {
-	//total orders  //oi
-	//total delivered  //oi
-	//total cancelled //oi
-	//revenue generated //oi
-	//coupon deductions //oi 
-	//product offer deductions //oi
-	//referral rewards given //oi
-	//week, month , year
+    var input model.PlatformSalesReportInput
+
+    // Bind the incoming JSON request body to the input struct
+    if err := c.ShouldBindJSON(&input); err!= nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Use the TotalOrders function with the received start date and current date
+    result, _ := TotalOrders(input.StartDate, time.Now(), input.PaymentStatus)
+
+    fmt.Println(result)
+    c.JSON(http.StatusOK, gin.H{
+        "result": result,
+    })
 }
+
+
