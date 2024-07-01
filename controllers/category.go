@@ -101,16 +101,7 @@ func AddCategory(c *gin.Context) { //admin
 	}
 
 	// Check if the category is already present
-	if err := database.DB.Where("name =?", Request.Name).Find(&existingcategory).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch information for possible category name match",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
-	if Request.Name == existingcategory.Name {
+	if err := database.DB.Where("name = ?", Request.Name).First(&existingcategory).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "category already exists",
@@ -119,7 +110,13 @@ func AddCategory(c *gin.Context) { //admin
 		return
 	}
 
-	if err := database.DB.Create(&Request).Error; err != nil {
+	createCategory := model.Category{
+		Name:        Request.Name,
+		Description: Request.Description,
+		ImageURL:    Request.ImageURL,
+	}
+
+	if err := database.DB.Save(&createCategory).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "unable to add new category, server error ",
@@ -138,60 +135,62 @@ func AddCategory(c *gin.Context) { //admin
 	})
 }
 
-func EditCategory(c *gin.Context) { //admin
-
+func EditCategory(c *gin.Context) {
 	var Request model.EditCategoryRequest
 	var existingcategory model.Category
 
-	//check admin api authentication
+	// Check admin role
 	_, role, err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "error while validating admin role",
+		})
+		return
+	}
+	if role != model.AdminRole {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
-			"message": "unauthorized request",
+			"message": "unauthorized request: admin role required",
 		})
 		return
 	}
 
+	// Bind JSON request
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to process incoming request",
-			"error_code": http.StatusBadRequest,
+			"status":  false,
+			"message": "failed to process incoming request",
 		})
 		return
 	}
 
+	// Fetch existing category
 	if err := database.DB.First(&existingcategory, Request.ID).Error; err != nil {
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch category details from the database",
-			"error_code": http.StatusInternalServerError,
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "category not found",
 		})
 		return
 	}
 
-	if err := database.DB.Where("name =?", Request.Name).Find(&existingcategory).Error; err != nil {
+	// Update fields if changed
+	if Request.Name != existingcategory.Name {
+		existingcategory.Name = Request.Name
+	}
+	existingcategory.Description = Request.Description
+	existingcategory.ImageURL = Request.ImageURL
+
+	// Perform update
+	if err := database.DB.Save(&existingcategory).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch category details via category name",
-			"error_code": http.StatusInternalServerError,
+			"status":  false,
+			"message": "failed to update category details",
 		})
 		return
 	}
 
-	Request.Name = existingcategory.Name
-
-	if err := database.DB.Updates(&Request).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to update category details",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
-
+	// Success response
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "successfully updated category",

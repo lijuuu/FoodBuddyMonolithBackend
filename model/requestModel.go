@@ -3,6 +3,7 @@ package model
 type EmailSignupRequest struct {
 	Name            string `validate:"required" json:"name"`
 	Email           string `validate:"required,email" json:"email"`
+	PhoneNumber     uint   `validate:"required,number,min=1000000000,max=9999999999" json:"phonenumber"`
 	Password        string `validate:"required" json:"password"`
 	ConfirmPassword string `validate:"required" json:"confirmpassword"`
 }
@@ -14,19 +15,20 @@ type EmailLoginRequest struct {
 
 type UpdateUserInformation struct {
 	Name        string `json:"name"`
-	PhoneNumber string `validate:"number" json:"phone_number"`
+	PhoneNumber uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
 	Picture     string `json:"picture"`
 }
 
 type RestaurantSignupRequest struct {
-	Name           string `validate:"required" json:"name"`
-	Description    string `gorm:"column:description" validate:"required" json:"description"`
-	Address        string `gorm:"column:address" validate:"required" json:"address"`
-	Email          string `gorm:"column:email" validate:"required,email" json:"email"`
-	Password       string `gorm:"column:password" validate:"required" json:"password"`
-	PhoneNumber    string `gorm:"column:phone_number" validate:"required" json:"phone_number"`
-	ImageURL       string `gorm:"column:image_url" validate:"required" json:"image_url"`
-	CertificateURL string `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
+	Name            string `validate:"required" json:"name"`
+	Description     string `gorm:"column:description" validate:"required" json:"description"`
+	Address         string `gorm:"column:address" validate:"required" json:"address"`
+	Email           string `gorm:"column:email" validate:"required,email" json:"email"`
+	ConfirmPassword string `gorm:"column:confirmpassword" validate:"required" json:"confirmpassword"`
+	Password        string `gorm:"column:password" validate:"required" json:"password"`
+	PhoneNumber     uint   `gorm:"column:phonenumber" validate:"required,number,min=1000000000,max=9999999999" json:"phonenumber"`
+	ImageURL        string `gorm:"column:image_url" validate:"required,url" json:"image_url"`
+	CertificateURL  string `gorm:"column:certificate_url" validate:"required,url" json:"certificate_url"`
 }
 
 type RestaurantLoginRequest struct {
@@ -145,7 +147,7 @@ type AddCategoryRequest struct {
 }
 
 type EditCategoryRequest struct {
-	ID          uint   `validate:"required,number"`
+	ID          uint   `validate:"required,number" json:"id"`
 	Name        string `validate:"required" json:"name"`
 	Description string `validate:"required" json:"description"`
 	ImageURL    string `validate:"required,url" json:"image_url"`
@@ -187,4 +189,24 @@ type EditProductRequest struct {
 type AddOfferRequest struct {
 	ProductID   uint    `json:"product_id" binding:"required"`
 	OfferAmount float64 `json:"offer_amount" binding:"required"`
+}
+
+type RestaurantProfileUpdate struct {
+	Name        string
+	Description string
+	Address     string
+	PhoneNumber uint
+	ImageURL    string
+}
+
+type EditUserAddress struct {
+	UserID       uint   `json:"user_id" gorm:"column:user_id"`
+	AddressID    uint   `gorm:"column:address_id" json:"address_id"`
+	PhoneNumber  uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
+	AddressType  string `validate:"required" json:"address_type" gorm:"column:address_type"`
+	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
+	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`
+	City         string `validate:"required" json:"city" gorm:"column:city"`
+	State        string `validate:"required" json:"state" gorm:"column:state"`
+	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
 }

@@ -17,7 +17,8 @@ import (
 func TotalOrders(From time.Time, Till time.Time, PaymentStatus string) (model.OrderCount, error) {
     var orders []model.Order
 
-	// From += "T00:00:00Z"
+	// addon += "T00:00:00Z"
+    //get from,till in 01-01-2002 format .... addon time at last 
 
     // Fetch orders within the specified time frame and payment status
     if err := database.DB.Where("ordered_at BETWEEN? AND? AND payment_status =?", From, Till, PaymentStatus).Find(&orders).Error; err!= nil {

@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -32,6 +33,24 @@ func RestaurantSignup(c *gin.Context) {
 			"status":     false,
 			"message":    err.Error(),
 			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	//check if the password and the confirm password is correct
+	if restaurantSignup.Password != restaurantSignup.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": "passwords doesn't match",
+		})
+		return
+	}
+
+	err := passwordvalidator.Validate(restaurantSignup.Password, model.PasswordEntropy)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -252,13 +271,28 @@ func GetRestaurants(c *gin.Context) {
 		})
 		return
 	}
+	var simplifiedRestaurants []gin.H
+	
+	for _, r := range restaurants {
+		simplifiedRestaurants = append(simplifiedRestaurants, gin.H{
+			"Name":               r.Name,
+			"Email":              r.Email,
+			"Description":        r.Description,
+			"Address":            r.Address,
+			"PhoneNumber":        r.PhoneNumber,
+			"ImageURL":           r.ImageURL,
+			"CertificateURL":     r.CertificateURL,
+			"VerificationStatus": r.VerificationStatus,
+		})
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "restaurants retrieved successfully",
-		"data":    gin.H{"restaurantslist": restaurants},
+		"data":    gin.H{"restaurantslist": simplifiedRestaurants},
 	})
 }
+
 
 // restaurant
 func EditRestaurant(c *gin.Context) {
@@ -421,11 +455,16 @@ func BlockRestaurant(c *gin.Context) {
 	}
 
 	if restaurant.Blocked {
-		c.JSON(http.StatusConflict, gin.H{
+		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    "restaurant is already blocked",
 			"error_code": http.StatusConflict,
-			"data":       gin.H{"restaurant": restaurant},
+			"data":    gin.H{
+				"name": restaurant.Name,
+				"email":restaurant.Email,
+				"address":restaurant.Address,
+				"blockstatus":restaurant.Blocked,
+			},
 		})
 		return
 	}
@@ -445,7 +484,12 @@ func BlockRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "restaurant is blocked",
-		"data":    gin.H{"restaurant": restaurant},
+		"data":    gin.H{
+			"name": restaurant.Name,
+			"email":restaurant.Email,
+			"address":restaurant.Address,
+			"blockstatus":restaurant.Blocked,
+		},
 	})
 }
 
@@ -489,7 +533,12 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant is already unblocked",
 			"error_code": http.StatusConflict,
-			"data":       gin.H{"restaurant": restaurant},
+					"data":    gin.H{
+			"name": restaurant.Name,
+			"email":restaurant.Email,
+			"address":restaurant.Address,
+			"blockstatus":restaurant.Blocked,
+		},
 		})
 		return
 	}
@@ -509,7 +558,12 @@ func UnblockRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "restaurant is unblocked",
-		"data":    gin.H{"restaurant": restaurant},
+		"data":    gin.H{
+			"name": restaurant.Name,
+			"email":restaurant.Email,
+			"address":restaurant.Address,
+			"blockstatus":restaurant.Blocked,
+		},
 	})
 }
 
@@ -543,7 +597,7 @@ func GetRestaurantWalletData(c *gin.Context) {
 	}
 
 	RestID, _ := RestIDfromEmail(email)
-	WalletBalance,_ := RestaurantWalletBalance(email)
+	WalletBalance, _ := RestaurantWalletBalance(email)
 
 	var Result []model.RestaurantWalletHistory
 	if err := database.DB.Where("restaurant_id = ?", RestID).Find(&Result).Error; err != nil {
@@ -551,16 +605,17 @@ func GetRestaurantWalletData(c *gin.Context) {
 		return
 	}
 
-	type Response struct{
-       WalletBalance float64
-	   History []model.RestaurantWalletHistory
+	type Response struct {
+		WalletBalance float64
+		History       []model.RestaurantWalletHistory
 	}
-	
-	c.JSON(http.StatusOK,gin.H{
-		"status":true,
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
 		"data": Response{
 			WalletBalance: WalletBalance,
-			History: Result,
+			History:       Result,
 		},
 	})
 }
+

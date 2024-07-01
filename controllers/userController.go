@@ -120,14 +120,6 @@ func GetBlockedUserList(c *gin.Context) {
 		return
 	}
 
-	if len(blockedUsers) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
-		})
-		return
-	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -285,16 +277,6 @@ func AddUserAddress(c *gin.Context) {
 		return
 	}
 	UserAddress.UserID = UserID
-
-	if err := helper.Validate(UserAddress); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    err,
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
-
 	//to make sure the addressid is autoincremented by the gorm
 	UserAddress.AddressID = 0
 
@@ -302,7 +284,7 @@ func AddUserAddress(c *gin.Context) {
 	if errs := helper.Validate(UserAddress); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    errs,
+			"message":    errs.Error(),
 			"error_code": http.StatusBadRequest,
 		})
 		return
@@ -352,7 +334,7 @@ func AddUserAddress(c *gin.Context) {
 	}
 
 	//return the addresses of the particular user
-	c.JSON(http.StatusInternalServerError, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "successfully added new address",
 		"data": gin.H{
@@ -436,7 +418,7 @@ func EditUserAddress(c *gin.Context) {
 	}
 	UserID, _ := UserIDfromEmail(email)
 
-	var updateUserAddress model.Address
+	var updateUserAddress model.EditUserAddress
 	updateUserAddress.UserID = UserID
 
 	// Bind the incoming JSON to the updateUserAddress struct
@@ -449,6 +431,8 @@ func EditUserAddress(c *gin.Context) {
 		})
 		return
 	}
+
+	fmt.Println(updateUserAddress)
 
 	// Retrieve the existing UserAddress record
 	var existingUserAddress model.Address
@@ -483,6 +467,7 @@ func EditUserAddress(c *gin.Context) {
 	}
 
 	// Update the existing record with the new values
+	existingUserAddress.PhoneNumber = updateUserAddress.PhoneNumber
 	existingUserAddress.AddressType = updateUserAddress.AddressType
 	existingUserAddress.StreetName = updateUserAddress.StreetName
 	existingUserAddress.StreetNumber = updateUserAddress.StreetNumber
@@ -517,17 +502,22 @@ func DeleteUserAddress(c *gin.Context) {
 		return
 	}
 	UserID, _ := UserIDfromEmail(email)
-	var AddressInfo model.Address
+
 	// Bind the incoming JSON to the updateUserAddress struct
-	if err := c.BindJSON(&AddressInfo); err != nil {
+	var addressidstr string
+	if addressidstr = c.Query("addressid"); addressidstr == "" { //use query ?addressid = 1
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "failed to bind the incoming request",
+			"message":    "provide the addressid to delete the address",
 			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
+	addressid, _ := strconv.Atoi(addressidstr)
+	var AddressInfo model.Address
+
 	AddressInfo.UserID = UserID
+	AddressInfo.AddressID = uint(addressid)
 	//check the userid and addressid
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
@@ -603,7 +593,7 @@ func UpdateUserInformation(c *gin.Context) {
 	if err := helper.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": err,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -644,20 +634,19 @@ func Step1PasswordReset(c *gin.Context) {
 		return
 	}
 
-	if Request.Role != model.UserRole && Request.Role != model.RestaurantRole{
+	if Request.Role != model.UserRole && Request.Role != model.RestaurantRole {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "role should be either user or restaurant"})
 		return
 	}
 
-
 	switch Request.Role {
 	case model.UserRole:
-		if !VerifyUserPasswordReset(Request.Email){
+		if !VerifyUserPasswordReset(Request.Email) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request"})
 			return
 		}
 	case model.RestaurantRole:
-		if !VerifyRestaurantPasswordReset(Request.Email){
+		if !VerifyRestaurantPasswordReset(Request.Email) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request"})
 			return
 		}
@@ -671,7 +660,7 @@ func Step1PasswordReset(c *gin.Context) {
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", Request.Email, ResetToken,Request.Role)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", Request.Email, ResetToken, Request.Role)
 	mail := fmt.Sprintf("FoodBuddy Password Reset \n Click here to reset your password %v", url)
 
 	//send the otp to the specified email
@@ -713,22 +702,21 @@ func LoadPasswordReset(c *gin.Context) {
 	token := c.Query("token")
 
 	var PasswordReset model.PasswordReset
-	if err := database.DB.Where("email = ? AND role =?", email,role).First(&PasswordReset).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role =?", email, role).First(&PasswordReset).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
 		return
 	}
 
-	if PasswordReset.Active == model.NO{
+	if PasswordReset.Active == model.NO {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "link is expired"})
 		return
 	}
-
 
 	fmt.Println(email, ": ", token)
 
 	c.HTML(http.StatusOK, "passwordreset.html", gin.H{
 		"email": email,
-		 "role":role,
+		"role":  role,
 		"token": token,
 	})
 }
@@ -748,12 +736,12 @@ func Step2PasswordReset(c *gin.Context) {
 	// this function recieves email, token, passwords(check for password match)
 	//check email
 	var PasswordReset model.PasswordReset
-	if err := database.DB.Where("email = ? AND role =?", Request.Email,Request.Role).First(&PasswordReset).Error; err != nil {
+	if err := database.DB.Where("email = ? AND role =?", Request.Email, Request.Role).First(&PasswordReset).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch password reset information"})
 		return
 	}
 
-	if PasswordReset.Active == model.NO{
+	if PasswordReset.Active == model.NO {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "link is expired"})
 		return
 	}
@@ -794,7 +782,7 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 		return false, errors.New("failed to hash the password")
 	}
 
-    switch Request.Role {
+	switch Request.Role {
 	case model.UserRole:
 		// create a new user instance with updated password and salt
 		user := model.User{
@@ -820,12 +808,12 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 	}
 
 	//change active status to no
-	if err:=database.DB.Model(&model.PasswordReset{}).Where("email = ? AND role = ?",Request.Email,Request.Role).Update("active",model.NO).Error;err!=nil{
+	if err := database.DB.Model(&model.PasswordReset{}).Where("email = ? AND role = ?", Request.Email, Request.Role).Update("active", model.NO).Error; err != nil {
 		return false, errors.New("something went wrong")
 	}
 
 	//change verification status to pending in the verification table as well
-	if err := database.DB.Model(&model.VerificationTable{}).Where("email = ? AND role = ?", Request.Email,Request.Role).Update("verification_status", model.VerificationStatusPending).Error; err != nil {
+	if err := database.DB.Model(&model.VerificationTable{}).Where("email = ? AND role = ?", Request.Email, Request.Role).Update("verification_status", model.VerificationStatusPending).Error; err != nil {
 		return false, errors.New("failed to update the verification status")
 	}
 

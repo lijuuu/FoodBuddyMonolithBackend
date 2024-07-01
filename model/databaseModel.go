@@ -14,6 +14,7 @@ const (
 	UserRole                   = "user"
 	AdminRole                  = "admin"
 	RestaurantRole             = "restaurant"
+	PasswordEntropy            = 75
 	MaxUserQuantity            = 50
 	YES                        = "YES"
 	NO                         = "NO"
@@ -75,7 +76,7 @@ type User struct {
 	ID             uint    `validate:"required"`
 	Name           string  `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
 	Email          string  `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber    string  `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	PhoneNumber    uint    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string  `gorm:"column:picture;type:text" json:"picture"`
 	ReferralCode   string  `gorm:"column:referral_code" json:"referral_code"`
 	WalletAmount   float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
@@ -102,7 +103,7 @@ type VerificationTable struct {
 
 type Category struct {
 	gorm.Model
-	ID              uint
+	ID              uint      `gorm:"column:id" json:"id"`
 	Name            string    `validate:"required" json:"name"`
 	Description     string    `gorm:"column:description" validate:"required" json:"description"`
 	ImageURL        string    `gorm:"column:image_url" validate:"required" json:"image_url"`
@@ -134,7 +135,7 @@ type Restaurant struct {
 	Description        string `gorm:"column:description" validate:"required" json:"description"`
 	Address            string
 	Email              string
-	PhoneNumber        string
+	PhoneNumber        uint
 	WalletAmount       float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
 	ImageURL           string  `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL     string  `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
@@ -150,8 +151,9 @@ type FavouriteProduct struct {
 }
 
 type Address struct {
-	UserID       uint   `validate:"required,number" json:"user_id" gorm:"column:user_id"`
+	UserID       uint   `json:"user_id" gorm:"column:user_id"`
 	AddressID    uint   `gorm:"primaryKey;autoIncrement;column:address_id" json:"address_id"`
+	PhoneNumber  uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
 	AddressType  string `validate:"required" json:"address_type" gorm:"column:address_type"`
 	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
 	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`

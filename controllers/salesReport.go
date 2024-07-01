@@ -378,21 +378,19 @@ func NewArrivals(c *gin.Context) {
 }
 
 func PlatformOverallSalesReport(c *gin.Context) {
-    var input model.PlatformSalesReportInput
+	var input model.PlatformSalesReportInput
 
-    // Bind the incoming JSON request body to the input struct
-    if err := c.ShouldBindJSON(&input); err!= nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	// Bind the incoming JSON request body to the input struct
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Use the TotalOrders function with the received start date and current date
-    result, _ := TotalOrders(input.StartDate, time.Now(), input.PaymentStatus)
+	// Use the TotalOrders function with the received start date and current date
+	result, _ := TotalOrders(input.StartDate, time.Now(), input.PaymentStatus)
 
-    fmt.Println(result)
-    c.JSON(http.StatusOK, gin.H{
-        "result": result,
-    })
+	fmt.Println(result)
+	c.JSON(http.StatusOK, gin.H{
+		"result": result,
+	})
 }
-
-

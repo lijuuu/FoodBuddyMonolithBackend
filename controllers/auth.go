@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 	"io"
 	"math/rand"
 	"net/http"
@@ -18,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -49,7 +50,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "missing code parameter",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -60,7 +60,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to exchange token",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -72,7 +71,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to get user information",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -84,7 +82,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to read user information",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -96,7 +93,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to parse user information",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -124,7 +120,6 @@ func GoogleHandleCallback(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"status":  false,
 					"message": "failed to create user through google sso",
-					"data":    gin.H{},
 				})
 				return
 			}
@@ -133,7 +128,6 @@ func GoogleHandleCallback(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  false,
 				"message": "failed to fetch user information",
-				"data":    gin.H{},
 			})
 			return
 		}
@@ -144,7 +138,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusSeeOther, gin.H{
 			"status":  false,
 			"message": "please login through email method",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -154,7 +147,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "user is unauthorized to access",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -165,7 +157,6 @@ func GoogleHandleCallback(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "failed to create authorization token",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -185,7 +176,6 @@ func GoogleHandleCallback(c *gin.Context) {
 
 }
 
-
 func EmailSignup(c *gin.Context) {
 
 	helper.NoCache(c)
@@ -196,8 +186,7 @@ func EmailSignup(c *gin.Context) {
 	if err := c.BindJSON(&EmailSignupRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": "failed to process the incoming request",
-			"data":    gin.H{},
+			"message": "failed to process the incoming request" + err.Error(),
 		})
 		return
 	}
@@ -207,7 +196,6 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err.Error(),
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -217,7 +205,15 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "passwords doesn't match",
-			"data":    gin.H{},
+		})
+		return
+	}
+
+	err = passwordvalidator.Validate(EmailSignupRequest.Password, model.PasswordEntropy)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  false,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -233,7 +229,6 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to hash the password",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -242,6 +237,7 @@ func EmailSignup(c *gin.Context) {
 	User := model.User{
 		Name:           EmailSignupRequest.Name,
 		Email:          EmailSignupRequest.Email,
+		PhoneNumber:    EmailSignupRequest.PhoneNumber,
 		HashedPassword: string(hash),
 		LoginMethod:    model.EmailLoginMethod,
 		Blocked:        false,
@@ -254,7 +250,6 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to retreive information from the database",
-			"data":    gin.H{},
 		})
 		return
 
@@ -265,7 +260,6 @@ func EmailSignup(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  false,
 				"message": "failed to create a new user",
-				"data":    gin.H{},
 			})
 			return
 		}
@@ -274,7 +268,6 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "user already exists",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -290,7 +283,6 @@ func EmailSignup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to process otp verification process",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -319,7 +311,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to process the incoming request",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -330,7 +321,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err.Error(),
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -342,7 +332,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "invalid email or password",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -352,7 +341,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "email uses another method for logging in, use google sso",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -362,7 +350,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "user is not authorized to access",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -377,7 +364,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "invalid email or password",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -390,7 +376,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to process otp verification",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -401,7 +386,6 @@ func EmailLogin(c *gin.Context) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"status":  false,
 				"message": err.Error(),
-				"data":    gin.H{},
 			})
 			return
 		}
@@ -409,7 +393,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusAccepted, gin.H{
 			"status":  false,
 			"message": "please complete your email verification",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -421,7 +404,6 @@ func EmailLogin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "Failed to create JWT token due to an internal server error.Try again",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -512,7 +494,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to process incoming request",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -524,7 +505,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to retrieve  information",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -533,7 +513,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusIMUsed, gin.H{
 			"status":  false,
 			"message": "already verified",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -542,7 +521,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":  false,
 			"message": "please login once again to verify your otp",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -551,7 +529,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "otp has expired ,please login once again to verify your otp",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -560,7 +537,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "otp is invalid ,please login once again to verify your otp",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -572,7 +548,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to verify otp, please try again",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -584,7 +559,6 @@ func VerifyOTP(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to generate token, please try again",
-			"data":    gin.H{},
 		})
 		return
 	}
@@ -693,14 +667,12 @@ func Logout(c *gin.Context) {
 	c.Next()
 }
 
-
-
 func VerifyUserPasswordReset(email string) bool {
 	var User model.User
 	err := database.DB.Where("email =?", email).First(&User).Error
 
 	return err == nil
-	
+
 }
 
 func VerifyRestaurantPasswordReset(email string) bool {
