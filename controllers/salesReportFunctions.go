@@ -8,38 +8,35 @@ import (
 	"time"
 )
 
-// total orders  //oi
-// total delivered  //oi
-// total cancelled //oi
-// revenue generated //oi
-// coupon deductions //oi
-// product offer deductions //oi
-// referral rewards given //oi
-func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCount, error) {
+// total orders
+// total delivered
+// total cancelled
+// revenue generated
+// coupon deductions
+// product offer deductions
+// referral rewards given
+func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCount, model.AmountInformation, error) {
 	var orders []model.Order
 
-    parsedFrom, err := time.Parse("2006-01-02", From)
-    if err != nil {
-        return model.OrderCount{}, fmt.Errorf("error parsing From time: %v", err)
-    }
+	parsedFrom, err := time.Parse("2006-01-02", From)
+	if err != nil {
+		return model.OrderCount{}, model.AmountInformation{}, fmt.Errorf("error parsing From time: %v", err)
+	}
 
-    parsedTill, err := time.Parse("2006-01-02", Till)
-    if err != nil {
-        return model.OrderCount{}, fmt.Errorf("error parsing Till time: %v", err)
-    }
+	parsedTill, err := time.Parse("2006-01-02", Till)
+	if err != nil {
+		return model.OrderCount{}, model.AmountInformation{}, fmt.Errorf("error parsing Till time: %v", err)
+	}
 
-    fFrom := time.Date(parsedFrom.Year(), parsedFrom.Month(), parsedFrom.Day(), 0, 0, 0, 0, time.UTC)
-    fTill := time.Date(parsedTill.Year(), parsedTill.Month(), parsedTill.Day(), 23, 59, 59, 999999999, time.UTC)
+	fFrom := time.Date(parsedFrom.Year(), parsedFrom.Month(), parsedFrom.Day(), 0, 0, 0, 0, time.UTC)
+	fTill := time.Date(parsedTill.Year(), parsedTill.Month(), parsedTill.Day(), 23, 59, 59, 999999999, time.UTC)
 
-    startTime := fFrom.Format("2006-01-02T15:04:05Z")
-    endDate := fTill.Format("2006-01-02T15:04:05Z")
-
-    fmt.Println("Formatted StartTime:", startTime)
-    fmt.Println("Formatted EndDate:", endDate)
+	startTime := fFrom.Format("2006-01-02T15:04:05Z")
+	endDate := fTill.Format("2006-01-02T15:04:05Z")
 
 	// Fetch orders within the specified time frame and payment status
 	if err := database.DB.Where("ordered_at BETWEEN? AND? AND payment_status =?", startTime, endDate, PaymentStatus).Find(&orders).Error; err != nil {
-		return model.OrderCount{}, errors.New("error fetching orders")
+		return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching orders")
 	}
 
 	// Initialize counters map
@@ -52,11 +49,15 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 		model.OrderStatusCancelled:     0,
 	}
 
-	// Iterate through each order and count order item statuses
+	var AccountInformation model.AmountInformation
 	for _, order := range orders {
+		AccountInformation.TotalCouponDeduction += order.CouponDiscountAmount
+		AccountInformation.TotalProductOfferDeduction += order.ProductOfferAmount
+		AccountInformation.TotalAmountBeforeDeduction += order.TotalAmount
+		AccountInformation.TotalAmountAfterDeduction += order.FinalAmount
 		var orderItems []model.OrderItem
 		if err := database.DB.Where("order_id =?", order.OrderID).Find(&orderItems).Error; err != nil {
-			return model.OrderCount{}, errors.New("error fetching order items")
+			return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching order items")
 		}
 
 		for _, status := range []string{
@@ -69,20 +70,17 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 		} {
 			var count int64
 			if err := database.DB.Model(&model.OrderItem{}).Where("order_id =? AND order_status =?", order.OrderID, status).Count(&count).Error; err != nil {
-				return model.OrderCount{}, errors.New("failed to query order items")
+				return model.OrderCount{}, model.AmountInformation{}, errors.New("failed to query order items")
 			}
-			// Update the map counters based on the status
+
 			orderStatusCounts[status] += count
 		}
 	}
-
-	// Sum up the counts of order items across all statuses to get the total order count
 	var totalCount int64
 	for _, count := range orderStatusCounts {
 		totalCount += count
 	}
 
-	// Construct and return the final OrderCount
 	return model.OrderCount{
 		TotalOrder:         uint(totalCount),
 		TotalProcessing:    uint(orderStatusCounts[model.OrderStatusProcessing]),
@@ -91,7 +89,7 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 		TotalOnTheWay:      uint(orderStatusCounts[model.OrderStatusOntheway]),
 		TotalDelivered:     uint(orderStatusCounts[model.OrderStatusDelivered]),
 		TotalCancelled:     uint(orderStatusCounts[model.OrderStatusCancelled]),
-	}, nil
+	}, AccountInformation, nil
 }
 
 //get orders based on time period

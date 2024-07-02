@@ -1,0 +1,8 @@
+OrderID,UserID,RestaurantID,ProductID,Quantity,Amount,ProductOfferAmount,AfterDeduction,CookingRequest,OrderStatus,OrderReview,OrderRating
+lijuthomas_mpkvqW5fLB,3,2,3,1,250.00,30.00,211.67,add  more spice,DELIVERED,,0.0
+lijuthomas_d9oy4g1Zqb,2,2,3,1,250.00,30.00,211.67,add  more spice,CANCELLED,,0.0
+new_user_tZ6ojLI30c,1,2,3,1,250.00,30.00,211.67,add  more spice,CANCELLED,,0.0
+new_user_kVHm3qKPP2,1,2,3,1,250.00,30.00,211.67,add  more spice,CANCELLED,,0.0
+lijuthomas_TeKNs7D0x6,2,2,3,1,250.00,30.00,211.67,add  more spice,PROCESSING,,0.0
+lijuthomas_CkwVUfhuQO,2,2,3,1,250.00,30.00,211.67,add  more spice,CANCELLED,,0.0
+lijuthomas_3a5QJQXSPr,2,2,3,1,250.00,30.00,211.67,add  more spice,PROCESSING,,0.0

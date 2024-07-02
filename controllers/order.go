@@ -384,7 +384,7 @@ func CheckUser(UserID uint) bool {
 func OrderHistoryRestaurants(c *gin.Context) {
 	//check restaurant api authentication
 	email, role, err := helper.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
+	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized request",
@@ -401,22 +401,15 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		return
 	}
 	//Restaurant id, if order status is provided use it or get the whole history
-	var Request model.OrderHistoryRestaurants
-	if err := c.Bind(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind the json",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
+	Request :=  c.Param("status")
+		
 	//if provided with order_status show the specific order's of that status
 
 	var OrderItems []model.OrderItem
-	if Request.OrderStatus != "" {
+	if Request != "" {
 		//condition one order status not empty
 		//return all the orders with order_id, restaurant_id,order_status is met with the condition
-		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", RestaurantID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
+		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", RestaurantID, Request).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":     false,
 				"message":    "failed to fetch orders assigned to this restaurant",

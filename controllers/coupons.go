@@ -699,7 +699,7 @@ func GetReferralStats(c *gin.Context) {
 		"IneligibleReferrals": IneligibleReferrals ,
 		"EligibleReferrals":  EligibleReferrals,
 		"ClaimsDone":        claimsDone,
-		"TotalClaimsDone": totalClaimedAmount,
+		"TotalClaimAmountRecieved": totalClaimedAmount,
 	}
 
 

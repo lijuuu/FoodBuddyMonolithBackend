@@ -183,19 +183,20 @@ type Order struct {
 	OrderedAt            time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
 type OrderItem struct {
-	OrderID            string  `validate:"required"`
-	UserID             uint    `validate:"required,number" json:"user_id"`
-	RestaurantID       uint    `validate:"required,number" json:"restaurant_id"`
-	ProductID          uint    ` validate:"required,number" json:"product_id"`
-	Quantity           uint    ` validate:"required,number" json:"quantity"`
-	Amount             float64 ` validate:"required,number" json:"amount"`
-	ProductOfferAmount float64 `json:"product_offer_amount"`
-	AfterDeduction     float64 `gorm:"column:after_deduction" json:"after_deduction"`
-	CookingRequest     string
-	OrderStatus        string `json:"order_status" gorm:"column:order_status"`
-	OrderReview        string
-	OrderRating        float64
+	OrderID            string  `validate:"required" csv:"OrderID"`
+	UserID             uint    `validate:"required,number" json:"user_id" csv:"UserID"`
+	RestaurantID       uint    `validate:"required,number" json:"restaurant_id" csv:"RestaurantID"`
+	ProductID          uint    `validate:"required,number" json:"product_id" csv:"ProductID"`
+	Quantity           uint    `validate:"required,number" json:"quantity" csv:"Quantity"`
+	Amount             float64 `validate:"required,number" json:"amount" csv:"Amount"`
+	ProductOfferAmount float64 `json:"product_offer_amount" csv:"ProductOfferAmount"`
+	AfterDeduction     float64 `gorm:"column:after_deduction" json:"after_deduction" csv:"AfterDeduction"`
+	CookingRequest     string  `csv:"CookingRequest"`
+	OrderStatus        string  `json:"order_status" gorm:"column:order_status" csv:"OrderStatus"`
+	OrderReview        string  `csv:"OrderReview"`
+	OrderRating        float64 `csv:"OrderRating"`
 }
+
 type Payment struct {
 	OrderID           string `validate:"required"`
 	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`

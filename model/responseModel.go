@@ -48,38 +48,44 @@ type ProductResponse struct {
 	Name           string  `json:"product_name"`
 	Description    string  `json:"description"`
 	ImageURL       string  `json:"image_url"`
-	Price          float64    `json:"price"`
+	Price          float64 `json:"price"`
 	StockLeft      uint    `json:"stock_left"`
 	AverageRating  float64 `json:"average_rating"`
-	Veg            string    `json:"veg"`
+	Veg            string  `json:"veg"`
 }
-
 
 type OrderCount struct {
-    TotalOrder uint
-	TotalProcessing uint
+	TotalOrder         uint
+	TotalProcessing    uint
 	TotalInPreparation uint
-	TotalPrepared uint
-	TotalOnTheWay uint
-	TotalDelivered uint
-	TotalCancelled uint
+	TotalPrepared      uint
+	TotalOnTheWay      uint
+	TotalDelivered     uint
+	TotalCancelled     uint
+}
+type AmountInformation struct{
+	TotalCouponDeduction float64
+	TotalProductOfferDeduction float64
+	TotalAmountBeforeDeduction float64
+	TotalAmountAfterDeduction float64
 }
 
-type OrderSales struct{
-	TotalRevenue float64
-	CouponDiscounts float64
-	ProductOffers float64
+type OrderSales struct {
+	TotalRevenue            float64
+	CouponDiscounts         float64
+	ProductOffers           float64
 	TotalCancelOrderRefunds float64
 }
 
 type OverallOrderReport struct {
-    From time.Time
-    Till time.Time
-    Count OrderCount
+	From  time.Time
+	Till  time.Time
+	Count OrderCount
 }
 
 type PlatformSalesReportInput struct {
-    StartDate string `json:"start_date,omitempty" time_format:"2006-01-02"`
-    EndDate   string `json:"end_date,omitempty" time_format:"2006-01-02"`
-    PaymentStatus string `json:"payment_status"`
+	StartDate     string `json:"start_date,omitempty" time_format:"2006-01-02"`
+	EndDate       string `json:"end_date,omitempty" time_format:"2006-01-02"`
+	Limit         string `json:"limit,omitempty"`
+	PaymentStatus string `json:"payment_status"`
 }

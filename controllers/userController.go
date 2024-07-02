@@ -78,7 +78,7 @@ func GetUserList(c *gin.Context) {
 		return
 	}
 
-	tx := database.DB.Select("*").Find(&users)
+	tx := database.DB.Find(&users)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,

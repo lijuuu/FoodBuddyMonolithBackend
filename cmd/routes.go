@@ -18,51 +18,51 @@ func ServerHealth(router *gin.Engine) {
 func AuthenticationRoutes(router *gin.Engine) {
 	// Authentication Endpoints
 	//admin
-	router.POST("/api/v1/auth/admin/login", controllers.AdminLogin) //mark
+	router.POST("/api/v1/auth/admin/login", controllers.AdminLogin) //
 
 	//user
-	router.POST("/api/v1/auth/user/email/login", controllers.EmailLogin)   //mark
-	router.POST("/api/v1/auth/user/email/signup", controllers.EmailSignup) //mark
-	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin) //mark
-	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback) //mark
+	router.POST("/api/v1/auth/user/email/login", controllers.EmailLogin)   //
+	router.POST("/api/v1/auth/user/email/signup", controllers.EmailSignup) //
+	router.GET("/api/v1/auth/google/login", controllers.GoogleHandleLogin) //
+	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback) //
 
 	//additional endpoints for email verification and password reset
-	router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP) //mark
+	router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP) //
 
-	router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset) //mark
-	router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)         //mark
-	router.POST("/api/v1/auth/passwordreset/step2", controllers.Step2PasswordReset) //mark
+	router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset) //
+	router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)         //
+	router.POST("/api/v1/auth/passwordreset/step2", controllers.Step2PasswordReset) //
 
 	//restaurant
-	router.POST("/api/v1/auth/restaurant/signup", controllers.RestaurantSignup) //mark
-	router.POST("/api/v1/auth/restaurant/login", controllers.RestaurantLogin)   //mark
+	router.POST("/api/v1/auth/restaurant/signup", controllers.RestaurantSignup) //
+	router.POST("/api/v1/auth/restaurant/login", controllers.RestaurantLogin)   //
 }
 
 func UserRoutes(router *gin.Engine) {
 	userRoutes := router.Group("/api/v1/user")
 	{
 		// User Profile Management
-		userRoutes.GET("/profile", controllers.GetUserProfile)       //mark
-		userRoutes.POST("/edit", controllers.UpdateUserInformation)  //mark
-		userRoutes.GET("/wallet/all", controllers.GetUserWalletData) //mark
+		userRoutes.GET("/profile", controllers.GetUserProfile)       //
+		userRoutes.POST("/edit", controllers.UpdateUserInformation)  //
+		userRoutes.GET("/wallet/all", controllers.GetUserWalletData) //
 
 		// Favorite Products
-		userRoutes.GET("/favorites/all", controllers.GetUsersFavouriteProduct)     //mark
-		userRoutes.POST("/favorites/add", controllers.AddFavouriteProduct)         //mark
-		userRoutes.DELETE("/favorites/delete", controllers.RemoveFavouriteProduct) //mark
+		userRoutes.GET("/favorites/all", controllers.GetUsersFavouriteProduct)     //
+		userRoutes.POST("/favorites/add", controllers.AddFavouriteProduct)         //
+		userRoutes.DELETE("/favorites/delete", controllers.RemoveFavouriteProduct) //
 
 		// User Address Management
-		userRoutes.GET("/address/all", controllers.GetUserAddress)          //mark
-		userRoutes.POST("/address/add", controllers.AddUserAddress)         //mark
-		userRoutes.PATCH("/address/edit", controllers.EditUserAddress)      //mark
-		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress) //mark
+		userRoutes.GET("/address/all", controllers.GetUserAddress)          //
+		userRoutes.POST("/address/add", controllers.AddUserAddress)         //
+		userRoutes.PATCH("/address/edit", controllers.EditUserAddress)      //
+		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress) //
 
 		// Cart Management
-		userRoutes.POST("/cart/add", controllers.AddToCart)
-		userRoutes.GET("/cart/all", controllers.GetCartTotal)
-		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)
-		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart)
-		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity)
+		userRoutes.POST("/cart/add", controllers.AddToCart)  //
+		userRoutes.GET("/cart/all", controllers.GetCartTotal) //
+		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)  // 
+		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //
+		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity) //
 
 		// Order Management
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
@@ -75,11 +75,10 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
-		userRoutes.GET("/coupon/all", controllers.GetAllCoupons)
-		userRoutes.GET("/coupon/cart/:couponcode", controllers.ApplyCouponOnCart)
+		userRoutes.GET("/coupon/cart/:couponcode", controllers.ApplyCouponOnCart) //
 
 		// Referral System
-		userRoutes.GET("/referral/code", controllers.GetRefferalCode)
+		userRoutes.GET("/referral/code", controllers.GetRefferalCode)  
 		userRoutes.PATCH("/referral/activate", controllers.ActivateReferral)
 		userRoutes.GET("/referral/claim", controllers.ClaimReferralRewards)
 		userRoutes.GET("/referral/stats", controllers.GetReferralStats)
@@ -90,21 +89,24 @@ func RestaurantRoutes(router *gin.Engine) {
 	restaurantRoutes := router.Group("/api/v1/restaurants")
 	{
 		// Restaurant Management
-		restaurantRoutes.POST("/edit", controllers.EditRestaurant)
-		restaurantRoutes.POST("/products/add", controllers.AddProduct)
-		restaurantRoutes.POST("/products/edit", controllers.EditProduct)
-		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)
+		restaurantRoutes.POST("/edit", controllers.EditRestaurant) //
+		restaurantRoutes.POST("/products/add", controllers.AddProduct) //
+		restaurantRoutes.POST("/products/edit", controllers.EditProduct) //
+		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct)  //
 
 		// Order History and Status Updates
-		restaurantRoutes.POST("/order/history/", controllers.OrderHistoryRestaurants)
-		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
+		restaurantRoutes.GET("/order/history/:status", controllers.OrderHistoryRestaurants)  //
+		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)  
 
 		// Product Offers
-		restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)
-		restaurantRoutes.PATCH("/product/offer/remove/:productid", controllers.RemoveProductOffer)
+		restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)  //
+		restaurantRoutes.PUT("/product/offer/remove/:productid", controllers.RemoveProductOffer) //
+
+		//orderitem information in excel
+		restaurantRoutes.GET("/orderitems/excel/all", controllers.OrderInformationsCSVFileForRestaurant) //
 
 		//restaurant wallet balance and history
-		restaurantRoutes.GET("/wallet/all", controllers.GetRestaurantWalletData)
+		restaurantRoutes.GET("/wallet/all", controllers.GetRestaurantWalletData)  //
 		// restaurantRoutes.POST("/profile/update",controllers.RestaurantProfileUpdate)
 	}
 }
@@ -113,25 +115,25 @@ func AdminRoutes(router *gin.Engine) {
 	adminRoutes := router.Group("/api/v1/admin")
 	{
 		// User Management
-		adminRoutes.GET("/users", controllers.GetUserList) 
-		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList) //mark
-		adminRoutes.PUT("/users/block/:userid", controllers.BlockUser) //mark
-		adminRoutes.PUT("/users/unblock/:userid", controllers.UnblockUser) //mark
+		adminRoutes.GET("/users", controllers.GetUserList) //
+		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList)  //
+		adminRoutes.PUT("/users/block/:userid", controllers.BlockUser)     //
+		adminRoutes.PUT("/users/unblock/:userid", controllers.UnblockUser) //
 
 		// Category Management
-		adminRoutes.POST("/categories/add", controllers.AddCategory) //mark
-		adminRoutes.PATCH("/categories/edit", controllers.EditCategory)  //mark
-		adminRoutes.DELETE("/categories/delete/:categoryid", controllers.DeleteCategory) //mark
+		adminRoutes.POST("/categories/add", controllers.AddCategory)                     //
+		adminRoutes.PATCH("/categories/edit", controllers.EditCategory)                  //
+		adminRoutes.DELETE("/categories/delete/:categoryid", controllers.DeleteCategory) //
 
 		// Restaurant Management
-		adminRoutes.GET("/restaurants", controllers.GetRestaurants) 
+		adminRoutes.GET("/restaurants", controllers.GetRestaurants)
 		// adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
-		adminRoutes.PUT("/restaurants/block/:restaurantid", controllers.BlockRestaurant) //mark
-		adminRoutes.PUT("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant) //mark
+		adminRoutes.PUT("/restaurants/block/:restaurantid", controllers.BlockRestaurant)     //
+		adminRoutes.PUT("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant) //
 
 		// Coupon Management
-		adminRoutes.POST("/coupon/create", controllers.CreateCoupon)
-		adminRoutes.POST("/coupon/update", controllers.UpdateCoupon)
+		adminRoutes.POST("/coupon/create", controllers.CreateCoupon) //
+		adminRoutes.PATCH("/coupon/update", controllers.UpdateCoupon) //
 	}
 }
 
@@ -139,26 +141,36 @@ func PublicRoutes(router *gin.Engine) {
 	// Public API Endpoints
 	publicRoute := router.Group("/api/v1/public")
 	{
-		publicRoute.GET("/categories", controllers.GetCategoryList) //mark
-		publicRoute.GET("/categories/products", controllers.GetCategoryProductList) //mark
-		publicRoute.GET("/products", controllers.GetProductList) //mark 
-		publicRoute.GET("/restaurants", controllers.GetRestaurants) //mark
-		publicRoute.GET("/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID) //mark
-		publicRoute.GET("/products/onlyveg", controllers.OnlyVegProducts)  //mark
-		publicRoute.GET("/products/newarrivals", controllers.NewArrivals) //mark
-		publicRoute.GET("/products/lowtohigh", controllers.PriceLowToHigh) //mark
-		publicRoute.GET("/products/hightolow", controllers.PriceHighToLow) //mark
-		publicRoute.GET("/products/offerproducts", controllers.GetProductOffers) //mark
-		publicRoute.GET("/report/products/:productid", controllers.ProductReport) //mark
-		publicRoute.GET("/report/products/best", controllers.BestSellingProducts) //mark
-		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport) //mark
+		publicRoute.GET("/coupon/all", controllers.GetAllCoupons)                                     //
+		publicRoute.GET("/categories", controllers.GetCategoryList)                                   //
+		publicRoute.GET("/categories/products", controllers.GetCategoryProductList)                   //
+		publicRoute.GET("/products", controllers.GetProductList)                                      //
+		publicRoute.GET("/restaurants", controllers.GetRestaurants)                                   //
+		publicRoute.GET("/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID) //
+		publicRoute.GET("/products/onlyveg", controllers.OnlyVegProducts)                             //
+		publicRoute.GET("/products/newarrivals", controllers.NewArrivals)                             //
+		publicRoute.GET("/products/lowtohigh", controllers.PriceLowToHigh)                            //
+		publicRoute.GET("/products/hightolow", controllers.PriceHighToLow)                            //
+		publicRoute.GET("/products/offerproducts", controllers.GetProductOffers)                      //
+		publicRoute.GET("/report/products/:productid", controllers.ProductReport)                     //
+		publicRoute.GET("/report/products/best", controllers.BestSellingProducts)                     //
+		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport)            //
 
 	}
 }
 
 func AdditionalRoutes(router *gin.Engine) {
 	// Additional Endpoints
-	router.GET("/api/v1/uploadimage", view.LoadUpload) //mark
-	router.POST("/api/v1/uploadimage", helper.ImageUpload) //mark
-	router.GET("/api/v1/logout", controllers.Logout) //mark
+	router.GET("/api/v1/uploadimage", view.LoadUpload)     //
+	router.POST("/api/v1/uploadimage", helper.ImageUpload) //
+	router.GET("/api/v1/logout", controllers.Logout)       //
 }
+
+//public routes related to sales -- total sales
+//User wallet and history
+//restaurant eallet and history
+//change in wallets
+//order invoice pdf
+//order informations csv file
+//*Referral
+//coupon minimum amount

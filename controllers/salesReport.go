@@ -378,20 +378,76 @@ func NewArrivals(c *gin.Context) {
 }
 
 func PlatformOverallSalesReport(c *gin.Context) {
-	var input model.PlatformSalesReportInput
+    var input model.PlatformSalesReportInput
 
-	// Bind the incoming JSON request body to the input struct
-	if err := c.BindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+    if err := c.BindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
 
-	fmt.Println("sending")
-	// Use the TotalOrders function with the received start date and current date
-	result, _ := TotalOrders(input.StartDate, input.EndDate, input.PaymentStatus)
+    if input.StartDate == "" && input.EndDate == "" && input.Limit == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "please provide start date and end date, or specify the limit as day, week, month, year"})
+        return
+    }
 
-	fmt.Println(result)
+    // Handle case where Limit is specified
+    if input.Limit != "" {
+        limits := []string{"day", "week", "month", "year"}
+        found := false
+        for _, l := range limits {
+            if input.Limit == l {
+                found = true
+                break
+            }
+        }
+        if !found {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit specified, valid options are: day, week, month, year"})
+            return
+        }
+
+        // Process based on the specified limit
+        var startDate, endDate string
+		switch input.Limit {
+		case "day":
+			startDate = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+			endDate = time.Now().Format("2006-01-02")
+		case "week":
+			today := time.Now()
+			endDate = today.AddDate(0, 0, 7-int(today.Weekday())).Format("2006-01-02")
+			startDate = today.Format("2006-01-02")
+		case "month":
+			firstDay := time.Now()
+			endDate = firstDay.AddDate(0, 1, -1).Format("2006-01-02")
+			startDate = firstDay.Format("2006-01-02")
+		case "year":
+			endDate = time.Now().Format("2006-01-02")
+			startDate = time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
+		}
+		
+	
+		fmt.Println(startDate)
+		fmt.Println(endDate)
+        result,amount, err := TotalOrders(startDate, endDate, input.PaymentStatus)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+            return
+        }
+        c.JSON(http.StatusOK, gin.H{
+			"result":result,
+			"amount":amount,
+		})
+        return
+    }
+
+    result,amount, err := TotalOrders(input.StartDate, input.EndDate, input.PaymentStatus)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+        return
+    }
+
 	c.JSON(http.StatusOK, gin.H{
-		"result": result,
+		"result":result,
+		"amount":amount,
 	})
 }
+

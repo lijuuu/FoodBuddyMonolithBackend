@@ -5,10 +5,13 @@ import (
 	"foodbuddy/database"
 	"foodbuddy/helper"
 	"foodbuddy/model"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gocarina/gocsv"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -272,7 +275,7 @@ func GetRestaurants(c *gin.Context) {
 		return
 	}
 	var simplifiedRestaurants []gin.H
-	
+
 	for _, r := range restaurants {
 		simplifiedRestaurants = append(simplifiedRestaurants, gin.H{
 			"Name":               r.Name,
@@ -292,7 +295,6 @@ func GetRestaurants(c *gin.Context) {
 		"data":    gin.H{"restaurantslist": simplifiedRestaurants},
 	})
 }
-
 
 // restaurant
 func EditRestaurant(c *gin.Context) {
@@ -362,7 +364,7 @@ func EditRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "successfully edited the restaurant",
-		"data":    gin.H{},
+		"data":    Request,
 	})
 }
 
@@ -459,11 +461,11 @@ func BlockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant is already blocked",
 			"error_code": http.StatusConflict,
-			"data":    gin.H{
-				"name": restaurant.Name,
-				"email":restaurant.Email,
-				"address":restaurant.Address,
-				"blockstatus":restaurant.Blocked,
+			"data": gin.H{
+				"name":        restaurant.Name,
+				"email":       restaurant.Email,
+				"address":     restaurant.Address,
+				"blockstatus": restaurant.Blocked,
 			},
 		})
 		return
@@ -484,11 +486,11 @@ func BlockRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "restaurant is blocked",
-		"data":    gin.H{
-			"name": restaurant.Name,
-			"email":restaurant.Email,
-			"address":restaurant.Address,
-			"blockstatus":restaurant.Blocked,
+		"data": gin.H{
+			"name":        restaurant.Name,
+			"email":       restaurant.Email,
+			"address":     restaurant.Address,
+			"blockstatus": restaurant.Blocked,
 		},
 	})
 }
@@ -533,12 +535,12 @@ func UnblockRestaurant(c *gin.Context) {
 			"status":     false,
 			"message":    "restaurant is already unblocked",
 			"error_code": http.StatusConflict,
-					"data":    gin.H{
-			"name": restaurant.Name,
-			"email":restaurant.Email,
-			"address":restaurant.Address,
-			"blockstatus":restaurant.Blocked,
-		},
+			"data": gin.H{
+				"name":        restaurant.Name,
+				"email":       restaurant.Email,
+				"address":     restaurant.Address,
+				"blockstatus": restaurant.Blocked,
+			},
 		})
 		return
 	}
@@ -558,11 +560,11 @@ func UnblockRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "restaurant is unblocked",
-		"data":    gin.H{
-			"name": restaurant.Name,
-			"email":restaurant.Email,
-			"address":restaurant.Address,
-			"blockstatus":restaurant.Blocked,
+		"data": gin.H{
+			"name":        restaurant.Name,
+			"email":       restaurant.Email,
+			"address":     restaurant.Address,
+			"blockstatus": restaurant.Blocked,
 		},
 	})
 }
@@ -619,3 +621,68 @@ func GetRestaurantWalletData(c *gin.Context) {
 	})
 }
 
+
+func OrderInformationsCSVFileForRestaurant(c *gin.Context) {
+	email, role, err := helper.GetJWTClaim(c)
+	if role!= model.RestaurantRole || err!= nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	RestID, _ := RestIDfromEmail(email)
+
+	var OrderInformation []model.OrderItem
+	err = database.DB.Where("restaurant_id =?", RestID).Find(&OrderInformation).Error
+	if err!= nil {
+		log.Printf("Failed to retrieve order information: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve order information"})
+		return
+	}
+
+	if len(OrderInformation) == 0 {
+		c.JSON(http.StatusOK, gin.H{"status": true, "message": "No orders found for this restaurant."})
+		return
+	}
+
+	data := make([]model.OrderItem, len(OrderInformation))
+	for i, item := range OrderInformation {
+		data[i] = model.OrderItem{
+			OrderID:            item.OrderID,
+			UserID:             uint(item.UserID),
+			RestaurantID:       uint(item.RestaurantID),
+			ProductID:          uint(item.ProductID),
+			Quantity:           item.Quantity,
+			Amount:             item.Amount,
+			ProductOfferAmount: item.ProductOfferAmount,
+			AfterDeduction:     item.AfterDeduction,
+			CookingRequest:     item.CookingRequest,
+			OrderStatus:        item.OrderStatus,
+			OrderReview:        item.OrderReview,
+			OrderRating:        item.OrderRating,
+		}
+	}
+
+	tmpfile, err := os.CreateTemp("", "orders_*.csv")
+	if err!= nil {
+		log.Printf("Failed to create temp file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create CSV file"})
+		return
+	}
+	defer os.Remove(tmpfile.Name()) 
+
+	if err := gocsv.MarshalFile(data, tmpfile); err!= nil {
+		log.Printf("Failed to marshal CSV data: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write CSV data"})
+		return
+	}
+	c.Writer.Header().Set("Content-Type", "text/csv")
+	c.Writer.Header().Set("Content-Disposition", "attachment; filename=orders.csv")
+	c.File(tmpfile.Name())
+}
+
+func OrderPaymentInformationsExcelFile(c *gin.Context) {
+
+}
