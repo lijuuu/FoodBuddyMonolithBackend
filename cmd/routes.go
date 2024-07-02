@@ -169,7 +169,7 @@ func AdditionalRoutes(router *gin.Engine) {
 //public routes related to sales -- total sales
 //User wallet and history
 //restaurant eallet and history
-//change in wallets
+//change in wallet amounts
 //order invoice pdf
 //order informations csv file
 //*Referral

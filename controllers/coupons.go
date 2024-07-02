@@ -71,6 +71,7 @@ func CreateCoupon(c *gin.Context) { //admin
 		Expiry:       Request.Expiry,
 		Percentage:   Request.Percentage,
 		MaximumUsage: Request.MaximumUsage,
+		MinimumAmount: float64(Request.MinimumAmount),
 	}
 
 	if err := database.DB.Create(&Coupon).Error; err != nil {
