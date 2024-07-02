@@ -151,14 +151,14 @@ func PublicRoutes(router *gin.Engine) {
 		publicRoute.GET("/products/offerproducts", controllers.GetProductOffers) //mark
 		publicRoute.GET("/report/products/:productid", controllers.ProductReport) //mark
 		publicRoute.GET("/report/products/best", controllers.BestSellingProducts) //mark
-		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport) // ongoing task - priority urgent
+		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport) //mark
 
 	}
 }
 
 func AdditionalRoutes(router *gin.Engine) {
 	// Additional Endpoints
-	router.GET("/api/v1/uploadimage", view.LoadUpload)
-	router.POST("/api/v1/uploadimage", helper.ImageUpload)
-	router.GET("/api/v1/logout", controllers.Logout)
+	router.GET("/api/v1/uploadimage", view.LoadUpload) //mark
+	router.POST("/api/v1/uploadimage", helper.ImageUpload) //mark
+	router.GET("/api/v1/logout", controllers.Logout) //mark
 }

@@ -79,7 +79,7 @@ type OverallOrderReport struct {
 }
 
 type PlatformSalesReportInput struct {
-    StartDate time.Time `json:"start_date,omitempty" time_format:"2006-01-02"`
-    EndDate   time.Time `json:"end_date,omitempty" time_format:"2006-01-02"`
+    StartDate string `json:"start_date,omitempty" time_format:"2006-01-02"`
+    EndDate   string `json:"end_date,omitempty" time_format:"2006-01-02"`
     PaymentStatus string `json:"payment_status"`
 }
