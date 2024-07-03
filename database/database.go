@@ -30,23 +30,24 @@ func ConnectToDB() {
 }
 
 func AutoMigrate() {
-	DB.AutoMigrate(&model.User{})
-	DB.AutoMigrate(&model.Restaurant{})
-	DB.AutoMigrate(&model.Category{})
-	DB.AutoMigrate(&model.Product{})
-	DB.AutoMigrate(&model.FavouriteProduct{})
-	DB.AutoMigrate(&model.Address{})
-	DB.AutoMigrate(&model.Admin{})
-	DB.AutoMigrate(&model.VerificationTable{})
-	DB.AutoMigrate(&model.CartItems{})
-	DB.AutoMigrate(&model.Order{})
-	DB.AutoMigrate(&model.OrderItem{})
-	DB.AutoMigrate(&model.Payment{})
-	DB.AutoMigrate(&model.PasswordReset{})
-	DB.AutoMigrate(&model.CouponInventory{})
-	DB.AutoMigrate(&model.CouponUsage{})
-	DB.AutoMigrate(&model.UserWalletHistory{})
-	DB.AutoMigrate(&model.RestaurantWalletHistory{})
-	DB.AutoMigrate(&model.UserReferralHistory{})
-
+	DB.AutoMigrate(
+		&model.User{},
+		&model.Restaurant{},
+		&model.Category{},
+		&model.Product{},
+		&model.FavouriteProduct{},
+		&model.Address{},
+		&model.Admin{},
+		&model.VerificationTable{},
+		&model.CartItems{},
+		&model.Order{},
+		&model.OrderItem{},
+		&model.Payment{},
+		&model.PasswordReset{},
+		&model.CouponInventory{},
+		&model.CouponUsage{},
+		&model.UserWalletHistory{},
+		&model.RestaurantWalletHistory{},
+		&model.UserReferralHistory{}
+	)
 }
