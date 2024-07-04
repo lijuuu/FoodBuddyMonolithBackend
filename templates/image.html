@@ -7,11 +7,19 @@
 </head>
 <body>
     <h1>Upload Images</h1>
-    <form id="uploadForm" action="/api/v1/uploadimage" method="POST" enctype="multipart/form-data">
-        <label for="files">Select images (JPG, JPEG, PNG only):</label>
-        <input type="file" id="files" name="files" accept=".jpg, .jpeg, .png" multiple>
+    <form id="uploadForm" action="/api/v1/user/profileimage" method="POST" enctype="multipart/form-data">
+        <label for="file">Select images (JPG, JPEG, PNG only): For User Image upload</label>
+        <input type="file" id="file" name="file" accept=".jpg, .jpeg, .png" multiple>
         <br><br>
         <button type="submit">Upload</button>
-        <div><p>hello</p></div>
+
+    </form>
+
+    <form id="uploadForm" action="/api/v1/restaurant/profileimage" method="POST" enctype="multipart/form-data">
+        <label for="file">Select images (JPG, JPEG, PNG only): For Restaurant Image upload</label>
+        <input type="file" id="file" name="file" accept=".jpg, .jpeg, .png" multiple>
+        <br><br>
+        <button type="submit">Upload</button>
+
     </form>
 </body>
