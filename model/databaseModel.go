@@ -55,6 +55,8 @@ const (
 )
 
 type EnvVariables struct {
+	ServerIP string
+	ServerPort string
 	ClientID            string
 	ClientSecret        string
 	DBUser              string

@@ -3,13 +3,16 @@ package main
 import (
 	"foodbuddy/database"
 	"foodbuddy/helper"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
 
 func init() {
 	database.ConnectToDB()
-	database.AutoMigrate()
+	if err := database.AutoMigrate(); err != nil {
+		log.Fatal("failed to automigrate models")
+	}
 }
 
 func main() {

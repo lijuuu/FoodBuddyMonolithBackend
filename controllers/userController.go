@@ -660,7 +660,7 @@ func Step1PasswordReset(c *gin.Context) {
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", Request.Email, ResetToken, Request.Role)
+	url := fmt.Sprintf("http://%v:%v/api/v1/auth/passwordreset?email=%v&token=%v&role=%v",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort, Request.Email, ResetToken, Request.Role)
 	mail := fmt.Sprintf("FoodBuddy Password Reset \n Click here to reset your password %v", url)
 
 	//send the otp to the specified email

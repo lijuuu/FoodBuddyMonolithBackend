@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
 
 	"log"
 
@@ -17,7 +17,7 @@ func ConnectToDB() {
 	var err error
 	databaseCredentials := helper.GetEnvVariables()
 
-	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v?charset=utf8mb4&parseTime=True&loc=Local", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
+	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
@@ -29,8 +29,8 @@ func ConnectToDB() {
 
 }
 
-func AutoMigrate() {
-	DB.AutoMigrate(
+func AutoMigrate() error {
+	err := DB.AutoMigrate(
 		&model.User{},
 		&model.Restaurant{},
 		&model.Category{},
@@ -48,6 +48,8 @@ func AutoMigrate() {
 		&model.CouponUsage{},
 		&model.UserWalletHistory{},
 		&model.RestaurantWalletHistory{},
-		&model.UserReferralHistory{}
+		&model.UserReferralHistory{},
 	)
+
+	return err
 }

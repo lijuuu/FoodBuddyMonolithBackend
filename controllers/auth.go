@@ -26,7 +26,7 @@ import (
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8080/api/v1/googlecallback",
+	RedirectURL:  fmt.Sprintf("http:/%v:%v/api/v1/googlecallback",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort),
 	ClientID:     helper.GetEnvVariables().ClientID,
 	ClientSecret: helper.GetEnvVariables().ClientSecret,
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
@@ -459,7 +459,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://localhost:8080/api/v1/auth/verifyotp/%v/%v/%v", role, to, otp)
+	url := fmt.Sprintf("http://%v:%v/api/v1/auth/verifyotp/%v/%v/%v",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort, role, to, otp)
 	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v", url)
 
 	//send the otp to the specified email

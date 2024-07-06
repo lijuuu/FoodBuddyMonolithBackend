@@ -9,10 +9,10 @@ import (
 )
 
 // GetJWTEmailClaim attempts to extract the email claim from a JWT token.
-func GetJWTClaim(c *gin.Context) (email string,role string,err error) {
+func GetJWTClaim(c *gin.Context) (email string, role string, err error) {
 	JWTToken, err := c.Cookie("Authorization")
 	if JWTToken == "" || err != nil {
-		return "","", errors.New("no authorization token available")
+		return "", "", errors.New("no authorization token available")
 	}
 
 	hmacSecretString := GetEnvVariables().JWTSecret
@@ -30,7 +30,7 @@ func GetJWTClaim(c *gin.Context) (email string,role string,err error) {
 	})
 
 	if err != nil {
-		return "","", errors.New("request unauthorized")
+		return "", "", errors.New("request unauthorized")
 	}
 
 	// Check if the token is valid
@@ -38,7 +38,7 @@ func GetJWTClaim(c *gin.Context) (email string,role string,err error) {
 		// Check for expiration
 		expirationTime, ok := claims["exp"].(float64)
 		if !ok {
-			return "","", errors.New("request unauthorized")
+			return "", "", errors.New("request unauthorized")
 		}
 
 		// Convert the expiration time to a Time value
@@ -46,13 +46,13 @@ func GetJWTClaim(c *gin.Context) (email string,role string,err error) {
 
 		// Check if the token is expired
 		if time.Now().After(expiration) {
-			return "","", errors.New("request unauthorized")
+			return "", "", errors.New("request unauthorized")
 		}
 
 		email := claims["email"].(string)
 		role := claims["role"].(string)
-		return email,role, nil
+		return email, role, nil
 	} else {
-		return "","", errors.New("request unauthorized")
+		return "", "", errors.New("request unauthorized")
 	}
 }
