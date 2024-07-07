@@ -1,16 +1,28 @@
 package helper
 
 import (
+	"fmt"
 	"foodbuddy/model"
+	"log"
 	"os"
+	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 func GetEnvVariables() model.EnvVariables {
+	
+    path, ok := os.LookupEnv("PROJECTROOT")
+    if !ok {
+        log.Fatal("PROJECTROOT environment variable not found,Please set your PROJECTROOT variable by running this on your terminal\n [ export PROJECTROOT={absolute_path_till_project_root_dir} ]")
+    }
 
-	// err := godotenv.Load("../.env")
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
-	// }
+    envFilePath := path + "/.env"
+    fmt.Println(envFilePath)
+    err := godotenv.Load(envFilePath)
+    if err != nil {
+        log.Fatal("Error loading .env file:", err)
+    }
 
 	//retrieving all the variables and storing it on the struct and returning it
 	EnvVariables := model.EnvVariables{
@@ -27,4 +39,12 @@ func GetEnvVariables() model.EnvVariables {
 		CloudinarySecretKey: os.Getenv("CLOUDINARYSECRETKEY"),
 	}
 	return EnvVariables
+}
+func AbsoluetPath() string {
+	AbsPath, err := filepath.Abs(".")
+	if err != nil {
+		fmt.Printf("Error converting path to absolute: %v\n", err)
+		return AbsPath
+	}
+	return AbsPath
 }

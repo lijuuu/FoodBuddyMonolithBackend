@@ -17,7 +17,7 @@ func ConnectToDB() {
 	var err error
 	databaseCredentials := helper.GetEnvVariables()
 
-	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
+	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 

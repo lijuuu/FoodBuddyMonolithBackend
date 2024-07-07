@@ -4,12 +4,13 @@ import (
 	"foodbuddy/database"
 	"foodbuddy/helper"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
 
 func init() {
-	database.ConnectToDB()
+	database.ConnectToDB() //export PROJECTROOT=/home/xstill/Desktop/Week8/onlyapi
 	if err := database.AutoMigrate(); err != nil {
 		log.Fatal("failed to automigrate models")
 	}
@@ -19,7 +20,7 @@ func main() {
 	//start server with default logger and recovery
 	router := gin.Default()
 	//load html from templates folder
-	router.LoadHTMLGlob("../templates/*")
+	router.LoadHTMLGlob(os.Getenv("PROJECTROOT") + "/templates/*")
 
 	//middleware for cors and api rate limiting`
 	router.Use(helper.RateLimitMiddleware())
