@@ -31,14 +31,14 @@ type ProductSales struct {
 }
 
 type BestProduct struct {
-	ProductID    uint
-	Name         string
-	CategoryName string
-	Description  string
-	ImageURL     string
-	Price        float64
-	Rating       float64
-	TotalSales   uint `json:"TotalSales"`
+	ProductID    uint    `json:"product_id"`
+	Name         string  `json:"name"`
+	CategoryName string  `json:"category_name"`
+	Description  string  `json:"description"`
+	ImageURL     string  `json:"image_url"`
+	Price        float64 `json:"price"`
+	Rating       float64 `json:"rating"`
+	TotalSales   uint    `json:"TotalSales"`
 }
 
 type ProductResponse struct {
@@ -55,32 +55,32 @@ type ProductResponse struct {
 }
 
 type OrderCount struct {
-	TotalOrder         uint
-	TotalProcessing    uint
-	TotalInPreparation uint
-	TotalPrepared      uint
-	TotalOnTheWay      uint
-	TotalDelivered     uint
-	TotalCancelled     uint
+	TotalOrder         uint `json:"total_order"`
+	TotalProcessing    uint `json:"total_processing"`
+	TotalInPreparation uint `json:"total_in_preparation"`
+	TotalPrepared      uint `json:"total_prepared"`
+	TotalOnTheWay      uint `json:"total_onthway"`
+	TotalDelivered     uint `json:"total_delivered"`
+	TotalCancelled     uint `json:"total_cancelled"`
 }
-type AmountInformation struct{
-	TotalCouponDeduction float64
-	TotalProductOfferDeduction float64
-	TotalAmountBeforeDeduction float64
-	TotalAmountAfterDeduction float64
+type AmountInformation struct {
+	TotalCouponDeduction       float64 `json:"total_coupon_deduction"`
+	TotalProductOfferDeduction float64 `json:"total_product_offer_deduction"`
+	TotalAmountBeforeDeduction float64 `json:"total_amount_before_deduction"`
+	TotalAmountAfterDeduction  float64 `json:"total_amount_after_deduction"`
 }
 
 type OrderSales struct {
-	TotalRevenue            float64
-	CouponDiscounts         float64
-	ProductOffers           float64
-	TotalCancelOrderRefunds float64
+	TotalRevenue            float64 `json:"total_revenue"`
+	CouponDiscounts         float64 `json:"coupon_discounts"`
+	ProductOffers           float64  `json:"product_offers"`
+	TotalCancelOrderRefunds float64 `json:"total_cancelorder_refunds"`
 }
 
 type OverallOrderReport struct {
-	From  time.Time
-	Till  time.Time
-	Count OrderCount
+	From  time.Time `json:"from"`
+	Till  time.Time `json:"till"`
+	Count OrderCount `json:"count"`
 }
 
 type PlatformSalesReportInput struct {

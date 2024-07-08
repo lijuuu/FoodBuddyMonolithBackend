@@ -3,7 +3,7 @@ package model
 type EmailSignupRequest struct {
 	Name            string `validate:"required" json:"name"`
 	Email           string `validate:"required,email" json:"email"`
-	PhoneNumber     uint   `validate:"required,number,min=1000000000,max=9999999999" json:"phonenumber"`
+	PhoneNumber     uint   `validate:"required,number,min=1000000000,max=9999999999" json:"phone_number"`
 	Password        string `validate:"required" json:"password"`
 	ConfirmPassword string `validate:"required" json:"confirmpassword"`
 }
@@ -26,7 +26,7 @@ type RestaurantSignupRequest struct {
 	Email           string `gorm:"column:email" validate:"required,email" json:"email"`
 	ConfirmPassword string `gorm:"column:confirmpassword" validate:"required" json:"confirmpassword"`
 	Password        string `gorm:"column:password" validate:"required" json:"password"`
-	PhoneNumber     uint   `gorm:"column:phonenumber" validate:"required,number,min=1000000000,max=9999999999" json:"phonenumber"`
+	PhoneNumber     uint   `gorm:"column:phone_number" validate:"required,number,min=1000000000,max=9999999999" json:"phone_number"`
 	ImageURL        string `gorm:"column:image_url" validate:"required,url" json:"image_url"`
 	CertificateURL  string `gorm:"column:certificate_url" validate:"required,url" json:"certificate_url"`
 }

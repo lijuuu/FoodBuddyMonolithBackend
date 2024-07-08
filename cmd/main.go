@@ -10,6 +10,10 @@ import (
 )
 
 func init() {
+	_, ok := os.LookupEnv("PROJECTROOT")
+	if !ok {
+		log.Fatal("PROJECTROOT environment variable not found,Please set your PROJECTROOT variable by running this on your terminal\n [ export PROJECTROOT={absolute_path_till_project_root_dir} ]")
+	}
 	database.ConnectToDB() //export PROJECTROOT=/home/xstill/Desktop/Week8/onlyapi
 	if err := database.AutoMigrate(); err != nil {
 		log.Fatal("failed to automigrate models")
@@ -20,7 +24,8 @@ func main() {
 	//start server with default logger and recovery
 	router := gin.Default()
 	//load html from templates folder
-	router.LoadHTMLGlob(os.Getenv("PROJECTROOT") + "/templates/*")
+	path, _ := os.LookupEnv("PROJECTROOT")
+	router.LoadHTMLGlob(path + "/templates/*")
 
 	//middleware for cors and api rate limiting`
 	router.Use(helper.RateLimitMiddleware())

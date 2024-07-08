@@ -569,8 +569,84 @@ func UnblockRestaurant(c *gin.Context) {
 	})
 }
 
-//get restaurantid from rest email
+func VerifyRestaurant(c *gin.Context)  {
+	//check admin api authentication
+	_, role, err := helper.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
 
+	// Get the restaurant id
+	restaurantIDStr := c.Param("restaurantid")
+	restaurantID, err := strconv.Atoi(restaurantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "invalid restaurant ID",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+	var Restaurant model.Restaurant
+	if err:=database.DB.Where("id = ?",restaurantID).First(&Restaurant).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"status":false,"message":err.Error()})
+	}
+
+	if Restaurant.VerificationStatus == model.VerificationStatusVerified{
+		c.JSON(http.StatusAlreadyReported,gin.H{"status":true,"message":"restaurant is already verified"})
+	}else{
+		Restaurant.VerificationStatus = model.VerificationStatusVerified
+	}
+
+	if err:=database.DB.Updates(&Restaurant).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"status":false,"message":err.Error()})
+	}
+	c.JSON(http.StatusOK,gin.H{"status":true,"message":"restaurant status changed to status - verified"})
+}
+func RemoveVerifyStatusRestaurant(c *gin.Context)  {
+	//check admin api authentication
+	_, role, err := helper.GetJWTClaim(c)
+	if role != model.AdminRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	// Get the restaurant id
+	restaurantIDStr := c.Param("restaurantid")
+	restaurantID, err := strconv.Atoi(restaurantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "invalid restaurant ID",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+	var Restaurant model.Restaurant
+	if err:=database.DB.Where("id = ?",restaurantID).First(&Restaurant).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"status":false,"message":err.Error()})
+	}
+
+	if Restaurant.VerificationStatus == model.VerificationStatusPending{
+		c.JSON(http.StatusAlreadyReported,gin.H{"status":true,"message":"restaurant is already unverified"})
+	}else{
+		Restaurant.VerificationStatus = model.VerificationStatusPending
+	}
+
+	if err:=database.DB.Updates(&Restaurant).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"status":false,"message":err.Error()})
+	}
+	c.JSON(http.StatusOK,gin.H{"status":true,"message":"restaurant status changed to status - pending"})
+}
+
+//get restaurantid from rest email
 func RestIDfromEmail(email string) (uint, bool) {
 	var Restaurant model.Restaurant
 	if err := database.DB.Where("email = ?", email).First(&Restaurant).Error; err != nil {
@@ -684,5 +760,4 @@ func OrderInformationsCSVFileForRestaurant(c *gin.Context) {
 }
 
 func OrderPaymentInformationsExcelFile(c *gin.Context) {
-
 }

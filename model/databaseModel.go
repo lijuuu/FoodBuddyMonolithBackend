@@ -55,8 +55,8 @@ const (
 )
 
 type EnvVariables struct {
-	ServerIP string
-	ServerPort string
+	ServerIP            string
+	ServerPort          string
 	ClientID            string
 	ClientSecret        string
 	DBUser              string
@@ -137,14 +137,14 @@ type Restaurant struct {
 	Description        string `gorm:"column:description" validate:"required" json:"description"`
 	Address            string
 	Email              string
-	PhoneNumber        uint
+	PhoneNumber        uint    `gorm:"column:phone_number"`
 	WalletAmount       float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
 	ImageURL           string  `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL     string  `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
-	VerificationStatus string
+	VerificationStatus string  `gorm:"column:verification_status"`
 	Blocked            bool
 	Salt               string
-	HashedPassword     string
+	HashedPassword     string `gorm:"column:hashed_password"`
 }
 
 type FavouriteProduct struct {

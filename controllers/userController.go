@@ -784,24 +784,20 @@ func Step3PasswordReset(Request model.Step2PasswordReset) (bool, error) {
 
 	switch Request.Role {
 	case model.UserRole:
-		// create a new user instance with updated password and salt
 		user := model.User{
 			Email:          Request.Email,
 			Salt:           salt,
 			HashedPassword: string(hashedPassword),
 		}
-		// save the updated user record
 		if err := database.DB.Model(&user).Where("email = ?", user.Email).Updates(user).Error; err != nil {
 			return false, errors.New("failed to update the password")
 		}
 	case model.RestaurantRole:
-		// create a new user instance with updated password and salt
 		restaurant := model.Restaurant{
 			Email:          Request.Email,
 			Salt:           salt,
 			HashedPassword: string(hashedPassword),
 		}
-		// save the updated user record
 		if err := database.DB.Model(&restaurant).Where("email = ?", restaurant.Email).Updates(restaurant).Error; err != nil {
 			return false, errors.New("failed to update the password")
 		}
