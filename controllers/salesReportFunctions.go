@@ -51,10 +51,10 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 
 	var AccountInformation model.AmountInformation
 	for _, order := range orders {
-		AccountInformation.TotalCouponDeduction += order.CouponDiscountAmount
-		AccountInformation.TotalProductOfferDeduction += order.ProductOfferAmount
-		AccountInformation.TotalAmountBeforeDeduction += order.TotalAmount
-		AccountInformation.TotalAmountAfterDeduction += order.FinalAmount
+		AccountInformation.TotalCouponDeduction += RoundDecimalValue(order.CouponDiscountAmount)
+		AccountInformation.TotalProductOfferDeduction += RoundDecimalValue(order.ProductOfferAmount)
+		AccountInformation.TotalAmountBeforeDeduction += RoundDecimalValue(order.TotalAmount)
+		AccountInformation.TotalAmountAfterDeduction += RoundDecimalValue(order.FinalAmount)
 		var orderItems []model.OrderItem
 		if err := database.DB.Where("order_id =?", order.OrderID).Find(&orderItems).Error; err != nil {
 			return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching order items")

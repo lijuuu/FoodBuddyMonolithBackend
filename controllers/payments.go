@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"foodbuddy/database"
-	"foodbuddy/model"
 	"foodbuddy/helper"
+	"foodbuddy/model"
+	"math"
 	"net/http"
 	"os"
 	"time"
@@ -17,6 +18,11 @@ import (
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/checkout/session"
 )
+
+func RoundDecimalValue(value float64) float64 {
+	multiplier := math.Pow(10, 2) 
+	return math.Round(value*multiplier) / multiplier
+}
 
 func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order model.Order) {
 	// Create Razorpay order
@@ -59,7 +65,7 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 		return
 	}
 
-	callbackurl := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/razorpaycallback/%v",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort, initiatePayment.OrderID)
+	callbackurl := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/razorpaycallback/%v", helper.GetEnvVariables().ServerIP, helper.GetEnvVariables().ServerPort, initiatePayment.OrderID)
 
 	responseData := map[string]interface{}{
 		"razorpay_order_id": rzpOrder["id"],
@@ -189,8 +195,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		},
 		Metadata:   map[string]string{"order_id": order.OrderID},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort)),
-		CancelURL:  stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort)),
+		SuccessURL: stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", helper.GetEnvVariables().ServerIP, helper.GetEnvVariables().ServerPort)),
+		CancelURL:  stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", helper.GetEnvVariables().ServerIP, helper.GetEnvVariables().ServerPort)),
 	}
 
 	s, err := session.New(params)
@@ -199,8 +205,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		return
 	}
 
-	successURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s", helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort,s.ID)
-	cancelURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s",helper.GetEnvVariables().ServerIP,helper.GetEnvVariables().ServerPort, s.ID)
+	successURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s", helper.GetEnvVariables().ServerIP, helper.GetEnvVariables().ServerPort, s.ID)
+	cancelURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s", helper.GetEnvVariables().ServerIP, helper.GetEnvVariables().ServerPort, s.ID)
 
 	params.SuccessURL = stripe.String(successURL)
 	params.CancelURL = stripe.String(cancelURL)
@@ -349,8 +355,6 @@ func verifyRazorpaySignature(orderID, paymentID, signature, secret string) bool 
 }
 
 func PaymentFailedOrderTable(OrderID string) bool {
-	var Order model.Order
-	Order.PaymentStatus = model.OnlinePaymentFailed
 	if err := database.DB.Model(&model.Order{}).Where("order_id = ?", OrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
 		return false
 	}
@@ -358,8 +362,6 @@ func PaymentFailedOrderTable(OrderID string) bool {
 }
 
 func PaymentFailedPaymentTable(RazorpayOrderID string) bool {
-	var PaymentDetails model.Payment
-	PaymentDetails.PaymentStatus = model.OnlinePaymentFailed
 	if err := database.DB.Model(&model.Payment{}).Where("razorpay_order_id = ?", RazorpayOrderID).Update("payment_status", model.OnlinePaymentFailed).Error; err != nil {
 		return false
 	}
@@ -387,23 +389,21 @@ func GetUserWalletData(c *gin.Context) {
 	}
 
 	var Result []model.UserWalletHistory
-	if err:=database.DB.Where("user_id = ?",UserID).Find(&Result).Error;err!=nil{
+	if err := database.DB.Where("user_id = ?", UserID).Find(&Result).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": false, "message": "failed to get wallet history",
 		})
 		return
 	}
-	
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": true, "data": gin.H{
 			"walletbalance": User.WalletAmount,
-			"history":Result,
+			"history":       Result,
 		},
 	})
 
 }
-
 
 func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 	// Verify if user has sufficient wallet balance
@@ -453,12 +453,12 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 	// Record the wallet transaction
 	walletHistory := model.UserWalletHistory{
 		TransactionTime: time.Now(),
-		UserID: UserID,
+		UserID:          UserID,
 		Type:            model.WalletOutgoing,
 		Amount:          order.FinalAmount,
-	    CurrentBalance: newBalance,
-		OrderID: OrderID,
-		Reason:         model.WalletTxTypeOrderPayment,
+		CurrentBalance:  newBalance,
+		OrderID:         OrderID,
+		Reason:          model.WalletTxTypeOrderPayment,
 	}
 
 	if err := database.DB.Create(&walletHistory).Error; err != nil {
@@ -515,18 +515,16 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		return
 	}
 
-
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
-			"payment": OrderID + " Status : Payment Confirmed, Payment Method :"+model.Wallet,
+			"payment": OrderID + " Status : Payment Confirmed, Payment Method :" + model.Wallet,
 		},
 	})
 }
 
-
-func CreateRestaurantWalletHistory(r model.RestaurantWalletHistory) bool  {
-	if err:=database.DB.Create(&r).Error;err!=nil{
+func CreateRestaurantWalletHistory(r model.RestaurantWalletHistory) bool {
+	if err := database.DB.Create(&r).Error; err != nil {
 		return false
 	}
 	return true
