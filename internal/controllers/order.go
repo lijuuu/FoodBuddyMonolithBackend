@@ -395,12 +395,11 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve restaurant information",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
 	//Restaurant id, if order status is provided use it or get the whole history
-	Request :=  c.Param("status")
+	Request :=  c.Param("order_status")
 		
 
 	var OrderItems []model.OrderItem
@@ -411,7 +410,6 @@ func OrderHistoryRestaurants(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":     false,
 				"message":    "failed to fetch orders assigned to this restaurant",
-				"error_code": http.StatusNotFound,
 			})
 			return
 		}
@@ -422,7 +420,6 @@ func OrderHistoryRestaurants(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":     false,
 				"message":    "failed to fetch orders assigned to this restaurant",
-				"error_code": http.StatusNotFound,
 			})
 			return
 		}
@@ -451,13 +448,7 @@ func UserOrderHistory(c *gin.Context) {
 
 	//same like restaurant
 	var Request model.UserOrderHistory
-	if err := c.BindJSON(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  true,
-			"message": "failed to bind the request",
-		})
-		return
-	}
+	Request.PaymentStatus = c.Query("payment_status")
 	Request.UserID = UserID
 	var Orders []model.Order
 

@@ -467,10 +467,43 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	}else{
 		url = fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
 	}
-	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v", url)
-
-	//send the otp to the specified email
-	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(mail))
+	htmlContent := fmt.Sprintf(`
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>FoodBuddy Email Verification</title>
+		<style>
+			.button {
+				background-color: #4CAF50;
+				border: none;
+				color: white;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>FoodBuddy Email Verification</h1>
+		<p>Please click the button below to verify your email:</p>
+		<a href="%s" class="button">Verify Email</a>
+	</body>
+	</html>
+	`, url)
+	
+	// Set up the email message
+	msg := []byte("MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n" +
+		"Subject: FoodBuddy Email Verification\r\n\r\n" +
+		htmlContent)
+	
+	// Send the email
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, msg)
 	if err != nil {
 		return errors.New("failed to send email")
 	}
