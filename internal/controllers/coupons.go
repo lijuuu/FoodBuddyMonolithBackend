@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/internal/database"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"net/http"
 	"strconv"
 	"time"
@@ -53,7 +53,7 @@ func CreateCoupon(c *gin.Context) { //admin
 	if Request.Percentage > model.CouponDiscountPercentageLimit {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": "coupon discount percentage should not exceed more than "+ strconv.Itoa(model.CouponDiscountPercentageLimit),
+			"message": "coupon discount percentage should not exceed more than " + strconv.Itoa(model.CouponDiscountPercentageLimit),
 		})
 		return
 	}
@@ -67,10 +67,10 @@ func CreateCoupon(c *gin.Context) { //admin
 	}
 
 	Coupon := model.CouponInventory{
-		CouponCode:   Request.CouponCode,
-		Expiry:       Request.Expiry,
-		Percentage:   Request.Percentage,
-		MaximumUsage: Request.MaximumUsage,
+		CouponCode:    Request.CouponCode,
+		Expiry:        Request.Expiry,
+		Percentage:    Request.Percentage,
+		MaximumUsage:  Request.MaximumUsage,
 		MinimumAmount: float64(Request.MinimumAmount),
 	}
 
@@ -186,18 +186,16 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 
 	if err := database.DB.Where("user_id = ?", UserID).Find(&CartItems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "Failed to fetch cart items. Please try again later.",
-			"error_code": http.StatusInternalServerError,
+			"status":  false,
+			"message": "Failed to fetch cart items. Please try again later.",
 		})
 		return
 	}
 
 	if len(CartItems) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "Your cart is empty.",
-			"error_code": http.StatusNotFound,
+			"status":  false,
+			"message": "Your cart is empty.",
 		})
 		return
 	}
@@ -208,9 +206,8 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 		var Product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
-				"status":     false,
-				"message":    "Failed to fetch product information. Please try again later.",
-				"error_code": http.StatusNotFound,
+				"status":  false,
+				"message": "Failed to fetch product information. Please try again later.",
 			})
 			return
 		}
@@ -226,9 +223,8 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 		var coupon model.CouponInventory
 		if err := database.DB.Where("coupon_code = ?", CouponCode).First(&coupon).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
-				"status":     false,
-				"message":    "Invalid coupon code. Please check and try again.",
-				"error_code": http.StatusNotFound,
+				"status":  false,
+				"message": "Invalid coupon code. Please check and try again.",
 			})
 			return
 		}
@@ -272,11 +268,11 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
-			"CartItems":            CartItems,
-			"TotalAmount":          sum,
-			"CouponDiscount":       CouponDiscount,
-			"ProductOfferDiscount": ProductOfferAmount,
-			"FinalAmount":          FinalAmount,
+			"cart_items":           CartItems,
+			"total_amount":         sum,
+			"coupon_discount":      CouponDiscount,
+			"product_offer_amount": ProductOfferAmount,
+			"final_amount":         FinalAmount,
 		},
 		"message": "Cart items retrieved successfully",
 	})
@@ -613,12 +609,11 @@ func ClaimReferralRewards(c *gin.Context) {
 		"status": true,
 		"data": gin.H{
 			"message":           "successfully claimed referral reward",
-			"EligibleReferrals": eligibleClaims,
-			"ClaimRecieved":     PossibleClaimAmount,
+			"eligible_referrals": eligibleClaims,
+			"claim_refund":     PossibleClaimAmount,
 		},
 	})
 }
-
 
 func GetReferralStats(c *gin.Context) {
 	email, role, _ := utils.GetJWTClaim(c)
@@ -684,7 +679,7 @@ func GetReferralStats(c *gin.Context) {
 		totalClaimedAmount += history.Amount
 	}
 
-	fmt.Println("length is  :",len(CompleteReferrals))
+	fmt.Println("length is  :", len(CompleteReferrals))
 	var IneligibleReferrals int
 	if len(CompleteReferrals) == 0 {
 		IneligibleReferrals = 0
@@ -696,17 +691,16 @@ func GetReferralStats(c *gin.Context) {
 	}
 
 	referralStats := gin.H{
-		"TotalReferrals":     len(CompleteReferrals),
-		"IneligibleReferrals": IneligibleReferrals ,
-		"EligibleReferrals":  EligibleReferrals,
-		"ClaimsDone":        claimsDone,
-		"TotalClaimAmountRecieved": totalClaimedAmount,
+		"total_referrals":           len(CompleteReferrals),
+		"ineligible_referrals":      IneligibleReferrals,
+		"eligible_referrals":        EligibleReferrals,
+		"claims_done":               claimsDone,
+		"total_claim_amount_received": totalClaimedAmount,
 	}
 
-
 	c.JSON(http.StatusOK, gin.H{
-		"status": true,
-		"data":   referralStats,
-		"ReferralHistory":CompleteReferrals,
+		"status":          true,
+		"data":            referralStats,
+		"referral_history": CompleteReferrals,
 	})
 }

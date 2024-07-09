@@ -60,8 +60,7 @@ func RestaurantProfileImageUpload(c *gin.Context) {
 		return
 	}
 
-	// Assuming there's only one file uploaded
-	fileHeaders := form.File["file"] // Replace "yourFieldName" with the actual field name used in the form
+	fileHeaders := form.File["file"]
 	if len(fileHeaders) > 0 {
 		fileHeader := fileHeaders[0]
 		imageURL, err := utils.ImageUpload(fileHeader)

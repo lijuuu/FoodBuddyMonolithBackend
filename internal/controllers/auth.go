@@ -371,13 +371,13 @@ func EmailLogin(c *gin.Context) {
 	}
 
 	//checking verification status of the user ,
-	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyotp to verify the otp
+	//if pending it will sent a response to login and verify the otp, use  /api/v1/verifyemail to verify the otp
 	var VerificationTable model.VerificationTable
 
 	if err := database.DB.Where("email = ? AND role = ?", user.Email, model.UserRole).First(&VerificationTable).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
-			"message": "failed to process otp verification",
+			"message": "failed to process email verification",
 		})
 		return
 	}
@@ -441,7 +441,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 		// OTP is still valid, respond with a message and do not send a new OTP
 		//send back tim left before trying another one
 		timeLeft := otpexpiry - uint64(now)
-		str := fmt.Sprintf("OTP is still valid. wait before sending another request, %v seconds left", int(timeLeft))
+		str := fmt.Sprintf("email is still valid. wait before sending another request, %v seconds left", int(timeLeft))
 
 		return errors.New(str)
 	}
@@ -463,16 +463,16 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 	url:=""
 	if os.Getenv("SERVERIP")== model.LocalHost{
-		url = fmt.Sprintf("http://%v:%v/api/v1/auth/verifyotp/%v/%v/%v",utils.GetEnvVariables().ServerIP,utils.GetEnvVariables().ServerPort, role, to, otp)
+		url = fmt.Sprintf("http://%v:%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP,utils.GetEnvVariables().ServerPort, role, to, otp)
 	}else{
-		url = fmt.Sprintf("https://%v/api/v1/auth/verifyotp/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
+		url = fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
 	}
 	mail := fmt.Sprintf("FoodBuddy Email Verification \n Click here to verify your email %v", url)
 
 	//send the otp to the specified email
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, []byte(mail))
 	if err != nil {
-		return errors.New("failed to send otp")
+		return errors.New("failed to send email")
 	}
 
 	//update the otp and expiry
@@ -491,7 +491,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	return nil
 }
 
-func VerifyOTP(c *gin.Context) {
+func VerifyEmail(c *gin.Context) {
 	///welcome?firstname=Jane&lastname=Doe
 	entityRole := c.Param("role")
 	entityEmail := c.Param("email")
@@ -528,7 +528,7 @@ func VerifyOTP(c *gin.Context) {
 	if VerificationTable.OTP == 0 {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":  false,
-			"message": "please login once again to verify your otp",
+			"message": "please login once again to verify your email",
 		})
 		return
 	}
@@ -544,7 +544,7 @@ func VerifyOTP(c *gin.Context) {
 	if VerificationTable.OTP != uint64(entityOTP) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": "otp is invalid ,please login once again to verify your otp",
+			"message": "email is invalid ,please login once again to verify your email",
 		})
 		return
 	}
@@ -555,7 +555,7 @@ func VerifyOTP(c *gin.Context) {
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
-			"message": "failed to verify otp, please try again",
+			"message": "failed to verify email, please try again",
 		})
 		return
 	}

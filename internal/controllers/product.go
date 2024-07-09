@@ -19,7 +19,6 @@ func GetProductList(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the product doesn't exist",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -41,7 +40,6 @@ func GetProductsByRestaurantID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "invalid restaurant ID",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -51,7 +49,6 @@ func GetProductsByRestaurantID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve products",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -82,7 +79,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get restaurant information",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -93,7 +89,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to process request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -102,7 +97,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -111,7 +105,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -120,7 +113,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "offer amount should not be more than the product price",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -131,7 +123,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "restaurant not found",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -142,7 +133,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "category doesn't exist",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -153,7 +143,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "product with the same name already exists in this restaurant",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -172,7 +161,6 @@ func AddProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to create product",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -181,7 +169,6 @@ func AddProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"message":    "successfully added new product",
-		"error_code": http.StatusOK,
 		"data": gin.H{
 			"product": Request,
 		},
@@ -204,7 +191,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get restaurant information",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -215,7 +201,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to process request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -224,7 +209,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -245,7 +229,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to fetch product from the database",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -254,7 +237,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -263,7 +245,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "offer amount should not be more than the product price",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -281,7 +262,6 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update product",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -311,7 +291,6 @@ func DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get restaurant information",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -323,7 +302,6 @@ func DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "invalid product ID",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -343,7 +321,6 @@ func DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "product is not present in the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -353,7 +330,6 @@ func DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "unable to delete the product from the database",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -393,7 +369,6 @@ func GetUsersFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "the user ID doesn't exist in the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -401,7 +376,7 @@ func GetUsersFavouriteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":        true,
 		"message":       "successfully retrieved favourite products",
-		"favouritelist": FavouriteProducts,
+		"favourite_list": FavouriteProducts,
 		"data":          gin.H{},
 	})
 }
@@ -428,7 +403,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind the JSON",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -439,7 +413,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err,
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -454,7 +427,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "user not found",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -465,7 +437,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "product not found",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -477,7 +448,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "favorite product already exists",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -488,7 +458,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to add favorite product",
-			"error_code": http.StatusInternalServerError,
 			"data":       gin.H{},
 		})
 		return
@@ -522,7 +491,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind the JSON",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -533,7 +501,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -545,7 +512,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "favorite product doesn't exist",
-			"error_code": http.StatusBadRequest,
 			"data":       gin.H{},
 		})
 		return
@@ -554,7 +520,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to delete favorite product",
-			"error_code": http.StatusInternalServerError,
 			"data":       gin.H{},
 		})
 		return

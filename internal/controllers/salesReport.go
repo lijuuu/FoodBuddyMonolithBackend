@@ -36,7 +36,6 @@ func IndividualProductReport(ProductID string) model.ProductSales {
                          FROM order_items
                          JOIN orders ON order_items.order_id = orders.order_id
                          WHERE order_items.product_id = %s
-                         AND orders.ordered_at BETWEEN '2024-06-01' AND '2024-06-30'
                          AND (order_items.order_status = 'DELIVERED' OR order_items.order_status IS NULL);`, ProductID)
 
 	var report model.ProductSales
@@ -153,7 +152,6 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -163,7 +161,6 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -434,6 +431,8 @@ func PlatformOverallSalesReport(c *gin.Context) {
             return
         }
         c.JSON(http.StatusOK, gin.H{
+			"status":true,
+			"message":"successfully created sales report",
 			"result":result,
 			"amount":amount,
 		})
@@ -447,6 +446,8 @@ func PlatformOverallSalesReport(c *gin.Context) {
     }
 
 	c.JSON(http.StatusOK, gin.H{
+		"status":true,
+		"message":"successfully created sales report",
 		"result":result,
 		"amount":amount,
 	})

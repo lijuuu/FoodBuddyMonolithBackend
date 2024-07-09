@@ -19,7 +19,6 @@ func GetCategoryList(c *gin.Context) { //public
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -39,7 +38,6 @@ func GetCategoryProductList(c *gin.Context) { //public
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -72,7 +70,6 @@ func AddCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to process incoming request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -83,7 +80,6 @@ func AddCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    err,
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -95,7 +91,6 @@ func AddCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "description must be a minimum of 10 words",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -105,7 +100,6 @@ func AddCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "category already exists",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -120,7 +114,6 @@ func AddCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "unable to add new category, server error ",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 
@@ -218,7 +211,6 @@ func DeleteCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "invalid category ID",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -227,7 +219,6 @@ func DeleteCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch category from the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -236,7 +227,6 @@ func DeleteCategory(c *gin.Context) { //admin
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to delete category from the database",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}

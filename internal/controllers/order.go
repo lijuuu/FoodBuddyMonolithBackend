@@ -402,7 +402,6 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	//Restaurant id, if order status is provided use it or get the whole history
 	Request :=  c.Param("status")
 		
-	//if provided with order_status show the specific order's of that status
 
 	var OrderItems []model.OrderItem
 	if Request != "" {
@@ -1057,7 +1056,6 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -1067,7 +1065,6 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -1077,7 +1074,6 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}

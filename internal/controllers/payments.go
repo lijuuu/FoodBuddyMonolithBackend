@@ -86,7 +86,6 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to get orderid",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -97,7 +96,6 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind Razorpay payment details",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -111,7 +109,6 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to verify",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -128,7 +125,6 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update payment informations",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -140,7 +136,6 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update payment informations",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -423,7 +418,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to fetch order information",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -433,7 +427,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusPaymentRequired, gin.H{
 			"status":     false,
 			"message":    "insufficient wallet balance",
-			"error_code": http.StatusPaymentRequired,
 		})
 		return
 	}
@@ -445,7 +438,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to deduct wallet balance",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -466,7 +458,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to record wallet transaction",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -482,7 +473,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update payment information",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -492,7 +482,6 @@ func HandleWalletPayment(OrderID string, UserID uint, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update payment status",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}

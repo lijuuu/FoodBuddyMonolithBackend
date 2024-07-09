@@ -26,7 +26,7 @@ func AuthenticationRoutes(router *gin.Engine) {
 	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback) //
 
 	//additional endpoints for email verification and password reset
-	router.GET("/api/v1/auth/verifyotp/:role/:email/:otp", controllers.VerifyOTP) //
+	router.GET("/api/v1/auth/verifyemail/:role/:email/:otp", controllers.VerifyEmail) //
 
 	router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset) //
 	router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)         //

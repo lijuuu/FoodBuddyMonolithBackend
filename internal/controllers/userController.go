@@ -43,7 +43,6 @@ func GetUserProfile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -83,7 +82,6 @@ func GetUserList(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -115,7 +113,6 @@ func GetBlockedUserList(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -125,7 +122,7 @@ func GetBlockedUserList(c *gin.Context) {
 		"status":  true,
 		"message": "successfully retrieved blocked user's data",
 		"data": gin.H{
-			"blockedusers": blockedUsers,
+			"blocked_users": blockedUsers,
 		},
 	})
 }
@@ -151,7 +148,6 @@ func BlockUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "invalid user ID",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -161,7 +157,6 @@ func BlockUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to fetch user information",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -170,7 +165,6 @@ func BlockUser(c *gin.Context) {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    "user is already blocked",
-			"error_code": http.StatusAlreadyReported,
 		})
 		return
 	}
@@ -182,7 +176,6 @@ func BlockUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to change the block status ",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -213,7 +206,6 @@ func UnblockUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "invalid user ID",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -222,7 +214,6 @@ func UnblockUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "User not found",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -231,7 +222,6 @@ func UnblockUser(c *gin.Context) {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    "user is already unblocked",
-			"error_code": http.StatusAlreadyReported,
 		})
 		return
 	}
@@ -243,7 +233,6 @@ func UnblockUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to change the unblock status",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -272,7 +261,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind the incoming request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -285,7 +273,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    errs.Error(),
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -296,7 +283,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "User not found",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -307,7 +293,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to retrieve the existing user addresses from the database",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -317,7 +302,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "user already have three addresses, please delete or edit the existing addresses",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -328,7 +312,6 @@ func AddUserAddress(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to create the address on the database",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -361,7 +344,6 @@ func GetUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to get informations from the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -372,7 +354,6 @@ func GetUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to get user email from the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -380,7 +361,6 @@ func GetUserAddress(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
-			"error_code": http.StatusUnauthorized,
 		})
 		return
 	}
@@ -391,7 +371,6 @@ func GetUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "no addresses related to the userid",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -427,7 +406,6 @@ func EditUserAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind the incoming request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -441,7 +419,6 @@ func EditUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "address not found",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -452,7 +429,6 @@ func EditUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to get user email from the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -461,7 +437,6 @@ func EditUserAddress(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
-			"error_code": http.StatusUnauthorized,
 		})
 		return
 	}
@@ -480,7 +455,6 @@ func EditUserAddress(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to update the address",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}
@@ -509,7 +483,6 @@ func DeleteUserAddress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "provide the addressid to delete the address",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -524,7 +497,6 @@ func DeleteUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "address not found",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -536,7 +508,6 @@ func DeleteUserAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":     false,
 			"message":    "failed to get user email from the database",
-			"error_code": http.StatusNotFound,
 		})
 		return
 	}
@@ -544,7 +515,6 @@ func DeleteUserAddress(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":     false,
 			"message":    "unauthorized user",
-			"error_code": http.StatusUnauthorized,
 		})
 
 		return
@@ -555,7 +525,6 @@ func DeleteUserAddress(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
 			"message":    "failed to delete the address",
-			"error_code": http.StatusInternalServerError,
 		})
 		return
 	}

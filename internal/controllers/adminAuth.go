@@ -36,7 +36,6 @@ func AdminLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "Failed to process the incoming request",
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -46,7 +45,6 @@ func AdminLogin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    err.Error(),
-			"error_code": http.StatusBadRequest,
 		})
 		return
 	}
@@ -58,14 +56,13 @@ func AdminLogin(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"status":     false,
 				"message":    "Email not present in the admin table",
-				"error_code": http.StatusUnauthorized,
 			})
 			return
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
 				"message":    "Database error",
-				"error_code": http.StatusInternalServerError,
+
 			})
 			return
 		}
@@ -85,7 +82,7 @@ func AdminLogin(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"status":     false,
 					"message":    "Failed to create admin verification entry",
-					"error_code": http.StatusInternalServerError,
+	
 				})
 				return
 			}
@@ -93,7 +90,7 @@ func AdminLogin(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":     false,
 				"message":    "Database error",
-				"error_code": http.StatusInternalServerError,
+
 			})
 			return
 		}
@@ -105,7 +102,6 @@ func AdminLogin(c *gin.Context) {
 		c.JSON(http.StatusAlreadyReported, gin.H{
 			"status":     false,
 			"message":    err.Error(),
-			"error_code": http.StatusAlreadyReported,
 		})
 		return
 	}
