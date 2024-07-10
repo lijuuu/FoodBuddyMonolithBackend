@@ -65,7 +65,7 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 		return
 	}
 
-	callbackurl := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort, initiatePayment.OrderID)
+	callbackurl := fmt.Sprintf("http://%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
 
 	responseData := map[string]interface{}{
 		"razorpay_order_id": rzpOrder["id"],
@@ -190,8 +190,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		},
 		Metadata:   map[string]string{"order_id": order.OrderID},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort)),
-		CancelURL:  stripe.String(fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort)),
+		SuccessURL: stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
+		CancelURL:  stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
 	}
 
 	s, err := session.New(params)
@@ -200,8 +200,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		return
 	}
 
-	successURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort, s.ID)
-	cancelURL := fmt.Sprintf("http://%v:%v/api/v1/user/order/step3/stripecallback?session_id=%s", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort, s.ID)
+	successURL := fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id=%s", utils.GetEnvVariables().ServerIP, s.ID)
+	cancelURL := fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id=%s", utils.GetEnvVariables().ServerIP, s.ID)
 
 	params.SuccessURL = stripe.String(successURL)
 	params.CancelURL = stripe.String(cancelURL)
