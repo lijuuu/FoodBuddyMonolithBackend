@@ -408,7 +408,7 @@ func BlockRestaurant(c *gin.Context) {
 	}
 
 	// Get the restaurant id
-	restaurantIDStr := c.Param("restaurantid")
+	restaurantIDStr := c.Query("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -482,7 +482,7 @@ func UnblockRestaurant(c *gin.Context) {
 	}
 
 	// Get the restaurant id
-	restaurantIDStr := c.Param("restaurantid")
+	restaurantIDStr := c.Query("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

@@ -180,7 +180,7 @@ func ApplyCouponOnCart(c *gin.Context) { //user
 		return
 	}
 	UserID, _ := UserIDfromEmail(email)
-	CouponCode := c.Param("couponcode")
+	CouponCode := c.Query("couponcode")
 
 	var CartItems []model.CartItems
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/internal/database"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -41,8 +41,8 @@ func GetUserProfile(c *gin.Context) {
 	var UserProfile model.User
 	if err := database.DB.Where("id = ?", UserID).First(&UserProfile).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"status":  false,
+			"message": "failed to retrieve data from the database, or the data doesn't exists",
 		})
 		return
 	}
@@ -59,7 +59,7 @@ func GetUserProfile(c *gin.Context) {
 			"picture":      UserProfile.Picture,
 			"login_method": UserProfile.LoginMethod,
 			"blocked":      UserProfile.Blocked,
-			"wallet":       UserProfile.WalletAmount,
+			"wallet_amount":       UserProfile.WalletAmount,
 		},
 	})
 }
@@ -80,8 +80,8 @@ func GetUserList(c *gin.Context) {
 	tx := database.DB.Find(&users)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve data from the database, or the data doesn't exists",
+			"status":  false,
+			"message": "failed to retrieve data from the database, or the data doesn't exists",
 		})
 		return
 	}
@@ -111,12 +111,11 @@ func GetBlockedUserList(c *gin.Context) {
 	tx := database.DB.Where("deleted_at IS NULL AND blocked =?", true).Find(&blockedUsers)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve blocked user data from the database, or the data doesn't exists",
+			"status":  false,
+			"message": "failed to retrieve blocked user data from the database, or the data doesn't exists",
 		})
 		return
 	}
-
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -141,13 +140,13 @@ func BlockUser(c *gin.Context) {
 		return
 	}
 
-	userIdStr := c.Param("userid")
+	userIdStr := c.Query("userid")
 
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "invalid user ID",
+			"status":  false,
+			"message": "invalid user ID",
 		})
 		return
 	}
@@ -155,16 +154,16 @@ func BlockUser(c *gin.Context) {
 	if err := database.DB.First(&user, userId).Error; err != nil {
 
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to fetch user information",
+			"status":  false,
+			"message": "failed to fetch user information",
 		})
 		return
 	}
 
 	if user.Blocked {
 		c.JSON(http.StatusAlreadyReported, gin.H{
-			"status":     false,
-			"message":    "user is already blocked",
+			"status":  false,
+			"message": "user is already blocked",
 		})
 		return
 	}
@@ -174,8 +173,8 @@ func BlockUser(c *gin.Context) {
 	tx := database.DB.Updates(&user)
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to change the block status ",
+			"status":  false,
+			"message": "failed to change the block status ",
 		})
 		return
 	}
@@ -199,29 +198,29 @@ func UnblockUser(c *gin.Context) {
 		return
 	}
 
-	userIdStr := c.Param("userid")
+	userIdStr := c.Query("userid")
 
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "invalid user ID",
+			"status":  false,
+			"message": "invalid user ID",
 		})
 		return
 	}
 
 	if err := database.DB.First(&user, userId).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "User not found",
+			"status":  false,
+			"message": "User not found",
 		})
 		return
 	}
 
 	if !user.Blocked {
 		c.JSON(http.StatusAlreadyReported, gin.H{
-			"status":     false,
-			"message":    "user is already unblocked",
+			"status":  false,
+			"message": "user is already unblocked",
 		})
 		return
 	}
@@ -231,8 +230,8 @@ func UnblockUser(c *gin.Context) {
 	tx := database.DB.Model(&user).UpdateColumn("blocked", false)
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to change the unblock status",
+			"status":  false,
+			"message": "failed to change the unblock status",
 		})
 		return
 	}
@@ -259,8 +258,8 @@ func AddUserAddress(c *gin.Context) {
 	//bind the json to the struct
 	if err := c.BindJSON(&UserAddress); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind the incoming request",
+			"status":  false,
+			"message": "failed to bind the incoming request",
 		})
 		return
 	}
@@ -271,8 +270,8 @@ func AddUserAddress(c *gin.Context) {
 	//validating the useraddress for required,number tag etc....
 	if errs := utils.Validate(UserAddress); errs != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    errs.Error(),
+			"status":  false,
+			"message": errs.Error(),
 		})
 		return
 	}
@@ -281,8 +280,8 @@ func AddUserAddress(c *gin.Context) {
 	var userinfo model.User
 	if err := database.DB.First(&userinfo, UserAddress.UserID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "User not found",
+			"status":  false,
+			"message": "User not found",
 		})
 		return
 	}
@@ -291,8 +290,8 @@ func AddUserAddress(c *gin.Context) {
 	var UserAddresses []model.Address
 	if err := database.DB.Where("user_id = ?", UserAddress.UserID).Find(&UserAddresses).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve the existing user addresses from the database",
+			"status":  false,
+			"message": "failed to retrieve the existing user addresses from the database",
 		})
 		return
 	}
@@ -300,8 +299,8 @@ func AddUserAddress(c *gin.Context) {
 	//check if the user already has 3 address...3 is the limit
 	if len(UserAddresses) >= 3 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "user already have three addresses, please delete or edit the existing addresses",
+			"status":  false,
+			"message": "user already have three addresses, please delete or edit the existing addresses",
 		})
 		return
 	}
@@ -310,8 +309,8 @@ func AddUserAddress(c *gin.Context) {
 	UserAddress.UserID = UserID
 	if err := database.DB.Create(&UserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to create the address on the database",
+			"status":  false,
+			"message": "failed to create the address on the database",
 		})
 		return
 	}
@@ -342,8 +341,8 @@ func GetUserAddress(c *gin.Context) {
 	var UserAddresses []model.Address
 	if err := database.DB.Where("user_id = ?", UserID).Find(&UserAddresses).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to get informations from the database",
+			"status":  false,
+			"message": "failed to get informations from the database",
 		})
 		return
 	}
@@ -352,15 +351,15 @@ func GetUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(uint(UserID))
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to get user email from the database",
+			"status":  false,
+			"message": "failed to get user email from the database",
 		})
 		return
 	}
 	if err := VerifyJWT(c, model.UserRole, email); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized user",
+			"status":  false,
+			"message": "unauthorized user",
 		})
 		return
 	}
@@ -369,8 +368,8 @@ func GetUserAddress(c *gin.Context) {
 	if len(UserAddresses) == 0 {
 
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "no addresses related to the userid",
+			"status":  false,
+			"message": "no addresses related to the userid",
 		})
 		return
 	}
@@ -404,8 +403,8 @@ func EditUserAddress(c *gin.Context) {
 	if err := c.BindJSON(&updateUserAddress); err != nil {
 
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind the incoming request",
+			"status":  false,
+			"message": "failed to bind the incoming request",
 		})
 		return
 	}
@@ -417,8 +416,8 @@ func EditUserAddress(c *gin.Context) {
 	if err := database.DB.Where("user_id =? AND address_id =?", updateUserAddress.UserID, updateUserAddress.AddressID).First(&existingUserAddress).Error; err != nil {
 
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "address not found",
+			"status":  false,
+			"message": "address not found",
 		})
 		return
 	}
@@ -427,16 +426,16 @@ func EditUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to get user email from the database",
+			"status":  false,
+			"message": "failed to get user email from the database",
 		})
 		return
 	}
 	if err := VerifyJWT(c, model.UserRole, email); err != nil {
 
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized user",
+			"status":  false,
+			"message": "unauthorized user",
 		})
 		return
 	}
@@ -453,8 +452,8 @@ func EditUserAddress(c *gin.Context) {
 	// Save the updated record back to the database
 	if err := database.DB.Updates(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to update the address",
+			"status":  false,
+			"message": "failed to update the address",
 		})
 		return
 	}
@@ -481,8 +480,8 @@ func DeleteUserAddress(c *gin.Context) {
 	var addressidstr string
 	if addressidstr = c.Query("addressid"); addressidstr == "" { //use query ?addressid = 1
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "provide the addressid to delete the address",
+			"status":  false,
+			"message": "provide the addressid to delete the address",
 		})
 		return
 	}
@@ -495,8 +494,8 @@ func DeleteUserAddress(c *gin.Context) {
 	var existingUserAddress model.Address
 	if err := database.DB.Where("user_id =? AND address_id =?", AddressInfo.UserID, AddressInfo.AddressID).First(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "address not found",
+			"status":  false,
+			"message": "address not found",
 		})
 		return
 	}
@@ -506,15 +505,15 @@ func DeleteUserAddress(c *gin.Context) {
 	email, ok := EmailFromUserID(existingUserAddress.UserID)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to get user email from the database",
+			"status":  false,
+			"message": "failed to get user email from the database",
 		})
 		return
 	}
 	if errs := VerifyJWT(c, model.UserRole, email); errs != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":     false,
-			"message":    "unauthorized user",
+			"status":  false,
+			"message": "unauthorized user",
 		})
 
 		return
@@ -523,8 +522,8 @@ func DeleteUserAddress(c *gin.Context) {
 	//delete the user address
 	if err := database.DB.Delete(&existingUserAddress).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to delete the address",
+			"status":  false,
+			"message": "failed to delete the address",
 		})
 		return
 	}
@@ -629,7 +628,13 @@ func Step1PasswordReset(c *gin.Context) {
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url := fmt.Sprintf("http://%v:%v/api/v1/auth/passwordreset?email=%v&token=%v&role=%v",utils.GetEnvVariables().ServerIP,utils.GetEnvVariables().ServerPort, Request.Email, ResetToken, Request.Role)
+	url := ""
+	if os.Getenv("SERVERIP") == model.LocalHost {
+		url = fmt.Sprintf("http://%v:%v/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", utils.GetEnvVariables().ServerIP, utils.GetEnvVariables().ServerPort, Request.Email, ResetToken, Request.Role)
+	} else {
+		url = fmt.Sprintf("https://%v/api/v1/auth/passwordreset?email=%v&token=%v&role=%v", utils.GetEnvVariables().ServerIP, Request.Email, ResetToken, Request.Role)
+	}
+
 	mail := fmt.Sprintf("FoodBuddy Password Reset \n Click here to reset your password %v", url)
 
 	//send the otp to the specified email

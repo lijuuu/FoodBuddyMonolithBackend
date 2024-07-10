@@ -15,7 +15,7 @@ import (
 )
 
 func ProductReport(c *gin.Context) {
-	productID, err := strconv.Atoi(c.Param("productid"))
+	productID, err := strconv.Atoi(c.Query("productid"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid ProductID",
@@ -145,7 +145,7 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 }
 
 func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
-	OrderID := c.Param("orderid")
+	OrderID := c.Query("orderid")
 
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {

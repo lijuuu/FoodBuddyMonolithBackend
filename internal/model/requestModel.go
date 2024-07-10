@@ -73,8 +73,8 @@ type OrderHistoryRestaurants struct {
 }
 
 type UserOrderHistory struct {
-	UserID        uint   `json:"user_id"`
-	PaymentStatus string `json:"payment_status"`
+	UserID      uint   `json:"user_id"`
+	OrderStatus string `json:"order_status"`
 }
 
 type GetOrderInfoByOrderID struct {
@@ -170,7 +170,7 @@ type AddProductRequest struct {
 	Price       float64 `validate:"required,number" json:"price"`
 	OfferAmount float64 `json:"offer_amount"`
 	MaxStock    uint    `validate:"required,number" json:"max_stock"`
-	StockLeft   uint    `validate:"required,number" json:"stock_left"`
+	StockLeft   uint    `validate:"required,number" json:"max_stock"`
 	Veg         string  `validate:"required" json:"veg"`
 }
 

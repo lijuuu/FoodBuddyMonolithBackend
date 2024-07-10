@@ -194,7 +194,7 @@ func DeleteCategory(c *gin.Context) { //admin
 
 	var category model.Category
 
-	catergoryIDStr := c.Param("categoryid")
+	catergoryIDStr := c.Query("categoryid")
 
 	//check admin api authentication
 	_, role, err := utils.GetJWTClaim(c)

@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type EnvVariables struct {
 	ServerIP            string
 	ServerPort          string
@@ -121,7 +120,7 @@ type CartItems struct {
 	UserID         uint   `gorm:"column:user_id" validate:"required,number" json:"user_id"`
 	ProductID      uint   ` validate:"required,number" json:"product_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
-	CookingRequest string // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
+	CookingRequest string `json:"cooking_request"` // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
 type Order struct {
 	OrderID              string    `validate:"required" json:"order_id"`

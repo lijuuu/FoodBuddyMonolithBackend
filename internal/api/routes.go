@@ -62,6 +62,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //
 		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //
 		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity)       //
+		userRoutes.GET("/coupon/cart/", controllers.ApplyCouponOnCart) //
 
 		// Order Management
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
@@ -69,12 +70,11 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
 		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
 		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
-		userRoutes.POST("/order/history", controllers.UserOrderHistory)
-		userRoutes.GET("/order/invoice/:orderid", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
+		userRoutes.POST("/order/items", controllers.UserOrderItems)
+		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.POST("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
-		userRoutes.GET("/coupon/cart/:couponcode", controllers.ApplyCouponOnCart) //
 
 		// Referral System
 		userRoutes.GET("/referral/code", controllers.GetRefferalCode)
@@ -91,15 +91,15 @@ func RestaurantRoutes(router *gin.Engine) {
 		restaurantRoutes.POST("/edit", controllers.EditRestaurant)                 //
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)             //
 		restaurantRoutes.POST("/products/edit", controllers.EditProduct)           //
-		restaurantRoutes.DELETE("/products/:productid", controllers.DeleteProduct) //
+		restaurantRoutes.DELETE("/products", controllers.DeleteProduct) //
 
 		// Order History and Status Updates
-		restaurantRoutes.GET("/order/history/:status", controllers.OrderHistoryRestaurants) //
+		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
 
 		// Product Offers
 		restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)                 //
-		restaurantRoutes.PUT("/product/offer/remove/:productid", controllers.RemoveProductOffer) //
+		restaurantRoutes.PUT("/product/offer/remove", controllers.RemoveProductOffer) //
 
 		//orderitem information in excel
 		restaurantRoutes.GET("/orderitems/excel/all", controllers.OrderInformationsCSVFileForRestaurant) //
@@ -116,19 +116,19 @@ func AdminRoutes(router *gin.Engine) {
 		// User Management
 		adminRoutes.GET("/users", controllers.GetUserList)                 //
 		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList)  //
-		adminRoutes.PUT("/users/block/:userid", controllers.BlockUser)     //
-		adminRoutes.PUT("/users/unblock/:userid", controllers.UnblockUser) //
+		adminRoutes.PUT("/users/block/", controllers.BlockUser)     //
+		adminRoutes.PUT("/users/unblock", controllers.UnblockUser) //
 
 		// Category Management
 		adminRoutes.POST("/categories/add", controllers.AddCategory)                     //
 		adminRoutes.PATCH("/categories/edit", controllers.EditCategory)                  //
-		adminRoutes.DELETE("/categories/delete/:categoryid", controllers.DeleteCategory) //
+		adminRoutes.DELETE("/categories/delete/", controllers.DeleteCategory) //
 
 		// Restaurant Management
 		adminRoutes.GET("/restaurants", controllers.GetRestaurants)
 		// adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
-		adminRoutes.PUT("/restaurants/block/:restaurantid", controllers.BlockRestaurant)     //
-		adminRoutes.PUT("/restaurants/unblock/:restaurantid", controllers.UnblockRestaurant) //
+		adminRoutes.PUT("/restaurants/block/", controllers.BlockRestaurant)     //
+		adminRoutes.PUT("/restaurants/unblock/", controllers.UnblockRestaurant) //
 
 		// Coupon Management
 		adminRoutes.POST("/coupon/create", controllers.CreateCoupon)  //
@@ -145,15 +145,15 @@ func PublicRoutes(router *gin.Engine) {
 		publicRoute.GET("/categories/products", controllers.GetCategoryProductList)                   //
 		publicRoute.GET("/products", controllers.GetProductList)                                      //
 		publicRoute.GET("/restaurants", controllers.GetRestaurants)                                   //
-		publicRoute.GET("/restaurants/products/:restaurantid", controllers.GetProductsByRestaurantID) //
+		publicRoute.GET("/restaurants/products/", controllers.GetProductsByRestaurantID) //
 		publicRoute.GET("/products/onlyveg", controllers.OnlyVegProducts)                             //
 		publicRoute.GET("/products/newarrivals", controllers.NewArrivals)                             //
 		publicRoute.GET("/products/lowtohigh", controllers.PriceLowToHigh)                            //
 		publicRoute.GET("/products/hightolow", controllers.PriceHighToLow)                            //
 		publicRoute.GET("/products/offerproducts", controllers.GetProductOffers)                      //
-		publicRoute.GET("/report/products/:productid", controllers.ProductReport)                     //
+		publicRoute.GET("/report/products", controllers.ProductReport)                     //
 		publicRoute.GET("/report/products/best", controllers.BestSellingProducts)                     //
-		publicRoute.GET("/report/totalorders/all", controllers.PlatformOverallSalesReport)            //
+		publicRoute.GET("/report/overallreport/all", controllers.PlatformOverallSalesReport)            //
 
 	}
 }

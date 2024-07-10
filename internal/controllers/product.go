@@ -34,7 +34,7 @@ func GetProductList(c *gin.Context) {
 
 // public
 func GetProductsByRestaurantID(c *gin.Context) {
-	restaurantIDStr := c.Param("restaurantid")
+	restaurantIDStr := c.Query("restaurantid")
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -296,7 +296,7 @@ func DeleteProduct(c *gin.Context) {
 	}
 
 	// Get product id from parameters
-	productIDStr := c.Param("productid")
+	productIDStr := c.Query("productid")
 	productID, err := strconv.Atoi(productIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -377,7 +377,6 @@ func GetUsersFavouriteProduct(c *gin.Context) {
 		"status":        true,
 		"message":       "successfully retrieved favourite products",
 		"favourite_list": FavouriteProducts,
-		"data":          gin.H{},
 	})
 }
 
@@ -644,7 +643,7 @@ func AddProductOffer(c *gin.Context) {
 
 func RemoveProductOffer(c *gin.Context) {
 
-	ProductID, err := strconv.Atoi(c.Param("productid"))
+	ProductID, err := strconv.Atoi(c.Query("productid"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid ProductID",

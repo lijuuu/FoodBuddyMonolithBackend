@@ -399,7 +399,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		return
 	}
 	//Restaurant id, if order status is provided use it or get the whole history
-	Request :=  c.Param("order_status")
+	Request :=  c.Query("order_status")
 		
 
 	var OrderItems []model.OrderItem
@@ -434,7 +434,7 @@ func OrderHistoryRestaurants(c *gin.Context) {
 }
 
 // user
-func UserOrderHistory(c *gin.Context) {
+func UserOrderItems(c *gin.Context) {
 	//check user api authentication
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
@@ -448,23 +448,23 @@ func UserOrderHistory(c *gin.Context) {
 
 	//same like restaurant
 	var Request model.UserOrderHistory
-	Request.PaymentStatus = c.Query("payment_status")
+	Request.OrderStatus = c.Query("order_status")
 	Request.UserID = UserID
-	var Orders []model.Order
+	var OrderItems []model.OrderItem
 
-	if Request.PaymentStatus != "" {
-		if err := database.DB.Where("user_id = ? AND payment_status = ?", Request.UserID, Request.PaymentStatus).Find(&Orders).Error; err != nil {
+	if Request.OrderStatus != "" {
+		if err := database.DB.Where("user_id = ? AND order_status = ?", Request.UserID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status":  true,
-				"message": "failed to fetch order history of the user by order status",
+				"message": "failed to fetch specified orderitems",
 			})
 			return
 		}
 	} else {
-		if err := database.DB.Where("user_id = ?", Request.UserID).Find(&Orders).Error; err != nil {
+		if err := database.DB.Where("user_id = ?", Request.UserID).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status":  true,
-				"message": "failed to fetch order history of the user",
+				"message": "failed to fetch order items of the user",
 			})
 			return
 		}
@@ -472,9 +472,9 @@ func UserOrderHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
-		"message": "successfully fetched order history",
+		"message": "successfully fetched order items based on order status",
 		"data": gin.H{
-			"orderhistory": Orders,
+			"orderhistory": OrderItems,
 		},
 	})
 }
@@ -667,6 +667,22 @@ func CancelOrderedProduct(c *gin.Context) {
 		return
 	}
 
+	var order model.Order
+	if err := database.DB.Where("order_id =?", Request.OrderID).First(&order).Error; err!= nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to fetch order information",
+		})
+		return
+	}
+	if order.PaymentStatus == model.OnlinePaymentConfirmed {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "order has not received the payment, hence cannot initiate the cancellation",
+		})
+		return
+	}
+
 	var OrderItems []model.OrderItem
 	if Request.ProductId!= 0 {
 		// Fetch individual product
@@ -704,24 +720,14 @@ func CancelOrderedProduct(c *gin.Context) {
 		return
 	}
 
-	var order model.Order
-	if err := database.DB.Where("order_id =?", Request.OrderID).First(&order).Error; err!= nil {
-		c.JSON(http.StatusNotFound, gin.H{
+
+	done = ProvideWalletRefundToUser(order.UserID, OrderItems)
+	if!done {
+		c.JSON(http.StatusConflict, gin.H{
 			"status":  false,
-			"message": "failed to fetch order information",
+			"message": "failed to refund to the wallet",
 		})
 		return
-	}
-
-	if order.PaymentStatus == model.OnlinePaymentConfirmed {
-		done = ProvideWalletRefundToUser(order.UserID, OrderItems)
-		if!done {
-			c.JSON(http.StatusConflict, gin.H{
-				"status":  false,
-				"message": "failed to refund to the wallet",
-			})
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

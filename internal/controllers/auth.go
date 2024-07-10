@@ -462,7 +462,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 	url:=""
-	if os.Getenv("SERVERIP")== model.LocalHost{
+	if os.Getenv("SERVERIP") == model.LocalHost{
 		url = fmt.Sprintf("http://%v:%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP,utils.GetEnvVariables().ServerPort, role, to, otp)
 	}else{
 		url = fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
@@ -543,7 +543,7 @@ func VerifyEmail(c *gin.Context) {
 
 	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&VerificationTable)
 	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to retrieve  information",
 		})
