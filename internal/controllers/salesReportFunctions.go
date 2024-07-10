@@ -39,7 +39,6 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 		return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching orders")
 	}
 
-	// Initialize counters map
 	var orderStatusCounts = map[string]int64{
 		model.OrderStatusProcessing:    0,
 		model.OrderStatusInPreparation: 0,

@@ -65,7 +65,7 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 		return
 	}
 
-	callbackurl := fmt.Sprintf("http://%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
+	callbackurl := fmt.Sprintf("https://%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
 
 	responseData := map[string]interface{}{
 		"razorpay_order_id": rzpOrder["id"],
