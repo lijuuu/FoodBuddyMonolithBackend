@@ -461,12 +461,9 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	from := "foodbuddycode@gmail.com"
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
-	url:=""
-	if os.Getenv("SERVERIP") == model.LocalHost{
-		url = fmt.Sprintf("http://%v:%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP,utils.GetEnvVariables().ServerPort, role, to, otp)
-	}else{
-		url = fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
-	}
+
+	url := fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
+	
 	htmlContent := fmt.Sprintf(`
 	<!DOCTYPE html>
 	<html lang="en">
@@ -577,7 +574,7 @@ func VerifyEmail(c *gin.Context) {
 	if VerificationTable.OTP != uint64(entityOTP) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
-			"message": "email is invalid ,please login once again to verify your email",
+			"message": "otp is invalid",
 		})
 		return
 	}

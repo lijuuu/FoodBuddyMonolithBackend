@@ -17,7 +17,7 @@ func ServerHealth(router *gin.Engine) {
 func AuthenticationRoutes(router *gin.Engine) {
 	// Authentication Endpoints
 	//admin
-	router.POST("/api/v1/auth/admin/login", controllers.AdminLogin) //
+	router.GET("/api/v1/auth/admin/login", controllers.AdminLogin) //
 
 	//user
 	router.POST("/api/v1/auth/user/email/login", controllers.EmailLogin)   //

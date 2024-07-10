@@ -428,6 +428,14 @@ func ActivateReferral(c *gin.Context) {
 		return
 	}
 
+	if err:=database.DB.Model(&model.User{}).Where("referral_code = ?",RefCode).Error;err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "the referral code doesnt exist",
+		})
+		return
+	}
+
 	fmt.Println(User)
 
 	var UserReferralHistory model.UserReferralHistory
@@ -439,7 +447,6 @@ func ActivateReferral(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(UserReferralHistory)
 
 	if UserReferralHistory.ReferredBy != "" {
 		c.JSON(http.StatusNotFound, gin.H{

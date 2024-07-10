@@ -12,43 +12,82 @@ import (
 )
 
 func GetCategoryList(c *gin.Context) { //public
-	var category []model.Category
+    var categories []struct {
+        ID              uint      `json:"id"`
+        Name            string    `json:"name"`
+        Description     string    `json:"description"`
+        ImageURL        string    `json:"image_url"`
+        OfferPercentage uint      `json:"offer_percentage"`
+    }
 
-	tx := database.DB.Select("*").Find(&category)
-	if tx.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-		})
-		return
-	}
+    tx := database.DB.Select("id, name, description, image_url, offer_percentage").Find(&categories)
+    if tx.Error != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":     false,
+            "message":    "failed to retrieve data from the database, or the data doesn't exists",
+        })
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "category list is fetched successfully",
-		"data": gin.H{
-			"categorylist": category,
-		},
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "status":  true,
+        "message": "category list is fetched successfully",
+        "data": gin.H{
+            "categorylist": categories,
+        },
+    })
 }
 
 func GetCategoryProductList(c *gin.Context) { //public
-	var categories []model.Category
-	if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve data from the database, or the data doesn't exists",
-		})
-		return
-	}
+    var categories []model.Category
+    if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":     false,
+            "message":    "failed to retrieve data from the database, or the data doesn't exists",
+        })
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "category list with products is fetched successfully",
-		"data": gin.H{
-			"categorylist": categories,
-		},
-	})
+    transformedCategories := make([]map[string]interface{}, len(categories))
+    for i, category := range categories {
+        transformedCategory := map[string]interface{}{
+            "id":              category.ID,
+            "name":            category.Name,
+            "description":     category.Description,
+            "image_url":       category.ImageURL,
+            "offer_percentage": category.OfferPercentage,
+            "products": []map[string]interface{}{},
+        }
+        
+        for _, product := range category.Products {
+            transformedProduct := map[string]interface{}{
+                "id":                  product.ID,
+                "restaurant_id":         product.RestaurantID,
+                "category_id":          product.CategoryID,
+                "name":               product.Name,
+                "description":         product.Description,
+                "image_url":          product.ImageURL,
+                "price":             product.Price,
+                "preparation_time":    product.PreparationTime,
+                "max_stock":          product.MaxStock,
+                "offer_amount":        product.OfferAmount,
+                "stock_left":         product.StockLeft,
+                "average_rating":      product.AverageRating,
+                "veg":              product.Veg,
+            }
+            transformedCategory["products"] = append(transformedCategory["products"].([]map[string]interface{}), transformedProduct)
+        }
+        
+        transformedCategories[i] = transformedCategory
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  true,
+        "message": "category list with products is fetched successfully",
+        "data": gin.H{
+            "categorylist": transformedCategories,
+        },
+    })
 }
 
 func AddCategory(c *gin.Context) { //admin
