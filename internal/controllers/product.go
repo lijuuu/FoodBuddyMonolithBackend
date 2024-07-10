@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"foodbuddy/internal/database"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -17,8 +17,8 @@ func GetProductList(c *gin.Context) {
 	tx := database.DB.Select("*").Find(&Products)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve data from the database, or the product doesn't exist",
+			"status":  false,
+			"message": "failed to retrieve data from the database, or the product doesn't exist",
 		})
 		return
 	}
@@ -38,8 +38,8 @@ func GetProductsByRestaurantID(c *gin.Context) {
 	restaurantID, err := strconv.Atoi(restaurantIDStr)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "invalid restaurant ID",
+			"status":  false,
+			"message": "invalid restaurant ID",
 		})
 		return
 	}
@@ -47,8 +47,8 @@ func GetProductsByRestaurantID(c *gin.Context) {
 	var products []model.Product
 	if err := database.DB.Where("restaurant_id =?", restaurantID).Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve products",
+			"status":  false,
+			"message": "failed to retrieve products",
 		})
 		return
 	}
@@ -77,8 +77,8 @@ func AddProduct(c *gin.Context) {
 	JWTRestaurantID, ok := RestIDfromEmail(email)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to get restaurant information",
+			"status":  false,
+			"message": "failed to get restaurant information",
 		})
 		return
 	}
@@ -87,32 +87,32 @@ func AddProduct(c *gin.Context) {
 
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to process request",
+			"status":  false,
+			"message": "failed to process request",
 		})
 		return
 	}
 
 	if err := utils.Validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    err.Error(),
+			"status":  false,
+			"message": err.Error(),
 		})
 		return
 	}
 
 	if Request.Veg != model.YES && Request.Veg != model.NO {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
+			"status":  false,
+			"message": "please specify if the product is vegetarian by 'YES' or 'NO' ",
 		})
 		return
 	}
 
 	if Request.Price < Request.OfferAmount {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "offer amount should not be more than the product price",
+			"status":  false,
+			"message": "offer amount should not be more than the product price",
 		})
 		return
 	}
@@ -121,8 +121,8 @@ func AddProduct(c *gin.Context) {
 	var restaurant model.Restaurant
 	if err := database.DB.First(&restaurant, JWTRestaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "restaurant not found",
+			"status":  false,
+			"message": "restaurant not found",
 		})
 		return
 	}
@@ -131,8 +131,8 @@ func AddProduct(c *gin.Context) {
 	var category model.Category
 	if err := database.DB.First(&category, Request.CategoryID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "category doesn't exist",
+			"status":  false,
+			"message": "category doesn't exist",
 		})
 		return
 	}
@@ -141,8 +141,8 @@ func AddProduct(c *gin.Context) {
 	var existingProduct model.Product
 	if err := database.DB.Where("name =? AND restaurant_id =? AND deleted_at IS NULL", Request.Name, JWTRestaurantID).First(&existingProduct).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "product with the same name already exists in this restaurant",
+			"status":  false,
+			"message": "product with the same name already exists in this restaurant",
 		})
 		return
 	}
@@ -155,21 +155,23 @@ func AddProduct(c *gin.Context) {
 		Price:        Request.Price,
 		MaxStock:     Request.MaxStock,
 		StockLeft:    Request.StockLeft,
+		Veg:          Request.Veg,
 	}
 
 	if err := database.DB.Create(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to create product",
+			"status":  false,
+			"message": "failed to create product",
 		})
 		return
 	}
 
 	// Return a success response
 	c.JSON(http.StatusOK, gin.H{
-		"status":     true,
-		"message":    "successfully added new product",
+		"status":  true,
+		"message": "successfully added new product",
 		"data": gin.H{
+			"id":      existingProduct.ID,
 			"product": Request,
 		},
 	})
@@ -189,8 +191,8 @@ func EditProduct(c *gin.Context) {
 	JWTRestaurantID, ok := RestIDfromEmail(email)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to get restaurant information",
+			"status":  false,
+			"message": "failed to get restaurant information",
 		})
 		return
 	}
@@ -199,16 +201,16 @@ func EditProduct(c *gin.Context) {
 	var Request model.EditProductRequest
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to process request",
+			"status":  false,
+			"message": "failed to process request",
 		})
 		return
 	}
 
 	if err := utils.Validate(Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    err.Error(),
+			"status":  false,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -227,24 +229,24 @@ func EditProduct(c *gin.Context) {
 	var existingProduct model.Product
 	if err := database.DB.Where("id = ?", Request.ProductID).First(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to fetch product from the database",
+			"status":  false,
+			"message": "failed to fetch product from the database",
 		})
 		return
 	}
 
 	if Request.Veg != model.YES && Request.Veg != model.NO {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "please specify if the product is vegetarian by 'YES' or 'NO' ",
+			"status":  false,
+			"message": "please specify if the product is vegetarian by 'YES' or 'NO' ",
 		})
 		return
 	}
 
 	if Request.Price < Request.OfferAmount {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "offer amount should not be more than the product price",
+			"status":  false,
+			"message": "offer amount should not be more than the product price",
 		})
 		return
 	}
@@ -260,8 +262,8 @@ func EditProduct(c *gin.Context) {
 	// Update product details
 	if err := database.DB.Where("id = ?", Request.ProductID).Updates(&existingProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to update product",
+			"status":  false,
+			"message": "failed to update product",
 		})
 		return
 	}
@@ -289,8 +291,8 @@ func DeleteProduct(c *gin.Context) {
 	JWTRestaurantID, ok := RestIDfromEmail(email)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to get restaurant information",
+			"status":  false,
+			"message": "failed to get restaurant information",
 		})
 		return
 	}
@@ -300,8 +302,8 @@ func DeleteProduct(c *gin.Context) {
 	productID, err := strconv.Atoi(productIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "invalid product ID",
+			"status":  false,
+			"message": "invalid product ID",
 		})
 		return
 	}
@@ -319,8 +321,8 @@ func DeleteProduct(c *gin.Context) {
 	var product model.Product
 	if err := database.DB.First(&product, productID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "product is not present in the database",
+			"status":  false,
+			"message": "product is not present in the database",
 		})
 		return
 	}
@@ -328,8 +330,8 @@ func DeleteProduct(c *gin.Context) {
 	//delete the product
 	if err := database.DB.Delete(&product, productID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "unable to delete the product from the database",
+			"status":  false,
+			"message": "unable to delete the product from the database",
 		})
 		return
 	}
@@ -367,15 +369,15 @@ func GetUsersFavouriteProduct(c *gin.Context) {
 
 	if err := database.DB.Where("user_id =?", UserID).Find(&FavouriteProducts).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "the user ID doesn't exist in the database",
+			"status":  false,
+			"message": "the user ID doesn't exist in the database",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":        true,
-		"message":       "successfully retrieved favourite products",
+		"status":         true,
+		"message":        "successfully retrieved favourite products",
 		"favourite_list": FavouriteProducts,
 	})
 }
@@ -400,9 +402,9 @@ func AddFavouriteProduct(c *gin.Context) {
 
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind the JSON",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "failed to bind the JSON",
+
 		})
 		return
 	}
@@ -410,9 +412,9 @@ func AddFavouriteProduct(c *gin.Context) {
 	// Extracted validation logic for clarity
 	if err := utils.Validate(request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    err,
-			"data":       gin.H{},
+			"status":  false,
+			"message": err,
+
 		})
 		return
 	}
@@ -424,9 +426,9 @@ func AddFavouriteProduct(c *gin.Context) {
 	// Check if the user exists
 	if err := database.DB.Where("id =?", UserID).First(&userinfo).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "user not found",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "user not found",
+
 		})
 		return
 	}
@@ -434,9 +436,9 @@ func AddFavouriteProduct(c *gin.Context) {
 	// Check if the product exists
 	if err := database.DB.Where("id =?", request.ProductID).First(&productinfo).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "product not found",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "product not found",
+
 		})
 		return
 	}
@@ -445,9 +447,9 @@ func AddFavouriteProduct(c *gin.Context) {
 	if err := database.DB.Where("user_id =? AND product_id =?", UserID, request.ProductID).First(&existingFavouriteProduct).Error; err == nil {
 		// If there's no error, it means the favorite product already exists
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "favorite product already exists",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "favorite product already exists",
+
 		})
 		return
 	}
@@ -455,9 +457,9 @@ func AddFavouriteProduct(c *gin.Context) {
 	// If everything checks out, add the favorite product
 	if err := database.DB.Create(&model.FavouriteProduct{UserID: UserID, ProductID: request.ProductID}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to add favorite product",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "failed to add favorite product",
+
 		})
 		return
 	}
@@ -465,7 +467,7 @@ func AddFavouriteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "favorite product added successfully",
-		"data":    gin.H{},
+
 	})
 }
 
@@ -488,9 +490,9 @@ func RemoveFavouriteProduct(c *gin.Context) {
 
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind the JSON",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "failed to bind the JSON",
+
 		})
 		return
 	}
@@ -498,9 +500,9 @@ func RemoveFavouriteProduct(c *gin.Context) {
 	// Extracted validation logic for clarity
 	if err := utils.Validate(request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "unauthorized user",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "unauthorized user",
+
 		})
 		return
 	}
@@ -509,24 +511,24 @@ func RemoveFavouriteProduct(c *gin.Context) {
 
 	if err := database.DB.Where(&model.FavouriteProduct{UserID: UserID, ProductID: request.ProductID}).First(&existingFavouriteProduct).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "favorite product doesn't exist",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "favorite product doesn't exist",
+
 		})
 		return
 	}
 	if err := database.DB.Where("user_id =? AND product_id =?", UserID, request.ProductID).Delete(&model.FavouriteProduct{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to delete favorite product",
-			"data":       gin.H{},
+			"status":  false,
+			"message": "failed to delete favorite product",
+
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "favorite product deleted successfully",
-		"data":    gin.H{},
+
 	})
 }
 

@@ -333,7 +333,7 @@ func ApplyCouponToOrder(order model.Order, UserID uint, CouponCode string) (bool
 		}
 	} else {
 		couponUsage.UsageCount++
-		if err := database.DB.Where("order_id = ?", order.OrderID).Save(&couponUsage).Error; err != nil {
+		if err := database.DB.Where("user_id = ? AND coupon_code = ?", order.UserID,order.CouponCode).Save(&couponUsage).Error; err != nil {
 			return false, "failed to update coupon usage record", order
 		}
 	}

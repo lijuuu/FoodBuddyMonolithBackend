@@ -91,11 +91,11 @@ func RazorPayGatewayCallback(c *gin.Context) {
 	}
 
 	var RazorpayPayment model.RazorpayPayment
-	if err := c.ShouldBind(&RazorpayPayment); err != nil {
+	if err := c.BindJSON(&RazorpayPayment); err != nil {
 		PaymentFailedOrderTable(OrderID)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
-			"message":    "failed to bind Razorpay payment details",
+			"message":    "failed to bind Razorpay payment details"+ err.Error(),
 		})
 		return
 	}

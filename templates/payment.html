@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pay with Razorpay</title>
 </head>
+
 <body>
     <button id="rzp-button1">Pay with Razorpay</button>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -12,13 +14,13 @@
         document.getElementById('rzp-button1').onclick = function (e) {
             e.preventDefault();
             var options = {
-                "key": "{{ .key }}", 
-                "amount": "{{ .amount }}", 
+                "key": "rzp_test_lsRCHVZUa3jQRW", 
+                "amount": "420000", 
                 "currency": "INR",
                 "name": "FoodBuddy",
                 "description": "Test Transaction",
-                "order_id": "{{ .razorpay_order_id }}", 
-                "callback_url": "{{ .callbackurl }}",
+                "order_id": "order_OWx6eTJ3vkG5Ub", 
+                "callback_url": "https:\/\/foodbuddy.lijuthomas.xyz\/api\/v1\/user\/order\/step3\/razorpaycallback\/LijuThomas__A82K8qcK7V",
                 "prefill": {
                     "name": "foodbuddy",
                     "email": "foodbuddy@gmail.com",
@@ -49,6 +51,7 @@
             rzp1.open();
         }
     </script>
-    
+
 </body>
+
 </html>

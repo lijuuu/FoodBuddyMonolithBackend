@@ -20,11 +20,11 @@ func GetCategoryList(c *gin.Context) { //public
         OfferPercentage uint      `json:"offer_percentage"`
     }
 
-    tx := database.DB.Select("id, name, description, image_url, offer_percentage").Find(&categories)
+    tx := database.DB.Model(&model.Category{}).Select("id, name, description, image_url, offer_percentage").Find(&categories)
     if tx.Error != nil {
         c.JSON(http.StatusNotFound, gin.H{
             "status":     false,
-            "message":    "failed to retrieve data from the database, or the data doesn't exists",
+            "message":    "failed to retrieve data from the database, or the data doesn't exist",
         })
         return
     }
@@ -43,11 +43,12 @@ func GetCategoryProductList(c *gin.Context) { //public
     if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
         c.JSON(http.StatusNotFound, gin.H{
             "status":     false,
-            "message":    "failed to retrieve data from the database, or the data doesn't exists",
+            "message":    "make sure products are added in their respective catgories inorder to be displayed here",
         })
         return
     }
 
+    // Transform the categories slice to match the desired JSON structure
     transformedCategories := make([]map[string]interface{}, len(categories))
     for i, category := range categories {
         transformedCategory := map[string]interface{}{
@@ -89,7 +90,6 @@ func GetCategoryProductList(c *gin.Context) { //public
         },
     })
 }
-
 func AddCategory(c *gin.Context) { //admin
 
 	var Request model.AddCategoryRequest

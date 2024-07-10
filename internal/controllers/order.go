@@ -675,7 +675,7 @@ func CancelOrderedProduct(c *gin.Context) {
 		})
 		return
 	}
-	if order.PaymentStatus == model.OnlinePaymentConfirmed {
+	if order.PaymentStatus != model.OnlinePaymentConfirmed {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "order has not received the payment, hence cannot initiate the cancellation",

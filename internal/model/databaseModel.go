@@ -197,7 +197,7 @@ type UserWalletHistory struct {
 }
 
 type RestaurantWalletHistory struct {
-	TransactionTime time.Time `gorm:"autoCreateTime"`
+	TransactionTime time.Time `gorm:"autoCreateTime" json:"transaction_time"` 
 	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
 	OrderID         string    `gorm:"column:order_id" json:"order_id"`
 	RestaurantID    uint      `gorm:"column:restaurant_id" json:"restaurant_id"`

@@ -63,9 +63,9 @@ type InitiatePayment struct {
 }
 
 type RazorpayPayment struct {
-	PaymentID string `form:"razorpay_payment_id" binding:"required"`
-	OrderID   string `form:"razorpay_order_id" binding:"required"`
-	Signature string `form:"razorpay_signature" binding:"required"`
+	PaymentID string `form:"razorpay_payment_id" binding:"required" json:"razorpay_payment_id"`
+	OrderID   string `form:"razorpay_order_id" binding:"required" json:"razorpay_order_id"`
+	Signature string `form:"razorpay_signature" binding:"required" json:"razorpay_signature"`
 }
 
 type OrderHistoryRestaurants struct {
@@ -170,12 +170,12 @@ type AddProductRequest struct {
 	Price       float64 `validate:"required,number" json:"price"`
 	OfferAmount float64 `json:"offer_amount"`
 	MaxStock    uint    `validate:"required,number" json:"max_stock"`
-	StockLeft   uint    `validate:"required,number" json:"max_stock"`
+	StockLeft   uint    `validate:"required,number" json:"stock_left"`
 	Veg         string  `validate:"required" json:"veg"`
 }
 
 type EditProductRequest struct {
-	ProductID   uint    `validate:"required,number" json:"id"`
+	ProductID   uint    `validate:"required,number" json:"product_id"`
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	ImageURL    string  `json:"image_url"`
@@ -192,11 +192,11 @@ type AddOfferRequest struct {
 }
 
 type RestaurantProfileUpdate struct {
-	Name        string
-	Description string
-	Address     string
-	PhoneNumber uint
-	ImageURL    string
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Address     string `json:"address"`
+	PhoneNumber uint   `json:"phone_number"`
+	ImageURL    string `json:"image_url"`
 }
 
 type EditUserAddress struct {

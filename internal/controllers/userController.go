@@ -65,65 +65,78 @@ func GetUserProfile(c *gin.Context) {
 }
 
 func GetUserList(c *gin.Context) {
-	var users []model.User
+    // Define a struct for the response that excludes sensitive and auto-generated fields
+    type UserResponse struct {
+        ID             uint    `json:"id"`
+        Name           string  `json:"name"`
+        Email          string  `json:"email"`
+        PhoneNumber    uint    `json:"phone_number"`
+        Picture        string  `json:"picture"`
+        ReferralCode   string  `json:"referral_code"`
+        WalletAmount   float64 `json:"wallet_amount"`
+        LoginMethod    string  `json:"login_method"`
+        Blocked        bool    `json:"blocked"`
+    }
 
-	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
-			"message": "unauthorized request",
-		})
-		return
-	}
+    var users []UserResponse
 
-	tx := database.DB.Find(&users)
-	if tx.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "failed to retrieve data from the database, or the data doesn't exists",
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "successfully retrieved user informations",
-		"data": gin.H{
-			"users": users,
-		},
-	})
+    // Check admin API authentication
+    _, role, err := utils.GetJWTClaim(c)
+    if role != model.AdminRole || err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "status":  false,
+            "message": "unauthorized request",
+        })
+        return
+    }
+
+    // Specify fields to retrieve, excluding sensitive and auto-generated ones
+    tx := database.DB.Model(&model.User{}).Select("id, name, email, phone_number, picture, referral_code, wallet_amount, login_method, blocked").Find(&users)
+    if tx.Error != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":  false,
+            "message": "failed to retrieve data from the database, or the data doesn't exist",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "status":  true,
+        "message": "successfully retrieved user informations",
+        "data": gin.H{
+            "users": users,
+        },
+    })
 }
 
 func GetBlockedUserList(c *gin.Context) {
+    var blockedUsers []model.BlockedUserResponse
 
-	var blockedUsers []model.User
+    _, role, err := utils.GetJWTClaim(c)
+    if role != model.AdminRole || err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "status":  false,
+            "message": "unauthorized request",
+        })
+        return
+    }
 
-	//check admin api authentication
-	_, role, err := utils.GetJWTClaim(c)
-	if role != model.AdminRole || err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  false,
-			"message": "unauthorized request",
-		})
-		return
-	}
+    tx := database.DB.Model(&model.User{}).Select("id, name, email, phone_number, picture, referral_code, wallet_amount, login_method, blocked").Where("deleted_at IS NULL AND blocked = ?", true).Scan(&blockedUsers)
+    if tx.Error != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "status":  false,
+            "message": "failed to retrieve blocked user data from the database, or the data doesn't exists",
+        })
+        return
+    }
 
-	tx := database.DB.Where("deleted_at IS NULL AND blocked =?", true).Find(&blockedUsers)
-	if tx.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  false,
-			"message": "failed to retrieve blocked user data from the database, or the data doesn't exists",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "successfully retrieved blocked user's data",
-		"data": gin.H{
-			"blocked_users": blockedUsers,
-		},
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "status":  true,
+        "message": "successfully retrieved blocked user's data",
+        "data": gin.H{
+            "blocked_users": blockedUsers,
+        },
+    })
 }
 
 func BlockUser(c *gin.Context) {
