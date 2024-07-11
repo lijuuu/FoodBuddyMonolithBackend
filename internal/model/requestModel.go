@@ -74,7 +74,7 @@ type OrderHistoryRestaurants struct {
 
 type UserOrderHistory struct {
 	UserID      uint   `json:"user_id"`
-	OrderStatus string `json:"order_status"`
+	OrderID string `json:"order_id"`
 }
 
 type GetOrderInfoByOrderID struct {

@@ -3,6 +3,7 @@ package api
 import (
 	"foodbuddy/internal/controllers"
 	"foodbuddy/view"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -73,6 +74,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.GET("/order/items", controllers.UserOrderItems)
 		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.GET("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
+		userRoutes.GET("/order/verifypayment", controllers.VerifyPaymentStatus)
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
 
@@ -162,6 +164,7 @@ func PublicRoutes(router *gin.Engine) {
 
 func AdditionalRoutes(router *gin.Engine) {
 	// Additional Endpoints
+	router.GET("/api/documentation", APIDocumentation)
 	router.GET("/api/v1/user/profileimage", view.LoadUpload)                                 //
 	router.POST("/api/v1/user/profileimage", controllers.UserProfileImageUpload)             //
 	router.GET("/api/v1/restaurant/profileimage", view.LoadUpload)                           //
@@ -177,3 +180,8 @@ func AdditionalRoutes(router *gin.Engine) {
 //order informations csv file
 //*Referral
 //coupon minimum amount
+
+func APIDocumentation(c *gin.Context) {
+	url := "https://documenter.getpostman.com/view/32055383/2sA3e488Sh"
+	c.Redirect(http.StatusMovedPermanently, url)
+}

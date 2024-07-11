@@ -518,3 +518,40 @@ func CreateRestaurantWalletHistory(r model.RestaurantWalletHistory) bool {
 	}
 	return true
 }
+
+
+func VerifyPaymentStatus(c *gin.Context)  {
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	UserID, _ := UserIDfromEmail(email)
+	OrderID := c.Query("order_id")
+	if OrderID == ""{
+		c.JSON(http.StatusBadRequest,gin.H{"status":false,"message":"please provide the orderid in the query"})
+		return
+	}
+	
+	oUserID,_:= UserIDfromOrderID(OrderID)
+	if UserID != oUserID{
+		c.JSON(http.StatusUnauthorized,gin.H{"status":false,"message":"please provide orderid from the orders you have initiated"})
+		return
+	}
+
+	var PaymentInfo model.Payment
+	if err:=database.DB.Where("order_id = ? AND payment_status = ?",OrderID,model.OnlinePaymentConfirmed).First(&PaymentInfo).Error;err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"status":false,"message":"please make sure the orderid you have provided is correct"})
+		return
+	}
+
+
+	c.JSON(http.StatusOK,gin.H{
+		"status":true,
+		"message":"successfully retrieved payment  status",
+		"data":PaymentInfo,
+	})
+}

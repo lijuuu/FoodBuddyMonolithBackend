@@ -145,7 +145,7 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 }
 
 func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
-	OrderID := c.Query("orderid")
+	OrderID := c.Query("order_id")
 
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {

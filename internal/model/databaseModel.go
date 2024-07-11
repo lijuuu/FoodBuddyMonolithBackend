@@ -137,7 +137,7 @@ type Order struct {
 	OrderedAt            time.Time `gorm:"autoCreateTime" json:"ordered_at"`
 }
 type OrderItem struct {
-	OrderID            string  `validate:"required" csv:"OrderID"`
+	OrderID            string  `validate:"required" csv:"OrderID" json:"order_id"`
 	UserID             uint    `validate:"required,number" json:"user_id" csv:"UserID"`
 	RestaurantID       uint    `validate:"required,number" json:"restaurant_id" csv:"RestaurantID"`
 	ProductID          uint    `validate:"required,number" json:"product_id" csv:"ProductID"`
@@ -145,10 +145,10 @@ type OrderItem struct {
 	Amount             float64 `validate:"required,number" json:"amount" csv:"Amount"`
 	ProductOfferAmount float64 `json:"product_offer_amount" csv:"ProductOfferAmount"`
 	AfterDeduction     float64 `gorm:"column:after_deduction" json:"after_deduction" csv:"AfterDeduction"`
-	CookingRequest     string  `csv:"CookingRequest"`
+	CookingRequest     string  `csv:"CookingRequest" json:"cooking_request"`
 	OrderStatus        string  `json:"order_status" gorm:"column:order_status" csv:"OrderStatus"`
-	OrderReview        string  `csv:"OrderReview"`
-	OrderRating        float64 `csv:"OrderRating"`
+	OrderReview        string  `csv:"OrderReview" json:"order_review"`
+	OrderRating        float64 `csv:"OrderRating" json:"order_rating"`
 }
 
 type Payment struct {

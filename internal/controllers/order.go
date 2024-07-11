@@ -80,8 +80,8 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 		return false
 	}
 
-	fmt.Printf("OrderID: %s\nUserID: %d\nAddressID: %d\nItemCount: %d\nCouponCode: %s\nCouponDiscountAmount: %.2f\nProductOfferAmount: %.2f\nTotalAmount: %.2f\nFinalAmount: %.2f\nPaymentMethod: %s\nPaymentStatus: %s\nOrderedAt: %v\n", 
-	Order.OrderID, Order.UserID, Order.AddressID, Order.ItemCount, Order.CouponCode, Order.CouponDiscountAmount, Order.ProductOfferAmount, Order.TotalAmount, Order.FinalAmount, Order.PaymentMethod, Order.PaymentStatus, Order.OrderedAt)
+	fmt.Printf("OrderID: %s\nUserID: %d\nAddressID: %d\nItemCount: %d\nCouponCode: %s\nCouponDiscountAmount: %.2f\nProductOfferAmount: %.2f\nTotalAmount: %.2f\nFinalAmount: %.2f\nPaymentMethod: %s\nPaymentStatus: %s\nOrderedAt: %v\n",
+		Order.OrderID, Order.UserID, Order.AddressID, Order.ItemCount, Order.CouponCode, Order.CouponDiscountAmount, Order.ProductOfferAmount, Order.TotalAmount, Order.FinalAmount, Order.PaymentMethod, Order.PaymentStatus, Order.OrderedAt)
 
 	for _, v := range CartItems {
 
@@ -92,7 +92,7 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 
 		OrderItem := model.OrderItem{
 			OrderID:            Order.OrderID,
-			UserID: UserID,
+			UserID:             UserID,
 			ProductID:          v.ProductID,
 			Quantity:           v.Quantity,
 			Amount:             (float64(v.Quantity) * Product.Price),
@@ -103,12 +103,12 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 		}
 
 		//after offer and coupon deduction amount
-		  //get ratio for coupon reduction
+		//get ratio for coupon reduction
 		fmt.Println(Order)
-		couponDeduct := Order.CouponDiscountAmount * (float64(OrderItem.Quantity)/float64(Order.ItemCount))
+		couponDeduct := Order.CouponDiscountAmount * (float64(OrderItem.Quantity) / float64(Order.ItemCount))
 		afterDeduct := OrderItem.Amount - (OrderItem.ProductOfferAmount + couponDeduct)
 
-		fmt.Println("coupon deduct is : ",couponDeduct)
+		fmt.Println("coupon deduct is : ", couponDeduct)
 		fmt.Println(OrderItem)
 		OrderItem.AfterDeduction = afterDeduct
 
@@ -223,7 +223,7 @@ func PlaceOrder(c *gin.Context) {
 		ItemCount:          ItemCount,
 		ProductOfferAmount: float64(ProductOffer),
 		TotalAmount:        float64(TotalAmount),
-		FinalAmount:        float64(TotalAmount),
+		FinalAmount:        float64(TotalAmount)-float64(ProductOffer),
 		PaymentMethod:      PlaceOrder.PaymentMethod,
 		OrderedAt:          time.Now(),
 	}
@@ -363,7 +363,7 @@ func InitiatePayment(c *gin.Context) {
 	case model.Stripe:
 		HandleStripe(c, initiatePayment, order)
 	case model.Wallet:
-		HandleWalletPayment(initiatePayment.OrderID,order.UserID,c)
+		HandleWalletPayment(initiatePayment.OrderID, order.UserID, c)
 	default:
 		HandleRazorpay(c, initiatePayment, order)
 	}
@@ -393,14 +393,13 @@ func OrderHistoryRestaurants(c *gin.Context) {
 	RestaurantID, ok := RestIDfromEmail(email)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to retrieve restaurant information",
+			"status":  false,
+			"message": "failed to retrieve restaurant information",
 		})
 		return
 	}
 	//Restaurant id, if order status is provided use it or get the whole history
-	Request :=  c.Query("order_status")
-		
+	Request := c.Query("order_status")
 
 	var OrderItems []model.OrderItem
 	if Request != "" {
@@ -408,8 +407,8 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		//return all the orders with order_id, restaurant_id,order_status is met with the condition
 		if err := database.DB.Where("restaurant_id = ? AND order_status = ?", RestaurantID, Request).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
-				"status":     false,
-				"message":    "failed to fetch orders assigned to this restaurant",
+				"status":  false,
+				"message": "failed to fetch orders assigned to this restaurant",
 			})
 			return
 		}
@@ -418,8 +417,8 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		//return all the orders with order_id, restaurant_id is met with the condition
 		if err := database.DB.Where("restaurant_id = ?", RestaurantID).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
-				"status":     false,
-				"message":    "failed to fetch orders assigned to this restaurant",
+				"status":  false,
+				"message": "failed to fetch orders assigned to this restaurant",
 			})
 			return
 		}
@@ -448,23 +447,15 @@ func UserOrderItems(c *gin.Context) {
 
 	//same like restaurant
 	var Request model.UserOrderHistory
-	Request.OrderStatus = c.Query("order_status")
+	Request.OrderID = c.Query("order_id")
 	Request.UserID = UserID
 	var OrderItems []model.OrderItem
 
-	if Request.OrderStatus != "" {
-		if err := database.DB.Where("user_id = ? AND order_status = ?", Request.UserID, Request.OrderStatus).Find(&OrderItems).Error; err != nil {
+	if Request.OrderID != "" {
+		if err := database.DB.Where("user_id = ? AND order_id = ?", Request.UserID, Request.OrderID).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status":  true,
 				"message": "failed to fetch specified orderitems",
-			})
-			return
-		}
-	} else {
-		if err := database.DB.Where("user_id = ?", Request.UserID).Find(&OrderItems).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  true,
-				"message": "failed to fetch order items of the user",
 			})
 			return
 		}
@@ -514,7 +505,7 @@ func PaymentDetailsByOrderID(c *gin.Context) {
 	if len(PaymentDetails) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  true,
-			"message": "failed to fetch payment information with the specified order_status",
+			"message": "failed to fetch payment information with the specified order_id",
 		})
 		return
 	}
@@ -638,7 +629,7 @@ func UserIDfromOrderID(OrderID string) (uint, bool) {
 // user - check userid by order.userid
 func CancelOrderedProduct(c *gin.Context) {
 	email, role, err := utils.GetJWTClaim(c)
-	if role!= model.UserRole || err!= nil {
+	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized request",
@@ -648,7 +639,7 @@ func CancelOrderedProduct(c *gin.Context) {
 	JWTUserID, _ := UserIDfromEmail(email)
 
 	var Request model.CancelOrderedProduct
-	if err := c.BindJSON(&Request); err!= nil {
+	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "failed to bind request",
@@ -659,7 +650,7 @@ func CancelOrderedProduct(c *gin.Context) {
 
 	oUserID, _ := UserIDfromOrderID(Request.OrderID)
 
-	if JWTUserID!= oUserID {
+	if JWTUserID != oUserID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  false,
 			"message": "unauthorized request",
@@ -668,7 +659,7 @@ func CancelOrderedProduct(c *gin.Context) {
 	}
 
 	var order model.Order
-	if err := database.DB.Where("order_id =?", Request.OrderID).First(&order).Error; err!= nil {
+	if err := database.DB.Where("order_id =?", Request.OrderID).First(&order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to fetch order information",
@@ -684,15 +675,15 @@ func CancelOrderedProduct(c *gin.Context) {
 	}
 
 	var OrderItems []model.OrderItem
-	if Request.ProductId!= 0 {
+	if Request.ProductId != 0 {
 		// Fetch individual product
-		if err := database.DB.Where("order_id =? AND product_id =? AND order_status IN (?,?)", Request.OrderID, Request.ProductId, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err!= nil {
+		if err := database.DB.Where("order_id =? AND product_id =? AND order_status IN (?,?)", Request.OrderID, Request.ProductId, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch the order item"})
 			return
 		}
 	} else {
 		// Fetch all orders
-		if err := database.DB.Where("order_id =? AND order_status IN (?,?)", Request.OrderID, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err!= nil {
+		if err := database.DB.Where("order_id =? AND order_status IN (?,?)", Request.OrderID, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch the order item"})
 			return
 		}
@@ -706,13 +697,13 @@ func CancelOrderedProduct(c *gin.Context) {
 	// Update order status to cancelled
 	for _, item := range OrderItems {
 		item.OrderStatus = model.OrderStatusCancelled
-		if err:=database.DB.Where("order_id = ? AND product_id = ?",item.OrderID,item.ProductID).Updates(&item).Error;err!=nil{
+		if err := database.DB.Where("order_id = ? AND product_id = ?", item.OrderID, item.ProductID).Updates(&item).Error; err != nil {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "message": "failed to do cancellation"})
 		}
 	}
 
 	done := IncrementStock(OrderItems)
-	if!done {
+	if !done {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":  false,
 			"message": "failed to increment order stock",
@@ -720,9 +711,8 @@ func CancelOrderedProduct(c *gin.Context) {
 		return
 	}
 
-
 	done = ProvideWalletRefundToUser(order.UserID, OrderItems)
-	if!done {
+	if !done {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":  false,
 			"message": "failed to refund to the wallet",
@@ -740,52 +730,50 @@ func CancelOrderedProduct(c *gin.Context) {
 }
 
 func ProvideWalletRefundToUser(UserID uint, OrderItems []model.OrderItem) bool {
-    // Fetch the order using the first item's order ID to get the coupon discount amount
-    var Order model.Order
-    if err := database.DB.Where("order_id =?", OrderItems[0].OrderID).First(&Order).Error; err!= nil {
-        return false
-    }
-    var sum float64
+	// Fetch the order using the first item's order ID to get the coupon discount amount
+	var Order model.Order
+	if err := database.DB.Where("order_id =?", OrderItems[0].OrderID).First(&Order).Error; err != nil {
+		return false
+	}
+	var sum float64
 
-    // Iterate over each item to calculate individual refunds
-    for _, item := range OrderItems {
-        
+	// Iterate over each item to calculate individual refunds
+	for _, item := range OrderItems {
 
-        // Fetch and update the restaurant's wallet amount
-        var Restaurant model.Restaurant
-        if err := database.DB.Where("id =?", item.RestaurantID).First(&Restaurant).Error; err!= nil {
-            return false
-        }
-
-        Restaurant.WalletAmount -= (item.AfterDeduction)
-		
-		rWalletHistory :=  model.RestaurantWalletHistory{
-			TransactionTime: time.Now(),
-			Type: model.WalletOutgoing,
-			OrderID: item.OrderID,
-			RestaurantID: item.RestaurantID,
-			Amount: item.AfterDeduction,
-			CurrentBalance: Restaurant.WalletAmount,
-			Reason: "Order Refund",
-
-		}
-
-		if !CreateRestaurantWalletHistory(rWalletHistory){
+		// Fetch and update the restaurant's wallet amount
+		var Restaurant model.Restaurant
+		if err := database.DB.Where("id =?", item.RestaurantID).First(&Restaurant).Error; err != nil {
 			return false
 		}
 
-        if err := database.DB.Save(&Restaurant).Error; err!= nil {
-            return false
-        }
+		Restaurant.WalletAmount -= (item.AfterDeduction)
+
+		rWalletHistory := model.RestaurantWalletHistory{
+			TransactionTime: time.Now(),
+			Type:            model.WalletOutgoing,
+			OrderID:         item.OrderID,
+			RestaurantID:    item.RestaurantID,
+			Amount:          item.AfterDeduction,
+			CurrentBalance:  Restaurant.WalletAmount,
+			Reason:          "Order Refund",
+		}
+
+		if !CreateRestaurantWalletHistory(rWalletHistory) {
+			return false
+		}
+
+		if err := database.DB.Save(&Restaurant).Error; err != nil {
+			return false
+		}
 
 		sum += item.AfterDeduction
-    }
+	}
 
-    // Update the user's wallet amount
-    var User model.User
-    if err := database.DB.Where("id =?", UserID).First(&User).Error; err!= nil {
-        return false
-    }
+	// Update the user's wallet amount
+	var User model.User
+	if err := database.DB.Where("id =?", UserID).First(&User).Error; err != nil {
+		return false
+	}
 	User.WalletAmount += (sum)
 
 	var WalletHistory model.UserWalletHistory
@@ -798,63 +786,60 @@ func ProvideWalletRefundToUser(UserID uint, OrderItems []model.OrderItem) bool {
 	WalletHistory.CurrentBalance = User.WalletAmount
 	WalletHistory.Type = model.WalletIncoming
 
-	if err:=database.DB.Create(&WalletHistory).Error;err!=nil{
+	if err := database.DB.Create(&WalletHistory).Error; err != nil {
 		return false
 	}
 
-    if err := database.DB.Save(&User).Error; err!= nil {
-        return false
-    }
+	if err := database.DB.Save(&User).Error; err != nil {
+		return false
+	}
 
-    return true
+	return true
 }
 
 func SplitMoneyToRestaurants(OrderID string) bool {
-    var OrderItems []model.OrderItem
-    if err := database.DB.Where("order_id = ?", OrderID).Find(&OrderItems).Error; err != nil {
-        return false
-    }
+	var OrderItems []model.OrderItem
+	if err := database.DB.Where("order_id = ?", OrderID).Find(&OrderItems).Error; err != nil {
+		return false
+	}
 
-    var totalOrderAmount float64
-    for _, item := range OrderItems {
-        totalOrderAmount += float64(item.Amount)
-    }
+	var totalOrderAmount float64
+	for _, item := range OrderItems {
+		totalOrderAmount += float64(item.Amount)
+	}
 
-    var Order model.Order
-    if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {
-        return false
-    }
+	var Order model.Order
+	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {
+		return false
+	}
 
-    for _, item := range OrderItems {
-        var Restaurant model.Restaurant
-        if err := database.DB.Where("id = ?", item.RestaurantID).First(&Restaurant).Error; err != nil {
-            return false
-        }
+	for _, item := range OrderItems {
+		var Restaurant model.Restaurant
+		if err := database.DB.Where("id = ?", item.RestaurantID).First(&Restaurant).Error; err != nil {
+			return false
+		}
 		Restaurant.WalletAmount += (item.AfterDeduction)
 
 		rWalletHistory := model.RestaurantWalletHistory{
 			TransactionTime: time.Now(),
-			Type: model.WalletIncoming,
-			OrderID: item.OrderID,
-			RestaurantID: Restaurant.ID,
-			Amount :item.AfterDeduction,
-			CurrentBalance: Restaurant.WalletAmount,
-			Reason: "Order Payment",
-
+			Type:            model.WalletIncoming,
+			OrderID:         item.OrderID,
+			RestaurantID:    Restaurant.ID,
+			Amount:          item.AfterDeduction,
+			CurrentBalance:  Restaurant.WalletAmount,
+			Reason:          "Order Payment",
 		}
 
-		if !CreateRestaurantWalletHistory(rWalletHistory){
+		if !CreateRestaurantWalletHistory(rWalletHistory) {
 			return false
 		}
 
-        if err := database.DB.Save(&Restaurant).Error; err != nil {
-            return false
-        }
-    }
+		if err := database.DB.Save(&Restaurant).Error; err != nil {
+			return false
+		}
+	}
 
-	
-
-    return true
+	return true
 }
 
 func IncrementStock(OrderItems []model.OrderItem) bool {
@@ -1051,8 +1036,8 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 	var Request model.GetOrderInfoByOrderID
 	if err := c.Bind(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to bind request",
+			"status":  false,
+			"message": "failed to bind request",
 		})
 		return
 	}
@@ -1060,8 +1045,8 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to fetch order information",
+			"status":  false,
+			"message": "failed to fetch order information",
 		})
 		return
 	}
@@ -1069,8 +1054,8 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 	var OrderItems []model.OrderItem
 	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch order information",
+			"status":  false,
+			"message": "failed to fetch order information",
 		})
 		return
 	}
