@@ -21,7 +21,7 @@
                 "callback_url": "{{ .callbackurl }}",
                 "prefill": {
                     "name": "foodbuddy",
-                    "email": "foodbuddy@gmail.com",
+                    "email": "foodbuddy@gmail.com",  
                     "contact": "9000090000"
                 },
                 "notes": {
@@ -32,7 +32,8 @@
                 },
                 "modal": {
                     "ondismiss": function() {
-                        alert("The payment process was interrupted. Please try again.");
+                        alert("payment cancelled by the user");
+                        sendTransactionStatusToServer('failed');
                     },
                     "animation": true, 
                     "backdropclose": false, 
@@ -47,6 +48,15 @@
             };
             var rzp1 = new Razorpay(options);
             rzp1.open();
+            function sendTransactionStatusToServer(status) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', "{{ .cancelurl }}", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({
+                order_id: "{{ .razorpay_order_id }}",
+                status: status
+            }));
+        }
         }
     </script>
     

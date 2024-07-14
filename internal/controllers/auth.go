@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"foodbuddy/internal/database"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"io"
 	"math/rand"
 	"net/http"
@@ -26,7 +26,7 @@ import (
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  fmt.Sprintf("https://%v/api/v1/googlecallback",utils.GetEnvVariables().ServerIP),
+	RedirectURL:  fmt.Sprintf("https://%v/api/v1/googlecallback", utils.GetEnvVariables().ServerIP),
 	ClientID:     utils.GetEnvVariables().ClientID,
 	ClientSecret: utils.GetEnvVariables().ClientSecret,
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
@@ -287,7 +287,7 @@ func EmailSignup(c *gin.Context) {
 		return
 	}
 
-	SendOTP(c,User.Email,VerificationTable.OTPExpiry,model.UserRole)
+	SendOTP(c, User.Email, VerificationTable.OTPExpiry, model.UserRole)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -462,8 +462,8 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 
-	url := fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v",utils.GetEnvVariables().ServerIP, role, to, otp)
-	
+	url := fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v", utils.GetEnvVariables().ServerIP, role, to, otp)
+
 	htmlContent := fmt.Sprintf(`
 	<!DOCTYPE html>
 	<html lang="en">
@@ -488,17 +488,17 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	</head>
 	<body>
 		<h1>FoodBuddy Email Verification</h1>
-		<p>Please click the button below to verify your email:</p>
-		<a href="%s" class="button">Verify Email</a>
+		<p>Please click the below text to verify your email:</p>
+		<a href="%s" >Verify Email</a>
 	</body>
 	</html>
 	`, url)
-	
+
 	// Set up the email message
 	msg := []byte("MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n" +
 		"Subject: FoodBuddy Email Verification\r\n\r\n" +
 		htmlContent)
-	
+
 	// Send the email
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, msg)
 	if err != nil {
@@ -526,7 +526,6 @@ func VerifyEmail(c *gin.Context) {
 	entityRole := c.Param("role")
 	entityEmail := c.Param("email")
 	entityOTP, _ := strconv.Atoi(c.Param("otp"))
-   
 
 	if entityRole == "" || entityEmail == "" || entityOTP == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{

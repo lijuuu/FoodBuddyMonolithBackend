@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pay with Razorpay</title>
 </head>
+
 <body>
     <button id="rzp-button1">Pay with Razorpay</button>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -13,15 +15,15 @@
             e.preventDefault();
             var options = {
                 "key": "rzp_test_lsRCHVZUa3jQRW", 
-                "amount": "18000", 
+                "amount": "194000", 
                 "currency": "INR",
                 "name": "FoodBuddy",
                 "description": "Test Transaction",
-                "order_id": "order_OXDKWK2pw4kRr1", 
-                "callback_url": "https:\/\/foodbuddy.lijuthomas.xyz\/api\/v1\/user\/order\/step3\/razorpaycallback\/LijuThomas__FP0KmZXnba",
+                "order_id": "order_OYTbRyuvJ7G849", 
+                "callback_url": "http:\/\/localhost:8080\/api\/v1\/user\/order\/step3\/razorpaycallback\/lijuthomas_KOg1ScW9Dj",
                 "prefill": {
                     "name": "foodbuddy",
-                    "email": "foodbuddy@gmail.com",
+                    "email": "foodbuddy@gmail.com",  
                     "contact": "9000090000"
                 },
                 "notes": {
@@ -32,7 +34,8 @@
                 },
                 "modal": {
                     "ondismiss": function() {
-                        alert("The payment process was interrupted. Please try again.");
+                        alert("payment cancelled by the user");
+                        sendTransactionStatusToServer('failed');
                     },
                     "animation": true, 
                     "backdropclose": false, 
@@ -47,8 +50,18 @@
             };
             var rzp1 = new Razorpay(options);
             rzp1.open();
+            function sendTransactionStatusToServer(status) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', "http:\/\/localhost:8080\/api\/v1\/user\/order\/step3\/razorpaycallback\/failed\/lijuthomas_KOg1ScW9Dj", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({
+                order_id: "order_OYTbRyuvJ7G849",
+                status: status
+            }));
+        }
         }
     </script>
-    
+
 </body>
+
 </html>

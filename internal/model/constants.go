@@ -15,6 +15,9 @@ const (
 	YES                        = "YES"
 	NO                         = "NO"
 
+	CODMaximumAmount = 1000
+	DeliveryVerificationOTPCooldownTime = 1 * 60
+
 	CashOnDelivery = "COD"
 	OnlinePayment  = "ONLINE"
 

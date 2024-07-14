@@ -9,14 +9,13 @@ import (
 )
 
 func ServerHealth(router *gin.Engine) {
-	router.GET("/", func(c *gin.Context) {
+	router.GET("/", func(c *gin.Context){
 		c.JSON(200, gin.H{
 			"message": "server status ok",
 		})
 	})
 }
 func AuthenticationRoutes(router *gin.Engine) {
-	// Authentication Endpoints
 	//admin
 	router.GET("/api/v1/auth/admin/login", controllers.AdminLogin) //
 
@@ -59,6 +58,7 @@ func UserRoutes(router *gin.Engine) {
 
 		// Cart Management
 		userRoutes.POST("/cart/add", controllers.AddToCart)               //
+		userRoutes.POST("/cart/cookingrequest",controllers.AddCookingRequest)
 		userRoutes.GET("/cart/all", controllers.GetCartTotal)             //
 		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //
 		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //
@@ -67,14 +67,18 @@ func UserRoutes(router *gin.Engine) {
 
 		// Order Management
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
+		userRoutes.GET("/order/deliverycode",controllers.SendOrderDeliveryVerificationCodeRoute)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
+		userRoutes.PUT("/order/update/paymentmode",controllers.ChangeOrderPaymentMode)  //orderid in the query param //CHANGE COD , ONLINE MODE
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
+		userRoutes.GET("/order/step3/razorpaycallback/failed/:orderid",controllers.RazorPayFailed)
 		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
 		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
 		userRoutes.GET("/order/items", controllers.UserOrderItems)
+		userRoutes.GET("/order/info",controllers.GetOrderInfoByOrderID)
 		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.GET("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
-		userRoutes.GET("/order/verifypayment", controllers.VerifyPaymentStatus)
+		userRoutes.GET("/order/verifypayment", controllers.VerifyOnlinePayment)
 		userRoutes.POST("/order/review", controllers.UserReviewonOrderItem)
 		userRoutes.POST("/order/rating", controllers.UserRatingOrderItem)
 
@@ -97,7 +101,9 @@ func RestaurantRoutes(router *gin.Engine) {
 
 		// Order History and Status Updates
 		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //
+		restaurantRoutes.POST("/order/confirmcod",controllers.ConfirmCODTxandOrderStatus)
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
+		// restaurantRoutes.POST("/order/delivered",controllers.)
 
 		// Product Offers
 		restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)      //

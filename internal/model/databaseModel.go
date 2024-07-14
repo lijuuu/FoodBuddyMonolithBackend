@@ -78,7 +78,9 @@ type Product struct {
 	MaxStock        uint    `validate:"required,number" json:"max_stock"`
 	OfferAmount     float64 `gorm:"column:offer_amount" json:"offer_amount"`
 	StockLeft       uint    `validate:"required,number" json:"stock_left"`
-	AverageRating   float64 `json:"average_rating"`
+	RatingSum       float64 `gorm:"column:rating_sum" json:"rating_sum"`
+	RatingCount     uint    `gorm:"column:rating_count" json:"rating_count"`
+	AverageRating   float64 `gorm:"column:average_rating" json:"average_rating"`
 	Veg             string  `validate:"required" json:"veg" gorm:"column:veg"`
 }
 
@@ -153,6 +155,7 @@ type OrderItem struct {
 
 type Payment struct {
 	OrderID           string `validate:"required"`
+	WalletPaymentID   string `json:"wallet_payment_id" gorm:"column:wallet_payment_id"`
 	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`
 	StripePaymentID   string `json:"stripe_payment_id" column:"stripe_payment_id"`
 	RazorpayOrderID   string `validate:"required" json:"razorpay_order_id" gorm:"column:razorpay_order_id"`
@@ -188,6 +191,7 @@ type CouponUsage struct {
 
 type UserWalletHistory struct {
 	TransactionTime time.Time `gorm:"autoCreateTime" json:"transaction_time"`
+	WalletPaymentID string    `gorm:"column:wallet_payment_id" json:"wallet_payment_id"`
 	UserID          uint      `gorm:"column:user_id" json:"user_id"`
 	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
 	OrderID         string    `gorm:"column:order_id" json:"order_id"`
@@ -197,11 +201,18 @@ type UserWalletHistory struct {
 }
 
 type RestaurantWalletHistory struct {
-	TransactionTime time.Time `gorm:"autoCreateTime" json:"transaction_time"` 
+	TransactionTime time.Time `gorm:"autoCreateTime" json:"transaction_time"`
 	Type            string    `gorm:"column:type" json:"type"` //incoming //outgoing
 	OrderID         string    `gorm:"column:order_id" json:"order_id"`
 	RestaurantID    uint      `gorm:"column:restaurant_id" json:"restaurant_id"`
 	Amount          float64   `gorm:"column:amount" json:"amount"`
 	CurrentBalance  float64   `gorm:"column:current_balance" json:"current_balance"`
 	Reason          string    `gorm:"column:reason" json:"reason"`
+}
+
+type DeliveryVerification struct {
+	OrderID    string `gorm:"column:order_id" json:"order_id"`
+	UserID     uint   `gorm:"column:user_id" json:"user_id"`
+	OTP        uint `gorm:"column:otp" json:"otp"`
+	LastSentAT uint   `gorm:"column:last_sent_at" json:"last_sent_at"`
 }

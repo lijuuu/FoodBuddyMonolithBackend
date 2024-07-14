@@ -50,6 +50,7 @@ func AutoMigrate() {
 		&model.UserWalletHistory{},
 		&model.RestaurantWalletHistory{},
 		&model.UserReferralHistory{},
+		&model.DeliveryVerification{},
 	)
 
 	if err != nil {

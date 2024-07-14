@@ -73,11 +73,7 @@ type OrderHistoryRestaurants struct {
 }
 
 type UserOrderHistory struct {
-	UserID      uint   `json:"user_id"`
-	OrderID string `json:"order_id"`
-}
-
-type GetOrderInfoByOrderID struct {
+	UserID  uint   `json:"user_id"`
 	OrderID string `json:"order_id"`
 }
 
@@ -209,4 +205,20 @@ type EditUserAddress struct {
 	City         string `validate:"required" json:"city" gorm:"column:city"`
 	State        string `validate:"required" json:"state" gorm:"column:state"`
 	PostalCode   string `validate:"required" json:"postal_code" gorm:"column:postal_code"`
+}
+
+type AddCookingRequest struct {
+	ProductID      uint   `json:"product_id"`
+	CookingRequest string `json:"cooking_request"`
+}
+
+type ChangeOrderPaymentMode struct {
+	OrderID       string `json:"order_id"`
+	PaymentMethod string `json:"payment_method"`
+}
+
+type ConfirmCODTxandOrderStatus struct {
+	OrderID     string `json:"order_id"`
+	ProductID   string `json:"product_id"`
+	DeliveryOTP uint   `json:"delivery_otp"`
 }

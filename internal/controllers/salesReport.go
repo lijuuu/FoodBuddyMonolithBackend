@@ -165,7 +165,7 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 		return
 	}
 	var User model.User
-	if err := database.DB.Where("id =?", Order.UserID).First(&User).Error; err != nil {
+	if err := database.DB.Where("id = ?", Order.UserID).First(&User).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
 			"message": "failed to get user information",
@@ -259,12 +259,12 @@ func PriceLowToHigh(c *gin.Context) {
 		var dbCategory model.Category
 		var dbRestaurant model.Restaurant
 
-		if err := database.DB.Where("id =?", product.CategoryID).First(&dbCategory).Error; err != nil {
+		if err := database.DB.Where("id = ?", product.CategoryID).First(&dbCategory).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
 			return
 		}
 
-		if err := database.DB.Where("id =?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+		if err := database.DB.Where("id = ?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
 			return
 		}
@@ -300,12 +300,12 @@ func PriceHighToLow(c *gin.Context) {
 		var dbCategory model.Category
 		var dbRestaurant model.Restaurant
 
-		if err := database.DB.Where("id =?", product.CategoryID).First(&dbCategory).Error; err != nil {
+		if err := database.DB.Where("id = ?", product.CategoryID).First(&dbCategory).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get category information"})
 			return
 		}
 
-		if err := database.DB.Where("id =?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
+		if err := database.DB.Where("id = ?", product.RestaurantID).First(&dbRestaurant).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to get restaurant information"})
 			return
 		}

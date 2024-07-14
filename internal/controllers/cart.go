@@ -7,10 +7,13 @@ import (
 	"foodbuddy/internal/model"
 	"foodbuddy/internal/utils"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+//add to cart with restaurantid, find the rest id from the product
+//add endpoint listcartwithrestaurants show restaurnat id and name,
 
 func AddToCart(c *gin.Context) {
 	//check user api authentication
@@ -48,15 +51,6 @@ func AddToCart(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":     false,
 			"message":    "Failed to fetch product information. Please ensure the specified product exists.",
-			"error_code": http.StatusBadRequest,
-		})
-		return
-	}
-	var User model.User
-	if err := database.DB.Where("id = ?", UserID).First(&User).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to fetch user information, make sure the user exists",
 			"error_code": http.StatusBadRequest,
 		})
 		return
@@ -140,6 +134,8 @@ func AddToCart(c *gin.Context) {
 	})
 }
 
+//get cart total by restaurant
+//add restaurant_id in the query 
 func GetCartTotal(c *gin.Context) {
 	//check user api authentication
 	email, role, err := utils.GetJWTClaim(c)
@@ -202,6 +198,8 @@ func GetCartTotal(c *gin.Context) {
 	})
 }
 
+//clear whole cart 
+//also clear whole cart by restaurant_id
 func ClearCart(c *gin.Context) {
 
 	//check user api authentication
@@ -229,6 +227,7 @@ func ClearCart(c *gin.Context) {
 		"message": "Deleted entire cart of the User",
 	})
 }
+
 
 func RemoveItemFromCart(c *gin.Context) {
 	//check user api authentication
@@ -352,6 +351,7 @@ func UpdateQuantity(c *gin.Context) {
 	})
 }
 
+//calculate cart total by restaurant_id
 func CalculateCartTotal(userID uint) (TotalAmount float64, ProductOffer float64, err error) {
 	var cartItems []model.CartItems
 
@@ -366,11 +366,34 @@ func CalculateCartTotal(userID uint) (TotalAmount float64, ProductOffer float64,
 	for _, item := range cartItems {
 		var product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&product).Error; err != nil {
-			return 0,0, errors.New("failed to fetch product information")
+			return 0, 0, errors.New("failed to fetch product information")
 		}
 		TotalAmount += (product.Price) * float64(item.Quantity)
 		ProductOffer += product.OfferAmount * float64(item.Quantity)
 	}
 
 	return TotalAmount, ProductOffer, nil
+}
+
+func AddCookingRequest(c *gin.Context) {
+	var Request model.AddCookingRequest
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "provide product_id, cooking_request in the payload"})
+		return
+	}
+
+	//check whether the cooking_request contains atleast the minimum words
+	words := strings.Fields(Request.CookingRequest)
+	wordCount := len(words)
+	if wordCount < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"status":  false,"message": "cooking_request must contain atleast 2 words"});return
+	}
+
+	//update the cart with cooking_request
+    if err:= database.DB.Where("product_id = ?",Request.ProductID).Updates(model.CartItems{CookingRequest:Request.CookingRequest}).Error;err!=nil{
+		c.JSON(http.StatusNotFound, gin.H{"status":  false,"message": "cart is empty or the specified product is not in this cart,please make sure the product exists"});return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status":  true,"message": "successfully updated cooking request"})
+
 }
