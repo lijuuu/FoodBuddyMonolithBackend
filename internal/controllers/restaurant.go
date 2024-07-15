@@ -657,11 +657,6 @@ func GetRestaurantWalletData(c *gin.Context) {
 		return
 	}
 
-	type Response struct {
-		WalletBalance float64
-		History       []model.RestaurantWalletHistory
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"data": gin.H{
@@ -671,7 +666,7 @@ func GetRestaurantWalletData(c *gin.Context) {
 	})
 }
 
-func OrderInformationsCSVFileForRestaurant(c *gin.Context) {
+func OrderItemsCSVFileForRestaurant(c *gin.Context) {
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.RestaurantRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -706,7 +701,7 @@ func OrderInformationsCSVFileForRestaurant(c *gin.Context) {
 			Quantity:           item.Quantity,
 			Amount:             item.Amount,
 			ProductOfferAmount: item.ProductOfferAmount,
-			AfterDeduction:     item.AfterDeduction,
+			AfterDeduction:     RoundDecimalValue(item.AfterDeduction),
 			CookingRequest:     item.CookingRequest,
 			OrderStatus:        item.OrderStatus,
 			OrderReview:        item.OrderReview,
@@ -733,4 +728,53 @@ func OrderInformationsCSVFileForRestaurant(c *gin.Context) {
 }
 
 func OrderPaymentInformationsExcelFile(c *gin.Context) {
+}
+
+func ListOrderItemsForRestaurants(c *gin.Context) {
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.RestaurantRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	RestID, _ := RestIDfromEmail(email)
+
+	var OrderInformation []model.OrderItem
+	err = database.DB.Where("restaurant_id =?", RestID).Find(&OrderInformation).Error
+	if err != nil {
+		log.Printf("Failed to retrieve order information: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve order information"})
+		return
+	}
+
+	if len(OrderInformation) == 0 {
+		c.JSON(http.StatusOK, gin.H{"status": true, "message": "No orders found for this restaurant."})
+		return
+	}
+
+	data := make([]model.OrderItem, len(OrderInformation))
+	for i, item := range OrderInformation {
+		data[i] = model.OrderItem{
+			OrderID:            item.OrderID,
+			UserID:             uint(item.UserID),
+			RestaurantID:       uint(item.RestaurantID),
+			ProductID:          uint(item.ProductID),
+			Quantity:           item.Quantity,
+			Amount:             item.Amount,
+			ProductOfferAmount: item.ProductOfferAmount,
+			AfterDeduction:     RoundDecimalValue(item.AfterDeduction),
+			CookingRequest:     item.CookingRequest,
+			OrderStatus:        item.OrderStatus,
+			OrderReview:        item.OrderReview,
+			OrderRating:        item.OrderRating,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data":   data,
+	})
 }

@@ -15,7 +15,7 @@ const (
 	YES                        = "YES"
 	NO                         = "NO"
 
-	CODMaximumAmount = 1000
+	CODMaximumAmount                    = 1000
 	DeliveryVerificationOTPCooldownTime = 1 * 60
 
 	CashOnDelivery = "COD"
@@ -41,9 +41,10 @@ const (
 	CODStatusFailed    = "COD_FAILED"
 
 	OrderStatusProcessing    = "PROCESSING"
+	OrderStatusInitiated     = "INITIATED"
 	OrderStatusInPreparation = "PREPARATION"
 	OrderStatusPrepared      = "PREPARED"
-	OrderStatusOntheway      = "ONTHEWAY"
+	OrderStatusOntheway      = "OUTFORDELIVERY"
 	OrderStatusDelivered     = "DELIVERED"
 	OrderStatusCancelled     = "CANCELLED"
 

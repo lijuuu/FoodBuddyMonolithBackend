@@ -143,6 +143,15 @@ func RazorPayGatewayCallback(c *gin.Context) {
 		return
 	}
 
+	//update all the orderitems as intiated
+	if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ?", OrderID).Update("order_status", model.OrderStatusInitiated).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "failed to update order status",
+		})
+		return
+	}
+
 	//decrement stock based on orderid
 	done := DecrementStock(OrderID)
 	if !done {
@@ -279,6 +288,14 @@ func StripeCallback(c *gin.Context) {
 				"status":  "error",
 				"message": "Failed to update status of payment",
 				"error":   err.Error(),
+			})
+			return
+		}
+			//update all the orderitems as intiated
+		if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ?", OrderID).Update("order_status", model.OrderStatusInitiated).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  false,
+				"message": "failed to update order status",
 			})
 			return
 		}

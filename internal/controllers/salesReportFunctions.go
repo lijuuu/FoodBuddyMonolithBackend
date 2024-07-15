@@ -15,7 +15,7 @@ import (
 // coupon deductions
 // product offer deductions
 // referral rewards given
-func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCount, model.AmountInformation, error) {
+func TotalOrders(From string, Till string, PaymentStatus string, RestauarantID uint) (model.OrderCount, model.AmountInformation, error) {
 	var orders []model.Order
 
 	parsedFrom, err := time.Parse("2006-01-02", From)
@@ -35,12 +35,19 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 	endDate := fTill.Format("2006-01-02T15:04:05Z")
 
 	// Fetch orders within the specified time frame and payment status
-	if err := database.DB.Where("ordered_at BETWEEN? AND? AND payment_status =?", startTime, endDate, PaymentStatus).Find(&orders).Error; err != nil {
-		return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching orders")
+	if RestauarantID != 0 {
+		if err := database.DB.Where("ordered_at BETWEEN? AND? AND payment_status =? AND restaurant_id = ?", startTime, endDate, PaymentStatus, RestauarantID).Find(&orders).Error; err != nil {
+			return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching orders")
+		}
+	} else {
+		if err := database.DB.Where("ordered_at BETWEEN? AND? AND payment_status =?", startTime, endDate, PaymentStatus).Find(&orders).Error; err != nil {
+			return model.OrderCount{}, model.AmountInformation{}, errors.New("error fetching orders")
+		}
 	}
 
 	var orderStatusCounts = map[string]int64{
 		model.OrderStatusProcessing:    0,
+		model.OrderStatusInitiated:     0,
 		model.OrderStatusInPreparation: 0,
 		model.OrderStatusPrepared:      0,
 		model.OrderStatusOntheway:      0,
@@ -61,6 +68,7 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 
 		for _, status := range []string{
 			model.OrderStatusProcessing,
+			model.OrderStatusInitiated,
 			model.OrderStatusInPreparation,
 			model.OrderStatusPrepared,
 			model.OrderStatusOntheway,
@@ -83,6 +91,7 @@ func TotalOrders(From string, Till string, PaymentStatus string) (model.OrderCou
 	return model.OrderCount{
 		TotalOrder:         uint(totalCount),
 		TotalProcessing:    uint(orderStatusCounts[model.OrderStatusProcessing]),
+		TotalInitiated:     uint(orderStatusCounts[model.OrderStatusInitiated]),
 		TotalInPreparation: uint(orderStatusCounts[model.OrderStatusInPreparation]),
 		TotalPrepared:      uint(orderStatusCounts[model.OrderStatusPrepared]),
 		TotalOnTheWay:      uint(orderStatusCounts[model.OrderStatusOntheway]),

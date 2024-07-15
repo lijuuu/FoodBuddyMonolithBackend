@@ -47,6 +47,14 @@ func CreateOrderID(UserID uint) (string, error) {
 	return OrderID, nil
 }
 
+func ValidRestaurant(RestauarantID uint) (model.Restaurant, bool) {
+	var response model.Restaurant
+	if err := database.DB.Where("id = ?", RestauarantID).First(&response).Error; err != nil {
+		return response, false
+	}
+	return model.Restaurant{}, true
+}
+
 func ValidAddress(UserID uint, AddressID uint) bool {
 	var Address model.Address
 	if err := database.DB.Where("user_id = ? AND address_id = ?", UserID, AddressID).First(&Address).Error; err != nil {
@@ -76,9 +84,9 @@ func CheckStock(UserID uint) (ItemCount uint, ok bool) {
 	return ItemCount, true
 }
 
-func CartToOrderItems(UserID uint, Order model.Order) bool {
+func CartToOrderItems(UserID uint, RestaurantID uint, Order model.Order) bool {
 	var CartItems []model.CartItems
-	if err := database.DB.Where("user_id = ?", UserID).Find(&CartItems).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND restaurant_id = ?", UserID, RestaurantID).Find(&CartItems).Error; err != nil {
 
 		return false
 	}
@@ -122,7 +130,7 @@ func CartToOrderItems(UserID uint, Order model.Order) bool {
 
 	//then remove the cartdetail for that user
 	var CartItem model.CartItems
-	if err := database.DB.Where("user_id = ?", UserID).Delete(&CartItem).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND restaurant_id = ?", UserID,RestaurantID).Delete(&CartItem).Error; err != nil {
 		return false
 	}
 
@@ -180,6 +188,16 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	_, restExist := ValidRestaurant(PlaceOrder.RestaurantID)
+	if !restExist {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":     false,
+			"message":    "invalid restaurant_id, please ensure restauarant exists",
+			"error_code": http.StatusConflict,
+		})
+		return
+	}
+
 	ItemCount, ok := CheckStock(PlaceOrder.UserID)
 
 	if !ok {
@@ -201,7 +219,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	TotalAmount, ProductOffer, err := CalculateCartTotal(PlaceOrder.UserID)
+	TotalAmount, ProductOffer, err := CalculateCartTotal(PlaceOrder.UserID, PlaceOrder.RestaurantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -263,7 +281,7 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	// Transfer cart items to order
-	if !CartToOrderItems(PlaceOrder.UserID, order) {
+	if !CartToOrderItems(PlaceOrder.UserID, PlaceOrder.RestaurantID, order) {
 		database.DB.Where("order_id = ?", OrderID).Delete(&order)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":     false,
@@ -630,7 +648,7 @@ func UserIDfromOrderID(OrderID string) (uint, bool) {
 }
 
 // user - check userid by order.userid
-func CancelOrderedProduct(c *gin.Context) {
+func CancelOrderedProductOnline(c *gin.Context) {
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -669,6 +687,14 @@ func CancelOrderedProduct(c *gin.Context) {
 		})
 		return
 	}
+	if order.PaymentMethod != model.OnlinePayment {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"status":  false,
+			"message": "order payment method is not ONLINE",
+		})
+		return
+	}
+
 	if order.PaymentStatus != model.OnlinePaymentConfirmed {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
@@ -719,6 +745,99 @@ func CancelOrderedProduct(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":  false,
 			"message": "failed to refund to the wallet",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully cancelled the order",
+		"data": gin.H{
+			"order_id": Request.OrderID,
+		},
+	})
+}
+
+func CancelOrderedProductCOD(c *gin.Context) {
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	JWTUserID, _ := UserIDfromEmail(email)
+
+	var Request model.CancelOrderedProduct
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "failed to bind request",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
+	oUserID, _ := UserIDfromOrderID(Request.OrderID)
+
+	if JWTUserID != oUserID {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	var order model.Order
+	if err := database.DB.Where("order_id =?", Request.OrderID).First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to fetch order information",
+		})
+		return
+	}
+	if order.PaymentMethod != model.CashOnDelivery {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"status":  false,
+			"message": "order payment method is not COD",
+		})
+		return
+	}
+
+	if order.PaymentMethod != model.CashOnDelivery {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "order is not COD, hence cannot initiate the cancellation",
+		})
+		return
+	}
+
+	var OrderItems []model.OrderItem
+	// Fetch all orders
+	if err := database.DB.Where("order_id =? AND order_status IN (?,?)", Request.OrderID, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch the order item"})
+		return
+	}
+
+	if len(OrderItems) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "No eligible items found for cancellation,order item should be either in Processing or Preparation stage"})
+		return
+	}
+
+	// Update order status to cancelled
+	for _, item := range OrderItems {
+		item.OrderStatus = model.OrderStatusCancelled
+		if err := database.DB.Where("order_id = ? AND product_id = ?", item.OrderID, item.ProductID).Updates(&item).Error; err != nil {
+			c.JSON(http.StatusConflict, gin.H{"status": false, "message": "failed to do cancellation"})
+		}
+	}
+
+	done := IncrementStock(OrderItems)
+	if !done {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  false,
+			"message": "failed to increment order stock",
 		})
 		return
 	}
@@ -1081,15 +1200,15 @@ func GetOrderInfoByOrderID(c *gin.Context) {
 	})
 }
 
-func HandleCODPayment(c *gin.Context) {
+func CancelCODOrder(c *gin.Context) {
+	OrderID := c.Query("order_id")
+	if OrderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "order_id is empty,mention order_id as query params"})
+		return
+	}
 
 }
-
-func DeliveryVerification(c *gin.Context) {
-
-}
-
-func SendOrderDeliveryVerificationCodeRoute(c *gin.Context) {
+func SendOrderDeliveryVerificationCode(c *gin.Context) {
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request"})
@@ -1109,7 +1228,7 @@ func SendOrderDeliveryVerificationCodeRoute(c *gin.Context) {
 		return
 	}
 
-	otp, err := SendOrderDeliveryVerificationCode(OrderID)
+	otp, err := SendOrderDeliveryCode(OrderID)
 	if err != nil {
 		c.JSON(http.StatusNotImplemented, gin.H{"status": false, "message": err.Error()})
 		return
@@ -1118,7 +1237,8 @@ func SendOrderDeliveryVerificationCodeRoute(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": false, "message": "otp is sent in mail", "otp": otp})
 }
 
-func SendOrderDeliveryVerificationCode(OrderID string) (int64, error) {
+// function that sends the code
+func SendOrderDeliveryCode(OrderID string) (int64, error) {
 	var DeliveryVerification model.DeliveryVerification
 	//check order_id
 	database.DB.Where("order_id = ?", OrderID).First(&DeliveryVerification)
@@ -1200,27 +1320,87 @@ func SendOrderDeliveryVerificationCode(OrderID string) (int64, error) {
 	return (int64(DeliveryVerification.OTP)), nil
 }
 
-func ConfirmCODTxandOrderStatus(c *gin.Context) {
-	var Request model.ConfirmCODTxandOrderStatus
+func ConfirmCODPayment(c *gin.Context) {
+	var Request model.ConfirmCODPayment
 	if err := c.BindJSON(&Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "provide order_id and delivery_otp in the json payload" + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "provide order_id in the json payload" + err.Error()})
 		return
 	}
 
 	//get order information
-	var OrderItem model.OrderItem
-	if err:=database.DB.Where("order_id = ? AND product_id = ?",Request.OrderID,Request.ProductID).First(&OrderItem).Error;err!=nil{
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "order_id doesnt exist"})
+	var Order model.Order
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "order_id is not present"})
 		return
 	}
-	// check if the order status is delivered
-	if OrderItem.OrderStatus == model.OrderStatusDelivered{
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "order has been delivered"})
+
+	//check if the order is COD
+	if Order.PaymentMethod != model.CashOnDelivery {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": false, "message": "order_id given is not COD"})
 		return
 	}
-    
-	//update the order_status to delivered if the order_status is cancelled ignore it
-	
-	c.JSON(http.StatusOK, gin.H{"status": false, "message": "order and payment confirmed"})
+
+	if Order.PaymentStatus == model.CODStatusConfirmed {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": false, "message": "order_id payment already done"})
+		return
+	}
+
+	Order.PaymentStatus = model.CODStatusConfirmed
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Updates(&Order).Error; err != nil {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": false, "message": "failed to update COD payment status to paid, please try again"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "order COD payment confirmed"})
+
+}
+
+func DeliveryComplete(c *gin.Context) {
+	var Request model.ConfirmDelivery
+	if err := c.BindJSON(&Request); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "order_id and delivery_otp should be present on the json payload"})
+		return
+	}
+
+	// Get order information
+	var Order model.Order
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "order_id is not present"})
+		return
+	}
+
+	if Order.PaymentStatus != model.OnlinePaymentConfirmed && Order.PaymentStatus != model.CODStatusConfirmed {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": false, "message": "payment should be confirmed before using this endpoint"})
+		return
+	}
+
+	var OrderItems []model.OrderItem
+	if err := database.DB.Where("order_id = ?", Request.OrderID).Find(&OrderItems).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch order items"})
+		return
+	}
+
+	var DeliveryVerification model.DeliveryVerification
+	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&DeliveryVerification).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch delivery verification information"})
+		return
+	}
+
+	if Request.DeliveryOTP != DeliveryVerification.OTP {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "delivery_otp provided doesnt match with database"})
+		return
+	}
+
+	for _, item := range OrderItems {
+		if item.OrderStatus != model.OrderStatusCancelled {
+			item.OrderStatus = model.OrderStatusDelivered
+			if err := database.DB.Where("order_id = ? AND product_id = ?", item.OrderID, item.ProductID).Save(&item).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to update order item status"})
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "order status updated to delivered"})
 
 }

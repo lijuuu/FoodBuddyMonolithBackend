@@ -120,13 +120,16 @@ type Address struct {
 
 type CartItems struct {
 	UserID         uint   `gorm:"column:user_id" validate:"required,number" json:"user_id"`
-	ProductID      uint   ` validate:"required,number" json:"product_id"`
+	ProductID      uint   `validate:"required,number" json:"product_id"`
+	RestaurantID   uint   `gorm:"column:restaurant_id" validate:"required,number" json:"restaurant_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
 	CookingRequest string `json:"cooking_request"` // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
+
 type Order struct {
 	OrderID              string    `validate:"required" json:"order_id"`
 	UserID               uint      `validate:"required,number" json:"user_id"`
+	RestaurantID         uint      `validate:"required,number" json:"restaurant_id"`
 	AddressID            uint      `validate:"required,number" json:"address_id"`
 	ItemCount            uint      `json:"item_count"`
 	CouponCode           string    `json:"coupon_code"`
@@ -213,6 +216,6 @@ type RestaurantWalletHistory struct {
 type DeliveryVerification struct {
 	OrderID    string `gorm:"column:order_id" json:"order_id"`
 	UserID     uint   `gorm:"column:user_id" json:"user_id"`
-	OTP        uint `gorm:"column:otp" json:"otp"`
+	OTP        uint   `gorm:"column:otp" json:"otp"`
 	LastSentAT uint   `gorm:"column:last_sent_at" json:"last_sent_at"`
 }

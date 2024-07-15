@@ -53,6 +53,7 @@ type RemoveItem struct {
 type PlaceOrder struct {
 	UserID        uint   `json:"user_id"`
 	AddressID     uint   `validate:"required,number" json:"address_id"`
+	RestaurantID  uint   `validate:"required,number" gorm:"column:restaurant_id" json:"restaurant_id"`
 	PaymentMethod string `validate:"required" json:"payment_method"`
 	CouponCode    string `json:"coupon_code"`
 }
@@ -217,8 +218,11 @@ type ChangeOrderPaymentMode struct {
 	PaymentMethod string `json:"payment_method"`
 }
 
-type ConfirmCODTxandOrderStatus struct {
+type ConfirmCODPayment struct {
+	OrderID string `json:"order_id"`
+}
+
+type ConfirmDelivery struct {
 	OrderID     string `json:"order_id"`
-	ProductID   string `json:"product_id"`
 	DeliveryOTP uint   `json:"delivery_otp"`
 }

@@ -24,10 +24,10 @@ type ErrorResponse struct {
 }
 
 type ProductSales struct {
-	TotalAmount uint     `json:"total_amount"`
-	TotalOrders uint     `json:"total_orders"`
+	TotalAmount uint    `json:"total_amount"`
+	TotalOrders uint    `json:"total_orders"`
 	AvgRating   float64 `json:"avg_rating"` // Pointer to allow for NULL values
-	Quantity    uint     `json:"quantity"`
+	Quantity    uint    `json:"quantity"`
 }
 
 type BestProduct struct {
@@ -57,6 +57,7 @@ type ProductResponse struct {
 type OrderCount struct {
 	TotalOrder         uint `json:"total_order"`
 	TotalProcessing    uint `json:"total_processing"`
+	TotalInitiated     uint `json:"total_initiated"`
 	TotalInPreparation uint `json:"total_in_preparation"`
 	TotalPrepared      uint `json:"total_prepared"`
 	TotalOnTheWay      uint `json:"total_onthway"`
@@ -73,13 +74,13 @@ type AmountInformation struct {
 type OrderSales struct {
 	TotalRevenue            float64 `json:"total_revenue"`
 	CouponDiscounts         float64 `json:"coupon_discounts"`
-	ProductOffers           float64  `json:"product_offers"`
+	ProductOffers           float64 `json:"product_offers"`
 	TotalCancelOrderRefunds float64 `json:"total_cancelorder_refunds"`
 }
 
 type OverallOrderReport struct {
-	From  time.Time `json:"from"`
-	Till  time.Time `json:"till"`
+	From  time.Time  `json:"from"`
+	Till  time.Time  `json:"till"`
 	Count OrderCount `json:"count"`
 }
 
@@ -90,15 +91,22 @@ type PlatformSalesReportInput struct {
 	PaymentStatus string `json:"payment_status"`
 }
 
+type RestaurantOverallSalesReport struct {
+	StartDate     string `json:"start_date,omitempty" time_format:"2006-01-02"`
+	EndDate       string `json:"end_date,omitempty" time_format:"2006-01-02"`
+	Limit         string `json:"limit,omitempty"`
+	PaymentStatus string `json:"payment_status"`
+}
+
 
 type BlockedUserResponse struct {
-	ID             uint    `json:"id"`
-	Name           string  `json:"name"`
-	Email          string  `json:"email"`
-	PhoneNumber    uint    `json:"phone_number"`
-	Picture        string  `json:"picture"`
-	ReferralCode   string  `json:"referral_code"`
-	WalletAmount   float64 `json:"wallet_amount"`
-	LoginMethod    string  `json:"login_method"`
-	Blocked        bool    `json:"blocked"`
+	ID           uint    `json:"id"`
+	Name         string  `json:"name"`
+	Email        string  `json:"email"`
+	PhoneNumber  uint    `json:"phone_number"`
+	Picture      string  `json:"picture"`
+	ReferralCode string  `json:"referral_code"`
+	WalletAmount float64 `json:"wallet_amount"`
+	LoginMethod  string  `json:"login_method"`
+	Blocked      bool    `json:"blocked"`
 }

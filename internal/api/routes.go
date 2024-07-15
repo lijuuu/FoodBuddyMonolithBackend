@@ -60,20 +60,21 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/cart/add", controllers.AddToCart)               //
 		userRoutes.POST("/cart/cookingrequest",controllers.AddCookingRequest)
 		userRoutes.GET("/cart/all", controllers.GetCartTotal)             //
-		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //
+		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //specify restaurant_id for clearing individual carts
 		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //
 		userRoutes.PUT("/cart/update/", controllers.UpdateQuantity)       //
 		userRoutes.GET("/coupon/cart/", controllers.ApplyCouponOnCart)    //
 
 		// Order Management
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
-		userRoutes.GET("/order/deliverycode",controllers.SendOrderDeliveryVerificationCodeRoute)
+		userRoutes.GET("/order/deliverycode",controllers.SendOrderDeliveryVerificationCode)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
 		userRoutes.PUT("/order/update/paymentmode",controllers.ChangeOrderPaymentMode)  //orderid in the query param //CHANGE COD , ONLINE MODE
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
 		userRoutes.GET("/order/step3/razorpaycallback/failed/:orderid",controllers.RazorPayFailed)
 		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
-		userRoutes.POST("/order/cancel", controllers.CancelOrderedProduct)
+		userRoutes.POST("/order/cancel/online", controllers.CancelOrderedProductOnline)
+		userRoutes.POST("/order/cancel/cod", controllers.CancelOrderedProductCOD)
 		userRoutes.GET("/order/items", controllers.UserOrderItems)
 		userRoutes.GET("/order/info",controllers.GetOrderInfoByOrderID)
 		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
@@ -101,16 +102,20 @@ func RestaurantRoutes(router *gin.Engine) {
 
 		// Order History and Status Updates
 		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //
-		restaurantRoutes.POST("/order/confirmcod",controllers.ConfirmCODTxandOrderStatus)
-		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant)
-		// restaurantRoutes.POST("/order/delivered",controllers.)
+		restaurantRoutes.POST("/order/confirmcod",controllers.ConfirmCODPayment) //authentication for rest add rest id in the order
+		restaurantRoutes.POST("/order/confirmdelivery",controllers.DeliveryComplete) //query param order_id
+		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //authentication rest
 
 		// Product Offers
 		restaurantRoutes.POST("/product/offer/add", controllers.AddProductOffer)      //
 		restaurantRoutes.PUT("/product/offer/remove", controllers.RemoveProductOffer) //
 
 		//orderitem information in excel
-		restaurantRoutes.GET("/orderitems/excel/all", controllers.OrderInformationsCSVFileForRestaurant) //
+		restaurantRoutes.GET("/orderitems/excel/all", controllers.OrderItemsCSVFileForRestaurant) //
+		restaurantRoutes.GET("/orderitems/json/all", controllers.ListOrderItemsForRestaurants) //
+
+		//report
+		restaurantRoutes.GET("/report/all",controllers.RestaurantOverallSalesReport)
 
 		//restaurant wallet balance and history
 		restaurantRoutes.GET("/wallet/all", controllers.GetRestaurantWalletData) //

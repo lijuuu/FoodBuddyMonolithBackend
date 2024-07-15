@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"foodbuddy/internal/database"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"net/http"
 	"os"
 	"strconv"
@@ -150,8 +151,8 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", OrderID).First(&Order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to fetch order information",
+			"status":  false,
+			"message": "failed to fetch order information",
 		})
 		return
 	}
@@ -159,8 +160,8 @@ func GetOrderInfoByOrderIDAndGeneratePDF(c *gin.Context) {
 	var OrderItems []model.OrderItem
 	if err := database.DB.Where("order_id = ?", OrderID).Find(&OrderItems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to fetch order information",
+			"status":  false,
+			"message": "failed to fetch order information",
 		})
 		return
 	}
@@ -376,80 +377,170 @@ func NewArrivals(c *gin.Context) {
 }
 
 func PlatformOverallSalesReport(c *gin.Context) {
-    var input model.PlatformSalesReportInput
+	var input model.PlatformSalesReportInput
 
-    if err := c.BindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	if err := c.BindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    if input.StartDate == "" && input.EndDate == "" && input.Limit == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "please provide start date and end date, or specify the limit as day, week, month, year"})
-        return
-    }
+	if input.StartDate == "" && input.EndDate == "" && input.Limit == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "please provide start date and end date, or specify the limit as day, week, month, year"})
+		return
+	}
 
-    // Handle case where Limit is specified
-    if input.Limit != "" {
-        limits := []string{"day", "week", "month", "year"}
-        found := false
-        for _, l := range limits {
-            if input.Limit == l {
-                found = true
-                break
-            }
-        }
-        if !found {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit specified, valid options are: day, week, month, year"})
-            return
-        }
+	// Handle case where Limit is specified
+	if input.Limit != "" {
+		limits := []string{"day", "week", "month", "year"}
+		found := false
+		for _, l := range limits {
+			if input.Limit == l {
+				found = true
+				break
+			}
+		}
+		if !found {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit specified, valid options are: day, week, month, year"})
+			return
+		}
 
-        // Process based on the specified limit
-        var startDate, endDate string
+		// Process based on the specified limit
+		var startDate, endDate string
 		switch input.Limit {
 		case "day":
 			startDate = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 			endDate = time.Now().Format("2006-01-02")
 		case "week":
 			today := time.Now()
-			endDate = today.AddDate(0, 0, 7-int(today.Weekday())).Format("2006-01-02")
-			startDate = today.Format("2006-01-02")
+			startDate = today.AddDate(0, 0, -int(today.Weekday())).Format("2006-01-02") // Start of the week (Sunday)
+			endDate = today.AddDate(0, 0, 7-int(today.Weekday())).Format("2006-01-02")  // End of the week (Saturday)
 		case "month":
-			firstDay := time.Now()
-			endDate = firstDay.AddDate(0, 1, -1).Format("2006-01-02")
-			startDate = firstDay.Format("2006-01-02")
+			today := time.Now()
+			firstDayOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+			lastDayOfMonth := firstDayOfMonth.AddDate(0, 1, -1)
+			startDate = firstDayOfMonth.Format("2006-01-02")
+			endDate = lastDayOfMonth.Format("2006-01-02")
 		case "year":
 			endDate = time.Now().Format("2006-01-02")
 			startDate = time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
 		}
-		
-	
+
 		fmt.Println(startDate)
 		fmt.Println(endDate)
-        result,amount, err := TotalOrders(startDate, endDate, input.PaymentStatus)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
-            return
-        }
-        c.JSON(http.StatusOK, gin.H{
-			"status":true,
-			"message":"successfully created sales report",
-			"result":result,
-			"amount":amount,
+		result, amount, err := TotalOrders(startDate, endDate, input.PaymentStatus, 0)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":  true,
+			"message": "successfully created sales report",
+			"result":  result,
+			"amount":  amount,
 		})
-        return
-    }
+		return
+	}
 
-    result,amount, err := TotalOrders(input.StartDate, input.EndDate, input.PaymentStatus)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
-        return
-    }
+	result, amount, err := TotalOrders(input.StartDate, input.EndDate, input.PaymentStatus, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":true,
-		"message":"successfully created sales report",
-		"result":result,
-		"amount":amount,
+		"status":  true,
+		"message": "successfully created sales report",
+		"result":  result,
+		"amount":  amount,
 	})
 }
 
+func RestaurantOverallSalesReport(c *gin.Context) {
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.UserRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+	
+	RestaurantID,_ := RestIDfromEmail(email)
+
+	var input model.RestaurantOverallSalesReport
+
+	if err := c.BindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if input.StartDate == "" && input.EndDate == "" && input.Limit == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "please provide start date and end date, or specify the limit as day, week, month, year"})
+		return
+	}
+
+	// Handle case where Limit is specified
+	if input.Limit != "" {
+		limits := []string{"day", "week", "month", "year"}
+		found := false
+		for _, l := range limits {
+			if input.Limit == l {
+				found = true
+				break
+			}
+		}
+		if !found {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit specified, valid options are: day, week, month, year"})
+			return
+		}
+
+		// Process based on the specified limit
+		var startDate, endDate string
+		switch input.Limit {
+		case "day":
+			startDate = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+			endDate = time.Now().Format("2006-01-02")
+		case "week":
+			today := time.Now()
+			startDate = today.AddDate(0, 0, -int(today.Weekday())).Format("2006-01-02") // Start of the week (Sunday)
+			endDate = today.AddDate(0, 0, 7-int(today.Weekday())).Format("2006-01-02")  // End of the week (Saturday)
+		case "month":
+			today := time.Now()
+			firstDayOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+			lastDayOfMonth := firstDayOfMonth.AddDate(0, 1, -1)
+			startDate = firstDayOfMonth.Format("2006-01-02")
+			endDate = lastDayOfMonth.Format("2006-01-02")
+		case "year":
+			endDate = time.Now().Format("2006-01-02")
+			startDate = time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
+		}
+
+		fmt.Println(startDate)
+		fmt.Println(endDate)
+		result, amount, err := TotalOrders(startDate, endDate, input.PaymentStatus, RestaurantID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":  true,
+			"message": "successfully created sales report",
+			"result":  result,
+			"amount":  amount,
+		})
+		return
+	}
+
+	result, amount, err := TotalOrders(input.StartDate, input.EndDate, input.PaymentStatus, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing orders"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "successfully created sales report",
+		"result":  result,
+		"amount":  amount,
+	})
+}

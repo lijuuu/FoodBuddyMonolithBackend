@@ -12,11 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
 //add to cart with restaurantid, find the rest id from the product
 //add endpoint listcartwithrestaurants show restaurnat id and name,
 
 func AddToCart(c *gin.Context) {
-	//check user api authentication
+	// Check user API authentication
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -26,7 +27,7 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 	UserID, _ := UserIDfromEmail(email)
-	//bind the json
+	// Bind the JSON
 	var Request model.AddToCartReq
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -90,6 +91,7 @@ func AddToCart(c *gin.Context) {
 
 		AddCartItems.UserID = UserID
 		AddCartItems.ProductID = Request.ProductID
+		AddCartItems.RestaurantID = Product.RestaurantID // Set the RestaurantID
 		AddCartItems.Quantity = Request.Quantity
 		AddCartItems.CookingRequest = Request.CookingRequest
 
@@ -102,7 +104,6 @@ func AddToCart(c *gin.Context) {
 			return
 		}
 	} else {
-
 		if CartItem.Quantity+Request.Quantity > model.MaxUserQuantity {
 			c.JSON(http.StatusConflict, gin.H{
 				"status":     false,
@@ -134,10 +135,10 @@ func AddToCart(c *gin.Context) {
 	})
 }
 
-//get cart total by restaurant
-//add restaurant_id in the query 
+// get cart total by restaurant
+// add restaurant_id in the query
 func GetCartTotal(c *gin.Context) {
-	//check user api authentication
+	// Check user API authentication
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -167,9 +168,15 @@ func GetCartTotal(c *gin.Context) {
 		})
 		return
 	}
-	//total price of the cart
-	sum := 0
-	var ProductOffer float64
+
+	// Create a map to store cart totals per restaurant
+	cartTotals := make(map[uint]struct {
+		Items       []model.CartItems
+		ProductOffer float64
+		TotalAmount  float64
+	})
+
+	// Iterate through cart items and calculate totals per restaurant
 	for _, item := range CartItems {
 		var Product model.Product
 		if err := database.DB.Where("id = ?", item.ProductID).First(&Product).Error; err != nil {
@@ -181,28 +188,58 @@ func GetCartTotal(c *gin.Context) {
 			return
 		}
 
-		ProductOffer += Product.OfferAmount * float64(item.Quantity)
-		sum += int(Product.Price) * int(item.Quantity)
+		restaurantID := Product.RestaurantID
+		if _, exists := cartTotals[restaurantID]; !exists {
+			cartTotals[restaurantID] = struct {
+				Items       []model.CartItems
+				ProductOffer float64
+				TotalAmount  float64
+			}{}
+		}
+
+		if val, ok := cartTotals[restaurantID]; ok {
+			val.Items = append(val.Items, item)
+			val.ProductOffer += Product.OfferAmount * float64(item.Quantity)
+			val.TotalAmount += float64(Product.Price) * float64(item.Quantity)
+			cartTotals[restaurantID] = val
+		} else {
+			cartTotals[restaurantID] = struct {
+				Items       []model.CartItems
+				ProductOffer float64
+				TotalAmount  float64
+			}{
+				Items:       []model.CartItems{item},
+				ProductOffer: Product.OfferAmount * float64(item.Quantity),
+				TotalAmount:  float64(Product.Price) * float64(item.Quantity),
+			}
+		}
+
 	}
 
-	FinalAmount := sum - int(ProductOffer)
+	// Prepare response data
+	responseData := make(map[uint]interface{})
+	for restaurantID, totals := range cartTotals {
+		FinalAmount := totals.TotalAmount - totals.ProductOffer
+		responseData[restaurantID] = gin.H{
+			"cartitems":    totals.Items,
+			"productoffer": totals.ProductOffer,
+			"totalamount":  totals.TotalAmount,
+			"finalamount":  FinalAmount,
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
-		"data": gin.H{
-			"cartitems":    CartItems,
-			"productoffer": ProductOffer,
-			"totalamount":  sum,
-			"finalamount":  FinalAmount,
-		},
+		"data":   responseData,
 		"message": "Cart items retrieved successfully",
 	})
 }
 
-//clear whole cart 
-//also clear whole cart by restaurant_id
-func ClearCart(c *gin.Context) {
 
-	//check user api authentication
+// clear whole cart
+// also clear whole cart by restaurant_id
+func ClearCart(c *gin.Context) {
+	// Check user API authentication
 	email, role, err := utils.GetJWTClaim(c)
 	if role != model.UserRole || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -213,21 +250,39 @@ func ClearCart(c *gin.Context) {
 	}
 	UserID, _ := UserIDfromEmail(email)
 
-	var CartItems model.CartItems
-	if err := database.DB.Where("user_id = ?", UserID).Delete(&CartItems).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "Failed to delete cart items. Please try again later.",
-			"error_code": http.StatusInternalServerError,
+	restaurantID := c.Query("restaurant_id")
+	if restaurantID == "" {
+		// Clear entire cart
+		var CartItems model.CartItems
+		if err := database.DB.Where("user_id = ?", UserID).Delete(&CartItems).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "Failed to delete cart items. Please try again later.",
+				"error_code": http.StatusInternalServerError,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":  true,
+			"message": "Deleted entire cart of the User",
 		})
-		return
+	} else {
+		// Clear cart for specific restaurant
+		var CartItems model.CartItems
+		if err := database.DB.Where("user_id = ? AND restaurant_id = ?", UserID, restaurantID).Delete(&CartItems).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":     false,
+				"message":    "Failed to delete cart items for the specified restaurant. Please try again later.",
+				"error_code": http.StatusInternalServerError,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":  true,
+			"message": "Deleted cart items for the specified restaurant",
+		})
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"status":  true,
-		"message": "Deleted entire cart of the User",
-	})
 }
-
 
 func RemoveItemFromCart(c *gin.Context) {
 	//check user api authentication
@@ -351,11 +406,11 @@ func UpdateQuantity(c *gin.Context) {
 	})
 }
 
-//calculate cart total by restaurant_id
-func CalculateCartTotal(userID uint) (TotalAmount float64, ProductOffer float64, err error) {
+// calculate cart total by restaurant_id
+func CalculateCartTotal(userID uint,RestaurantID uint) (TotalAmount float64, ProductOffer float64, err error) {
 	var cartItems []model.CartItems
 
-	if err := database.DB.Where("user_id = ?", userID).Find(&cartItems).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND restaurant_id = ?", userID,RestaurantID).Find(&cartItems).Error; err != nil {
 		return 0, 0, errors.New("failed to fetch cart items")
 	}
 
@@ -386,14 +441,16 @@ func AddCookingRequest(c *gin.Context) {
 	words := strings.Fields(Request.CookingRequest)
 	wordCount := len(words)
 	if wordCount < 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"status":  false,"message": "cooking_request must contain atleast 2 words"});return
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "cooking_request must contain atleast 2 words"})
+		return
 	}
 
 	//update the cart with cooking_request
-    if err:= database.DB.Where("product_id = ?",Request.ProductID).Updates(model.CartItems{CookingRequest:Request.CookingRequest}).Error;err!=nil{
-		c.JSON(http.StatusNotFound, gin.H{"status":  false,"message": "cart is empty or the specified product is not in this cart,please make sure the product exists"});return
+	if err := database.DB.Where("product_id = ?", Request.ProductID).Updates(model.CartItems{CookingRequest: Request.CookingRequest}).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "cart is empty or the specified product is not in this cart,please make sure the product exists"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status":  true,"message": "successfully updated cooking request"})
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "successfully updated cooking request"})
 
 }
