@@ -95,7 +95,6 @@ func RestaurantRoutes(router *gin.Engine) {
 	restaurantRoutes := router.Group("/api/v1/restaurants")
 	{
 		// Restaurant Management
-		//get profile info
 		restaurantRoutes.POST("/edit", controllers.EditRestaurant)       //update restaurant profile
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)   //
 		restaurantRoutes.POST("/products/edit", controllers.EditProduct) //
@@ -156,6 +155,8 @@ func PublicRoutes(router *gin.Engine) {
 	// Public API Endpoints
 	publicRoute := router.Group("/api/v1/public")
 	{
+		//get restaurant profile info
+		publicRoute.GET("/restaurant/profile",controllers.GetRestaurantProfile)
 		publicRoute.GET("/coupon/all", controllers.GetAllCoupons)                            //
 		publicRoute.GET("/categories", controllers.GetCategoryList)                          //
 		publicRoute.GET("/categories/products", controllers.GetCategoryProductList)          //
@@ -188,3 +189,5 @@ func APIDocumentation(c *gin.Context) {
 	url := "https://documenter.getpostman.com/view/32055383/2sA3e488Sh"
 	c.Redirect(http.StatusMovedPermanently, url)
 }
+
+

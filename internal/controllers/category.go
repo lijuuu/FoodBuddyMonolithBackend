@@ -286,7 +286,7 @@ func GetCategoryOfferfromProductID(ProductID uint) (bool, uint, uint) { //ok,id,
 	if err := database.DB.Where("id = ?", ProductID).First(&Product).Error; err != nil {
 		return false, Product.CategoryID, 0
 	}
-	var Category model.Category
+	var Category model.Category;
 	if err := database.DB.Where("id = ?", Product.CategoryID).First(&Category).Error; err != nil {
 		return false, Product.CategoryID, 0
 	}
@@ -294,6 +294,6 @@ func GetCategoryOfferfromProductID(ProductID uint) (bool, uint, uint) { //ok,id,
 	return true, Product.CategoryID, Category.OfferPercentage
 }
 
-func GetOverallRestaurantOrderInfo(c *gin.Context) {
+// func GetOverallRestaurantOrderInfo(c *gin.Context) {
 
-}
+// }

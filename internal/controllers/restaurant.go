@@ -778,3 +778,30 @@ func ListOrderItemsForRestaurants(c *gin.Context) {
 		"data":   data,
 	})
 }
+
+func GetRestaurantProfile(c *gin.Context){
+	RestaurantID := c.Query("id")
+    if RestaurantID == "0" || RestaurantID == ""{
+		c.JSON(http.StatusBadRequest,gin.H{"status":false,"message":"id is not provided in the query params"});return
+	}
+
+    var Restaurant model.Restaurant
+	if err:=database.DB.Where("id = ?",RestaurantID).First(&Restaurant).Error;err!=nil{
+		c.JSON(http.StatusBadRequest,gin.H{"status":false,"message":"restaurant profile not found,confirm id of the restaurant"});return
+	}	
+
+	c.JSON(http.StatusOK,
+		gin.H{
+			"status":true,
+			"data":gin.H{
+				"restaurant_id":RestaurantID,
+				"name":Restaurant.Name,
+				"description":Restaurant.Description,
+				"address":Restaurant.Address,
+				"phone_number":Restaurant.PhoneNumber,
+				"image_url":Restaurant.ImageURL,
+				"certificate_url":Restaurant.CertificateURL,
+				"blocked":Restaurant.Blocked,
+			},
+		})
+}
