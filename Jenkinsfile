@@ -10,6 +10,14 @@ pipeline {
             }
         }
 
+        stage('Check Go Installation') {
+            steps {
+                script {
+                    sh 'go version'
+                }
+            }
+        }
+
         stage('Check Environment Variable') {
             steps {
                 script {
@@ -22,7 +30,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    sh 'go build -o main'
+                    sh 'cd cmd && go build -o main'
                 }
             }
         }
