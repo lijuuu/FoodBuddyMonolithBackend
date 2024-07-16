@@ -26,7 +26,7 @@ import (
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  fmt.Sprintf("https://%v/api/v1/googlecallback", utils.GetEnvVariables().ServerIP),
+	RedirectURL:  fmt.Sprintf("http://%v/api/v1/googlecallback", utils.GetEnvVariables().ServerIP),
 	ClientID:     utils.GetEnvVariables().ClientID,
 	ClientSecret: utils.GetEnvVariables().ClientSecret,
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
@@ -134,13 +134,13 @@ func GoogleHandleCallback(c *gin.Context) {
 	}
 
 	// User already exists, check login method
-	if existingUser.LoginMethod == model.EmailLoginMethod {
-		c.JSON(http.StatusSeeOther, gin.H{
-			"status":  false,
-			"message": "please login through email method",
-		})
-		return
-	}
+	// if existingUser.LoginMethod == model.EmailLoginMethod {
+	// 	c.JSON(http.StatusSeeOther, gin.H{
+	// 		"status":  false,
+	// 		"message": "please login through email method",
+	// 	})
+	// 	return
+	// }
 
 	//check is the user is blocked by the admin
 	if existingUser.Blocked {
@@ -237,7 +237,7 @@ func EmailSignup(c *gin.Context) {
 	User := model.User{
 		Name:           EmailSignupRequest.Name,
 		Email:          EmailSignupRequest.Email,
-		PhoneNumber:    EmailSignupRequest.PhoneNumber,
+		PhoneNumber:    string(EmailSignupRequest.PhoneNumber),
 		HashedPassword: string(hash),
 		LoginMethod:    model.EmailLoginMethod,
 		Blocked:        false,
@@ -707,8 +707,13 @@ func Logout(c *gin.Context) {
 func VerifyUserPasswordReset(email string) bool {
 	var User model.User
 	err := database.DB.Where("email =?", email).First(&User).Error
-
-	return err == nil
+	if err != nil {
+		return false
+	}
+	if User.LoginMethod != model.EmailLoginMethod {
+		return false
+	}
+	return true
 
 }
 

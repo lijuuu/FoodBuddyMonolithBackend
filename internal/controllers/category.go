@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"foodbuddy/internal/database"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
+	"foodbuddy/internal/utils"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,83 +12,83 @@ import (
 )
 
 func GetCategoryList(c *gin.Context) { //public
-    var categories []struct {
-        ID              uint      `json:"id"`
-        Name            string    `json:"name"`
-        Description     string    `json:"description"`
-        ImageURL        string    `json:"image_url"`
-        OfferPercentage uint      `json:"offer_percentage"`
-    }
+	var categories []struct {
+		ID              uint   `json:"id"`
+		Name            string `json:"name"`
+		Description     string `json:"description"`
+		ImageURL        string `json:"image_url"`
+		OfferPercentage uint   `json:"offer_percentage"`
+	}
 
-    tx := database.DB.Model(&model.Category{}).Select("id, name, description, image_url, offer_percentage").Find(&categories)
-    if tx.Error != nil {
-        c.JSON(http.StatusNotFound, gin.H{
-            "status":     false,
-            "message":    "failed to retrieve data from the database, or the data doesn't exist",
-        })
-        return
-    }
+	tx := database.DB.Model(&model.Category{}).Select("id, name, description, image_url, offer_percentage").Find(&categories)
+	if tx.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "failed to retrieve data from the database, or the data doesn't exist",
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status":  true,
-        "message": "category list is fetched successfully",
-        "data": gin.H{
-            "categorylist": categories,
-        },
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "category list is fetched successfully",
+		"data": gin.H{
+			"categorylist": categories,
+		},
+	})
 }
 
 func GetCategoryProductList(c *gin.Context) { //public
-    var categories []model.Category
-    if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
-        c.JSON(http.StatusNotFound, gin.H{
-            "status":     false,
-            "message":    "make sure products are added in their respective catgories inorder to be displayed here",
-        })
-        return
-    }
+	var categories []model.Category
+	if err := database.DB.Preload("Products").Find(&categories).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  false,
+			"message": "make sure products are added in their respective catgories inorder to be displayed here",
+		})
+		return
+	}
 
-    // Transform the categories slice to match the desired JSON structure
-    transformedCategories := make([]map[string]interface{}, len(categories))
-    for i, category := range categories {
-        transformedCategory := map[string]interface{}{
-            "id":              category.ID,
-            "name":            category.Name,
-            "description":     category.Description,
-            "image_url":       category.ImageURL,
-            "offer_percentage": category.OfferPercentage,
-            "products": []map[string]interface{}{},
-        }
-        
-        for _, product := range category.Products {
-            transformedProduct := map[string]interface{}{
-                "id":                  product.ID,
-                "restaurant_id":         product.RestaurantID,
-                "category_id":          product.CategoryID,
-                "name":               product.Name,
-                "description":         product.Description,
-                "image_url":          product.ImageURL,
-                "price":             product.Price,
-                "preparation_time":    product.PreparationTime,
-                "max_stock":          product.MaxStock,
-                "offer_amount":        product.OfferAmount,
-                "stock_left":         product.StockLeft,
-                "average_rating":      product.AverageRating,
-                "veg":              product.Veg,
-            }
-            transformedCategory["products"] = append(transformedCategory["products"].([]map[string]interface{}), transformedProduct)
-        }
-        
-        transformedCategories[i] = transformedCategory
-    }
+	// Transform the categories slice to match the desired JSON structure
+	transformedCategories := make([]map[string]interface{}, len(categories))
+	for i, category := range categories {
+		transformedCategory := map[string]interface{}{
+			"id":               category.ID,
+			"name":             category.Name,
+			"description":      category.Description,
+			"image_url":        category.ImageURL,
+			"offer_percentage": category.OfferPercentage,
+			"products":         []map[string]interface{}{},
+		}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status":  true,
-        "message": "category list with products is fetched successfully",
-        "data": gin.H{
-            "categorylist": transformedCategories,
-        },
-    })
+		for _, product := range category.Products {
+			transformedProduct := map[string]interface{}{
+				"id":               product.ID,
+				"restaurant_id":    product.RestaurantID,
+				"category_id":      product.CategoryID,
+				"name":             product.Name,
+				"description":      product.Description,
+				"image_url":        product.ImageURL,
+				"price":            product.Price,
+				"preparation_time": product.PreparationTime,
+				"max_stock":        product.MaxStock,
+				"offer_amount":     product.OfferAmount,
+				"stock_left":       product.StockLeft,
+				"average_rating":   product.AverageRating,
+				"veg":              product.Veg,
+			}
+			transformedCategory["products"] = append(transformedCategory["products"].([]map[string]interface{}), transformedProduct)
+		}
+
+		transformedCategories[i] = transformedCategory
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  true,
+		"message": "category list with products is fetched successfully",
+		"data": gin.H{
+			"categorylist": transformedCategories,
+		},
+	})
 }
 func AddCategory(c *gin.Context) { //admin
 
@@ -107,8 +107,8 @@ func AddCategory(c *gin.Context) { //admin
 
 	if err := c.BindJSON(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "failed to process incoming request",
+			"status":  false,
+			"message": "failed to process incoming request",
 		})
 		return
 	}
@@ -117,8 +117,8 @@ func AddCategory(c *gin.Context) { //admin
 	if err := utils.Validate(Request); err != nil {
 		//add json response
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    err,
+			"status":  false,
+			"message": err,
 		})
 		return
 	}
@@ -128,8 +128,8 @@ func AddCategory(c *gin.Context) { //admin
 
 	if wordCount < 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "description must be a minimum of 10 words",
+			"status":  false,
+			"message": "description must be a minimum of 10 words",
 		})
 		return
 	}
@@ -137,8 +137,8 @@ func AddCategory(c *gin.Context) { //admin
 	// Check if the category is already present
 	if err := database.DB.Where("name = ?", Request.Name).First(&existingcategory).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "category already exists",
+			"status":  false,
+			"message": "category already exists",
 		})
 		return
 	}
@@ -151,8 +151,8 @@ func AddCategory(c *gin.Context) { //admin
 
 	if err := database.DB.Save(&createCategory).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "unable to add new category, server error ",
+			"status":  false,
+			"message": "unable to add new category, server error ",
 		})
 		return
 
@@ -248,24 +248,29 @@ func DeleteCategory(c *gin.Context) { //admin
 	categoryID, err := strconv.Atoi(catergoryIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":     false,
-			"message":    "invalid category ID",
+			"status":  false,
+			"message": "invalid category ID",
 		})
 		return
 	}
 
 	if err := database.DB.First(&category, categoryID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":     false,
-			"message":    "failed to fetch category from the database",
+			"status":  false,
+			"message": "failed to fetch category from the database",
 		})
+		return
+	}
+	var productCount int64
+	if result := database.DB.Model(&model.Product{}).Where("category_id = ?", categoryID).Count(&productCount); result.RowsAffected > 0 {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"status": false, "message": "category contains products, change the category of these products before using this endpoint"})
 		return
 	}
 
 	if err := database.DB.Delete(&category, categoryID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to delete category from the database",
+			"status":  false,
+			"message": "failed to delete category from the database",
 		})
 		return
 	}

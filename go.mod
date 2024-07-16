@@ -8,6 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.21.0
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/google/uuid v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jung-kurt/gofpdf/v2 v2.17.3
 	github.com/razorpay/razorpay-go v1.3.2
@@ -33,7 +34,6 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

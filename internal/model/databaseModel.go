@@ -30,7 +30,7 @@ type User struct {
 	ID             uint    `validate:"required"`
 	Name           string  `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
 	Email          string  `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber    uint    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	PhoneNumber    string    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string  `gorm:"column:picture;type:text" json:"picture"`
 	ReferralCode   string  `gorm:"column:referral_code" json:"referral_code"`
 	WalletAmount   float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`

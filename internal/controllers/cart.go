@@ -251,7 +251,7 @@ func ClearCart(c *gin.Context) {
 	UserID, _ := UserIDfromEmail(email)
 
 	restaurantID := c.Query("restaurant_id")
-	if restaurantID == "" {
+	if restaurantID == "" || restaurantID == "0"{
 		// Clear entire cart
 		var CartItems model.CartItems
 		if err := database.DB.Where("user_id = ?", UserID).Delete(&CartItems).Error; err != nil {

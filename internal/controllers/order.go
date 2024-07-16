@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -130,7 +131,7 @@ func CartToOrderItems(UserID uint, RestaurantID uint, Order model.Order) bool {
 
 	//then remove the cartdetail for that user
 	var CartItem model.CartItems
-	if err := database.DB.Where("user_id = ? AND restaurant_id = ?", UserID,RestaurantID).Delete(&CartItem).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND restaurant_id = ?", UserID, RestaurantID).Delete(&CartItem).Error; err != nil {
 		return false
 	}
 
@@ -188,13 +189,19 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	_, restExist := ValidRestaurant(PlaceOrder.RestaurantID)
+	var Restaurant model.Restaurant
+	Restaurant, restExist := ValidRestaurant(PlaceOrder.RestaurantID)
 	if !restExist {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":     false,
 			"message":    "invalid restaurant_id, please ensure restauarant exists",
 			"error_code": http.StatusConflict,
 		})
+		return
+	}
+
+	if Restaurant.Blocked{
+		c.JSON(http.StatusConflict, gin.H{"status":false,"message":"cannot place orders of blocked restaurants","error_code": http.StatusConflict,})
 		return
 	}
 
@@ -209,15 +216,17 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	OrderID, err := CreateOrderID(PlaceOrder.UserID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":     false,
-			"message":    "failed to create order ID",
-			"error_code": http.StatusInternalServerError,
-		})
-		return
-	}
+	// OrderID, err := CreateOrderID(PlaceOrder.UserID)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{
+	// 		"status":     false,
+	// 		"message":    "failed to create order ID",
+	// 		"error_code": http.StatusInternalServerError,
+	// 	})
+	// 	return
+	// }
+    OrderID := uuid.New().String()
+
 
 	TotalAmount, ProductOffer, err := CalculateCartTotal(PlaceOrder.UserID, PlaceOrder.RestaurantID)
 	if err != nil {
@@ -445,6 +454,10 @@ func OrderHistoryRestaurants(c *gin.Context) {
 		}
 	}
 
+	for i := 0; i < len(OrderItems); i++ {
+		OrderItems[i].AfterDeduction = RoundDecimalValue(OrderItems[i].AfterDeduction)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": true,
 		"message": gin.H{
@@ -480,6 +493,10 @@ func UserOrderItems(c *gin.Context) {
 			})
 			return
 		}
+	}
+
+	for i := 0; i < len(OrderItems); i++ {
+		OrderItems[i].AfterDeduction = RoundDecimalValue(OrderItems[i].AfterDeduction)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -1163,7 +1180,7 @@ func UpdatePaymentGatewayMethod(OrderID string, PaymentGateway string) bool {
 	return true
 }
 
-func GetOrderInfoByOrderID(c *gin.Context) {
+func GetOrderInfoByOrderIDasJSON(c *gin.Context) {
 	//get order id
 
 	OrderID := c.Query("order_id")

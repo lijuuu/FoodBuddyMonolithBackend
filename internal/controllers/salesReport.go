@@ -44,6 +44,7 @@ func IndividualProductReport(ProductID string) model.ProductSales {
 	if err != nil {
 		return report
 	}
+	report.AvgRating = RoundDecimalValue(report.AvgRating)
 	return report
 }
 

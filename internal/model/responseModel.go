@@ -24,9 +24,9 @@ type ErrorResponse struct {
 }
 
 type ProductSales struct {
-	TotalAmount uint    `json:"total_amount"`
+	TotalAmount uint    `json:"total_product_sales_amount"`
 	TotalOrders uint    `json:"total_orders"`
-	AvgRating   float64 `json:"avg_rating"` // Pointer to allow for NULL values
+	AvgRating   float64 `json:"avg_rating"`
 	Quantity    uint    `json:"quantity"`
 }
 

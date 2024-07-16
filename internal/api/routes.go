@@ -76,7 +76,7 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.POST("/order/cancel/online", controllers.CancelOrderedProductOnline)
 		userRoutes.POST("/order/cancel/cod", controllers.CancelOrderedProductCOD)
 		userRoutes.GET("/order/items", controllers.UserOrderItems)
-		userRoutes.GET("/order/info",controllers.GetOrderInfoByOrderID)
+		userRoutes.GET("/order/info",controllers.GetOrderInfoByOrderIDasJSON)
 		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.GET("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.GET("/order/verifypayment", controllers.VerifyOnlinePayment)
@@ -95,15 +95,16 @@ func RestaurantRoutes(router *gin.Engine) {
 	restaurantRoutes := router.Group("/api/v1/restaurants")
 	{
 		// Restaurant Management
-		restaurantRoutes.POST("/edit", controllers.EditRestaurant)       //
+		//get profile info
+		restaurantRoutes.POST("/edit", controllers.EditRestaurant)       //update restaurant profile
 		restaurantRoutes.POST("/products/add", controllers.AddProduct)   //
 		restaurantRoutes.POST("/products/edit", controllers.EditProduct) //
 		restaurantRoutes.DELETE("/products", controllers.DeleteProduct)  //
 
 		// Order History and Status Updates
-		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //
+		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //without order_status and with
 		restaurantRoutes.POST("/order/confirmcod",controllers.ConfirmCODPayment) //authentication for rest add rest id in the order
-		restaurantRoutes.POST("/order/confirmdelivery",controllers.DeliveryComplete) //query param order_id
+		restaurantRoutes.POST("/order/confirmdelivery",controllers.DeliveryComplete) //query param order_id,authentication
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //authentication rest
 
 		// Product Offers
@@ -116,10 +117,10 @@ func RestaurantRoutes(router *gin.Engine) {
 
 		//report
 		restaurantRoutes.GET("/report/all",controllers.RestaurantOverallSalesReport)
+		//new customers this week
 
 		//restaurant wallet balance and history
 		restaurantRoutes.GET("/wallet/all", controllers.GetRestaurantWalletData) //
-		// restaurantRoutes.POST("/profile/update",controllers.RestaurantProfileUpdate)
 	}
 }
 
@@ -127,6 +128,7 @@ func AdminRoutes(router *gin.Engine) {
 	adminRoutes := router.Group("/api/v1/admin")
 	{
 		// User Management
+		//get profile info , update online stats
 		adminRoutes.GET("/users", controllers.GetUserList)                //
 		adminRoutes.GET("/users/blocked", controllers.GetBlockedUserList) //
 		adminRoutes.PUT("/users/block/", controllers.BlockUser)           //
@@ -139,7 +141,6 @@ func AdminRoutes(router *gin.Engine) {
 
 		// Restaurant Management
 		adminRoutes.GET("/restaurants", controllers.GetRestaurants)
-		// adminRoutes.DELETE("/restaurants/:restaurantid", controllers.DeleteRestaurant)
 		adminRoutes.PUT("/restaurants/block", controllers.BlockRestaurant)     //
 		adminRoutes.PUT("/restaurants/unblock", controllers.UnblockRestaurant) //
 		adminRoutes.PUT("/restaurants/verify/success", controllers.VerifyRestaurant)
@@ -175,22 +176,13 @@ func PublicRoutes(router *gin.Engine) {
 
 func AdditionalRoutes(router *gin.Engine) {
 	// Additional Endpoints
-	router.GET("/api/documentation", APIDocumentation)
+	router.GET("/api/v1/documentation", APIDocumentation)
 	router.GET("/api/v1/user/profileimage", view.LoadUpload)                                 //
 	router.POST("/api/v1/user/profileimage", controllers.UserProfileImageUpload)             //
 	router.GET("/api/v1/restaurant/profileimage", view.LoadUpload)                           //
 	router.POST("/api/v1/restaurant/profileimage", controllers.RestaurantProfileImageUpload) //
 	router.GET("/api/v1/logout", controllers.Logout)                                         //
 }
-
-//public routes related to sales -- total sales
-//User wallet and history
-//restaurant eallet and history
-//change in wallet amounts
-//order invoice pdf
-//order informations csv file
-//*Referral
-//coupon minimum amount
 
 func APIDocumentation(c *gin.Context) {
 	url := "https://documenter.getpostman.com/view/32055383/2sA3e488Sh"
