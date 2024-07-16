@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    environment {
+        PROJECTROOT = '' // Default value, can be overridden by the environment
+    }
+    stages {
+        stage('Check Environment Variable') {
+            steps {
+                script {
+                    if (!env.PROJECTROOT?.trim()) {
+                        error("Environment variable PROJECTROOT is not set. Exiting the build.")
+                    } else {
+                        echo "PROJECTROOT is set to: ${env.PROJECTROOT}"
+                    }
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Proceeding with the build...'
+                // Add your build steps here
+            }
+        }
+    }
+    post {
+        always {
+            echo 'This will always run'
+        }
+        success {
+            echo 'This will run only if the build succeeds'
+        }
+        failure {
+            echo 'This will run only if the build fails'
+        }
+    }
+}
