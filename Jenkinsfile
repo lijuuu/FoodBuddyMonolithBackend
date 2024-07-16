@@ -1,39 +1,38 @@
 pipeline {
-  agent any
-  stages {
-    stage('Checkout Code') {
-      steps {
-        git(url: 'https://github.com/liju-github/FoodBuddy-API', branch: 'master')
-      }
+    agent any
+    environment {
+        PATH = "/usr/local/go/bin:${env.PATH}"
     }
-
-    stage('Check Environment Variable') {
-      steps {
-        script {
-          def projectRoot = sh(script: 'echo $PROJECTROOT', returnStdout: true).trim()
-          echo "PROJECTROOT: ${projectRoot}"
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git(url: 'https://github.com/liju-github/FoodBuddy-API', branch: 'master')
+            }
         }
 
-      }
-    }
-
-    stage('Build') {
-      steps {
-        script {
-          sh 'go build -o main'
+        stage('Check Environment Variable') {
+            steps {
+                script {
+                    def projectRoot = sh(script: 'echo $PROJECTROOT', returnStdout: true).trim()
+                    echo "PROJECTROOT: ${projectRoot}"
+                }
+            }
         }
 
-      }
-    }
-
-    stage('Run') {
-      steps {
-        script {
-          sh 'nohup ./main &'
+        stage('Build') {
+            steps {
+                script {
+                    sh 'go build -o main'
+                }
+            }
         }
 
-      }
+        stage('Run') {
+            steps {
+                script {
+                    sh 'nohup ./main &'
+                }
+            }
+        }
     }
-
-  }
 }
