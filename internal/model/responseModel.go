@@ -38,7 +38,7 @@ type BestProduct struct {
 	ImageURL     string  `json:"image_url"`
 	Price        float64 `json:"price"`
 	Rating       float64 `json:"rating"`
-	TotalSales   uint    `json:"TotalSales"`
+	TotalSales   uint    `json:"total_sales"`
 }
 
 type ProductResponse struct {

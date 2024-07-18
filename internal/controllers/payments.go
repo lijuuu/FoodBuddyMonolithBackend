@@ -66,8 +66,8 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 		return
 	}
 
-	callbackurl := fmt.Sprintf("http://%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
-	cancelurl := fmt.Sprintf("http://%v/api/v1/user/order/step3/razorpaycallback/failed/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
+	callbackurl := fmt.Sprintf("https://%v/api/v1/user/order/step3/razorpaycallback/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
+	cancelurl := fmt.Sprintf("https://%v/api/v1/user/order/step3/razorpaycallback/failed/%v", utils.GetEnvVariables().ServerIP, initiatePayment.OrderID)
 
 	responseData := map[string]interface{}{
 		"razorpay_order_id": rzpOrder["id"],
@@ -214,8 +214,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		},
 		Metadata:   map[string]string{"order_id": order.OrderID},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
-		CancelURL:  stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
+		SuccessURL: stripe.String(fmt.Sprintf("https://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
+		CancelURL:  stripe.String(fmt.Sprintf("https://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
 	}
 
 	s, err := session.New(params)

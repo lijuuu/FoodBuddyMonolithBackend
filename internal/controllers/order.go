@@ -110,7 +110,7 @@ func CartToOrderItems(UserID uint, RestaurantID uint, Order model.Order) bool {
 			Amount:             (float64(v.Quantity) * Product.Price),
 			ProductOfferAmount: float64(v.Quantity) * float64(Product.OfferAmount),
 			CookingRequest:     v.CookingRequest,
-			OrderStatus:        model.OrderStatusProcessing,
+			OrderStatus:        model.OrderStatusInitiated,
 			RestaurantID:       RestaurantIDByProductID(v.ProductID),
 		}
 
@@ -200,8 +200,8 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if Restaurant.Blocked{
-		c.JSON(http.StatusConflict, gin.H{"status":false,"message":"cannot place orders of blocked restaurants","error_code": http.StatusConflict,})
+	if Restaurant.Blocked {
+		c.JSON(http.StatusConflict, gin.H{"status": false, "message": "cannot place orders of blocked restaurants", "error_code": http.StatusConflict})
 		return
 	}
 
@@ -225,8 +225,7 @@ func PlaceOrder(c *gin.Context) {
 	// 	})
 	// 	return
 	// }
-    OrderID := uuid.New().String()
-
+	OrderID := uuid.New().String()
 
 	TotalAmount, ProductOffer, err := CalculateCartTotal(PlaceOrder.UserID, PlaceOrder.RestaurantID)
 	if err != nil {
@@ -723,13 +722,13 @@ func CancelOrderedProductOnline(c *gin.Context) {
 	var OrderItems []model.OrderItem
 	if Request.ProductId != 0 {
 		// Fetch individual product
-		if err := database.DB.Where("order_id =? AND product_id =? AND order_status IN (?,?)", Request.OrderID, Request.ProductId, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err != nil {
+		if err := database.DB.Where("order_id =? AND product_id =? AND order_status = ?", Request.OrderID, Request.ProductId, model.OrderStatusInitiated).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch the order item"})
 			return
 		}
 	} else {
 		// Fetch all orders
-		if err := database.DB.Where("order_id =? AND order_status IN (?,?)", Request.OrderID, model.OrderStatusProcessing, model.OrderStatusInPreparation).Find(&OrderItems).Error; err != nil {
+		if err := database.DB.Where("order_id =? AND order_status= ?", Request.OrderID, model.OrderStatusInitiated).Find(&OrderItems).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "failed to fetch the order item"})
 			return
 		}
@@ -1207,6 +1206,10 @@ func GetOrderInfoByOrderIDasJSON(c *gin.Context) {
 		return
 	}
 
+	for i := 0; i < len(OrderItems); i++ {
+		OrderItems[i].AfterDeduction = RoundDecimalValue(OrderItems[i].AfterDeduction)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "Successfully retrieved OrderInformation",
@@ -1344,10 +1347,26 @@ func ConfirmCODPayment(c *gin.Context) {
 		return
 	}
 
+	email, role, err := utils.GetJWTClaim(c)
+	if role != model.RestaurantRole || err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "unauthorized request",
+		})
+		return
+	}
+
+	RestID, _ := RestIDfromEmail(email)
+
 	//get order information
 	var Order model.Order
 	if err := database.DB.Where("order_id = ?", Request.OrderID).First(&Order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "message": "order_id is not present"})
+		return
+	}
+
+	if RestID != Order.RestaurantID {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "unauthorized request,order doesnt belong to this restaurant"})
 		return
 	}
 

@@ -404,7 +404,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to bind the JSON",
-
 		})
 		return
 	}
@@ -414,7 +413,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": err,
-
 		})
 		return
 	}
@@ -428,7 +426,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "user not found",
-
 		})
 		return
 	}
@@ -438,7 +435,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "product not found",
-
 		})
 		return
 	}
@@ -449,7 +445,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "favorite product already exists",
-
 		})
 		return
 	}
@@ -459,7 +454,6 @@ func AddFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to add favorite product",
-
 		})
 		return
 	}
@@ -467,7 +461,6 @@ func AddFavouriteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "favorite product added successfully",
-
 	})
 }
 
@@ -492,7 +485,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to bind the JSON",
-
 		})
 		return
 	}
@@ -502,7 +494,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "unauthorized user",
-
 		})
 		return
 	}
@@ -513,7 +504,6 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "favorite product doesn't exist",
-
 		})
 		return
 	}
@@ -521,14 +511,12 @@ func RemoveFavouriteProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
 			"message": "failed to delete favorite product",
-
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
 		"message": "favorite product deleted successfully",
-
 	})
 }
 
@@ -725,4 +713,33 @@ func GetProductOffers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": true, "data": Products,
 	})
+}
+
+func ListAllReviewsandRating(c *gin.Context) {
+    ProductID := c.Query("product_id")
+
+    if ProductID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "provide product_id in the query params"})
+        return
+    }
+
+    var orderItems []model.OrderItem
+    if err := database.DB.Where("product_id = ?", ProductID).Find(&orderItems).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to fetch reviews and ratings"})
+        return
+    }
+
+    var response []map[string]interface{}
+    for _, item := range orderItems {
+        // Check if either review or rating is non-null
+        if item.OrderReview != "" || item.OrderRating != 0 {
+            response = append(response, map[string]interface{}{
+                "userid":    item.UserID,
+                "rating":    item.OrderRating,
+                "review":    item.OrderReview,
+            })
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{"status": true, "data": response})
 }

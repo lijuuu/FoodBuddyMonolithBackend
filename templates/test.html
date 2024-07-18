@@ -4,21 +4,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password</title>
+    <title>Pay with Razorpay</title>
 </head>
 
 <body>
-    <h2>Reset Your Password</h2>
-    <form id="resetPasswordForm" action="/api/v1/auth/passwordreset/step2" method="POST">
-        <input type="hidden" name="email" value="lijuthomasliju03@gmail.com">
-        <input type="hidden" name="role" value="user">
-        <input type="hidden" name="token" value="3e1c532c-f223-4e48-8be2-7549ea7447f6">
-        <label for="password1">New Password:</label>
-        <input type="password" id="password1" name="password1" required>
-        <label for="password2">Confirm New Password:</label>
-        <input type="password" id="password2" name="password2" required>
-        <button type="submit">Reset Password</button>
-    </form>
+    <button id="rzp-button1">Pay with Razorpay</button>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.getElementById('rzp-button1').onclick = function (e) {
+            e.preventDefault();
+            var options = {
+                "key": "rzp_test_lsRCHVZUa3jQRW", 
+                "amount": "3000", 
+                "currency": "INR",
+                "name": "FoodBuddy",
+                "description": "Test Transaction",
+                "order_id": "order_OZdI3SJb5uThpq", 
+                "callback_url": "https:\/\/foodbuddy.lijuthomas.xyz\/api\/v1\/user\/order\/step3\/razorpaycallback\/376b6524-30bc-48bc-9485-d9779979532f",
+                "prefill": {
+                    "name": "foodbuddy",
+                    "email": "foodbuddy@gmail.com",  
+                    "contact": "9000090000"
+                },
+                "notes": {
+                    "address": "FoodBuddy Office"
+                },
+                "theme": {
+                    "color": "#32CD32" 
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        alert("payment cancelled by the user");
+                        sendTransactionStatusToServer('failed');
+                    },
+                    "animation": true, 
+                    "backdropclose": false, 
+                    "escape": true, 
+                    "handleback": true, 
+                    "confirm_close": true 
+                },
+                "retry": {
+                    "enabled": true,
+                    "max_count": 3 
+                }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+            function sendTransactionStatusToServer(status) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', "https:\/\/foodbuddy.lijuthomas.xyz\/api\/v1\/user\/order\/step3\/razorpaycallback\/failed\/376b6524-30bc-48bc-9485-d9779979532f", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({
+                order_id: "order_OZdI3SJb5uThpq",
+                status: status
+            }));
+        }
+        }
+    </script>
+
 </body>
 
 </html>

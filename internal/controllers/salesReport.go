@@ -84,13 +84,13 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 
 	// Table header
 	pdf.SetFont("Arial", "B", 10)
-	pdf.Cell(30, 10, "Product ID")
-	pdf.Cell(40, 10, "Product Name")
-	pdf.Cell(30, 10, "Product Offer")
-	pdf.Cell(40, 10, "Restaurant Name")
-	pdf.Cell(40, 10, "Quantity")
-	pdf.Cell(40, 10, "Amount")
-	pdf.Cell(40, 10, "Order Status")
+	pdf.Cell(15, 10, "ID")
+	pdf.Cell(60, 10, "Product Name")
+	pdf.Cell(25, 10, "Offer")
+	pdf.Cell(40, 10, "Restaurant")
+	pdf.Cell(20, 10, "Qty")
+	pdf.Cell(30, 10, "Amount")
+	pdf.Cell(30, 10, "Status")
 	pdf.Ln(10)
 
 	// Table body
@@ -100,16 +100,16 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 		var Product model.Product
 		//restaurant info
 		database.DB.Where("id = ?", item.RestaurantID).First(&Result)
-		pdf.Cell(30, 10, fmt.Sprintf("%d", item.ProductID))
+		pdf.Cell(15, 10, fmt.Sprintf("%d", item.ProductID))
 		//product info
 		database.DB.Where("id = ?", item.ProductID).First(&Product)
-		pdf.Cell(40, 10, fmt.Sprintf("%v", Product.Name))
+		pdf.Cell(60, 10, fmt.Sprintf("%v", Product.Name))
 
-		pdf.Cell(30, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
+		pdf.Cell(25, 10, fmt.Sprintf("%.2f", item.ProductOfferAmount))
 		pdf.Cell(40, 10, fmt.Sprintf("%v", Result.Name))
-		pdf.Cell(40, 10, fmt.Sprintf("%d", item.Quantity))
-		pdf.Cell(40, 10, fmt.Sprintf("%.2f", item.Amount))
-		pdf.Cell(40, 10, fmt.Sprintf("%v", item.OrderStatus))
+		pdf.Cell(20, 10, fmt.Sprintf("%d", item.Quantity))
+		pdf.Cell(30, 10, fmt.Sprintf("%.2f", item.Amount))
+		pdf.Cell(30, 10, fmt.Sprintf("%v", item.OrderStatus))
 		pdf.Ln(10)
 	}
 

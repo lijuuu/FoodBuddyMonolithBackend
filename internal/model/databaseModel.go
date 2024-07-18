@@ -30,7 +30,7 @@ type User struct {
 	ID             uint    `validate:"required"`
 	Name           string  `gorm:"column:name;type:varchar(255)" validate:"required" json:"name"`
 	Email          string  `gorm:"column:email;type:varchar(255);unique_index" validate:"email" json:"email"`
-	PhoneNumber    string    `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
+	PhoneNumber    string  `gorm:"column:phone_number;type:varchar(255);unique_index" validate:"number" json:"phone_number"`
 	Picture        string  `gorm:"column:picture;type:text" json:"picture"`
 	ReferralCode   string  `gorm:"column:referral_code" json:"referral_code"`
 	WalletAmount   float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
@@ -121,7 +121,7 @@ type Address struct {
 type CartItems struct {
 	UserID         uint   `gorm:"column:user_id" validate:"required,number" json:"user_id"`
 	ProductID      uint   `validate:"required,number" json:"product_id"`
-	RestaurantID   uint   `gorm:"column:restaurant_id" validate:"required,number" json:"restaurant_id"`
+	RestaurantID   uint   `gorm:"column:restaurant_id"  json:"restaurant_id"`
 	Quantity       uint   ` validate:"required,number" json:"quantity"`
 	CookingRequest string `json:"cooking_request"` // similar to zomato,, requesting restaurant to add or remove specific ingredients etc
 }
@@ -157,7 +157,7 @@ type OrderItem struct {
 }
 
 type Payment struct {
-	OrderID           string `validate:"required"`
+	OrderID           string `validate:"required" json:"order_id"`
 	WalletPaymentID   string `json:"wallet_payment_id" gorm:"column:wallet_payment_id"`
 	StripeSessionID   string `json:"stripe_session_id" column:"stripe_session_id"`
 	StripePaymentID   string `json:"stripe_payment_id" column:"stripe_payment_id"`

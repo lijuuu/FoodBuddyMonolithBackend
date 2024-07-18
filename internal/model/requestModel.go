@@ -31,6 +31,11 @@ type RestaurantSignupRequest struct {
 	CertificateURL  string `gorm:"column:certificate_url" validate:"required,url" json:"certificate_url"`
 }
 
+type UpdateQuantityCart struct {
+	ProductID uint `validate:"required" json:"product_id"`
+	Quantity  uint `validate:"required" json:"quantity"`
+}
+
 type RestaurantLoginRequest struct {
 	Email    string `validate:"required,email"`
 	Password string `validate:"required"`

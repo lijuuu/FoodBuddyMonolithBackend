@@ -9,7 +9,7 @@ import (
 )
 
 func ServerHealth(router *gin.Engine) {
-	router.GET("/", func(c *gin.Context){
+	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "server status ok",
 		})
@@ -57,8 +57,8 @@ func UserRoutes(router *gin.Engine) {
 		userRoutes.DELETE("/address/delete", controllers.DeleteUserAddress) //
 
 		// Cart Management
-		userRoutes.POST("/cart/add", controllers.AddToCart)               //
-		userRoutes.POST("/cart/cookingrequest",controllers.AddCookingRequest)
+		userRoutes.POST("/cart/add", controllers.AddToCart) //
+		userRoutes.POST("/cart/cookingrequest", controllers.AddCookingRequest)
 		userRoutes.GET("/cart/all", controllers.GetCartTotal)             //
 		userRoutes.DELETE("/cart/delete/", controllers.ClearCart)         //specify restaurant_id for clearing individual carts
 		userRoutes.DELETE("/cart/remove", controllers.RemoveItemFromCart) //
@@ -67,16 +67,16 @@ func UserRoutes(router *gin.Engine) {
 
 		// Order Management
 		userRoutes.POST("/order/step1/placeorder", controllers.PlaceOrder)
-		userRoutes.GET("/order/deliverycode",controllers.SendOrderDeliveryVerificationCode)
+		userRoutes.GET("/order/deliverycode", controllers.SendOrderDeliveryVerificationCode)
 		userRoutes.POST("/order/step2/initiatepayment", controllers.InitiatePayment)
-		userRoutes.PUT("/order/update/paymentmode",controllers.ChangeOrderPaymentMode)  //orderid in the query param //CHANGE COD , ONLINE MODE
+		userRoutes.PUT("/order/update/paymentmode", controllers.ChangeOrderPaymentMode) //orderid in the query param //CHANGE COD , ONLINE MODE
 		userRoutes.POST("/order/step3/razorpaycallback/:orderid", controllers.RazorPayGatewayCallback)
-		userRoutes.GET("/order/step3/razorpaycallback/failed/:orderid",controllers.RazorPayFailed)
+		userRoutes.GET("/order/step3/razorpaycallback/failed/:orderid", controllers.RazorPayFailed)
 		userRoutes.GET("/order/step3/stripecallback", controllers.StripeCallback)
 		userRoutes.POST("/order/cancel/online", controllers.CancelOrderedProductOnline)
 		userRoutes.POST("/order/cancel/cod", controllers.CancelOrderedProductCOD)
 		userRoutes.GET("/order/items", controllers.UserOrderItems)
-		userRoutes.GET("/order/info",controllers.GetOrderInfoByOrderIDasJSON)
+		userRoutes.GET("/order/info", controllers.GetOrderInfoByOrderIDasJSON)
 		userRoutes.GET("/order/invoice/", controllers.GetOrderInfoByOrderIDAndGeneratePDF)
 		userRoutes.GET("/order/paymenthistory", controllers.PaymentDetailsByOrderID)
 		userRoutes.GET("/order/verifypayment", controllers.VerifyOnlinePayment)
@@ -101,9 +101,9 @@ func RestaurantRoutes(router *gin.Engine) {
 		restaurantRoutes.DELETE("/products", controllers.DeleteProduct)  //
 
 		// Order History and Status Updates
-		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants) //without order_status and with
-		restaurantRoutes.POST("/order/confirmcod",controllers.ConfirmCODPayment) //authentication for rest add rest id in the order
-		restaurantRoutes.POST("/order/confirmdelivery",controllers.DeliveryComplete) //query param order_id,authentication
+		restaurantRoutes.GET("/order/history", controllers.OrderHistoryRestaurants)            //without order_status and with
+		restaurantRoutes.POST("/order/confirmcod", controllers.ConfirmCODPayment)              //authentication for rest add rest id in the order
+		restaurantRoutes.POST("/order/confirmdelivery", controllers.DeliveryComplete)          //query param order_id,authentication
 		restaurantRoutes.POST("/order/nextstatus", controllers.UpdateOrderStatusForRestaurant) //authentication rest
 
 		// Product Offers
@@ -112,10 +112,10 @@ func RestaurantRoutes(router *gin.Engine) {
 
 		//orderitem information in excel
 		restaurantRoutes.GET("/orderitems/excel/all", controllers.OrderItemsCSVFileForRestaurant) //
-		restaurantRoutes.GET("/orderitems/json/all", controllers.ListOrderItemsForRestaurants) //
+		restaurantRoutes.GET("/orderitems/json/all", controllers.ListOrderItemsForRestaurants)    //
 
 		//report
-		restaurantRoutes.GET("/report/all",controllers.RestaurantOverallSalesReport)
+		restaurantRoutes.GET("/report/all", controllers.RestaurantOverallSalesReport)
 		//new customers this week
 
 		//restaurant wallet balance and history
@@ -156,11 +156,12 @@ func PublicRoutes(router *gin.Engine) {
 	publicRoute := router.Group("/api/v1/public")
 	{
 		//get restaurant profile info
-		publicRoute.GET("/restaurant/profile",controllers.GetRestaurantProfile)
-		publicRoute.GET("/coupon/all", controllers.GetAllCoupons)                            //
-		publicRoute.GET("/categories", controllers.GetCategoryList)                          //
-		publicRoute.GET("/categories/products", controllers.GetCategoryProductList)          //
-		publicRoute.GET("/products", controllers.GetProductList)                             //
+		publicRoute.GET("/restaurant/profile", controllers.GetRestaurantProfile)
+		publicRoute.GET("/coupon/all", controllers.GetAllCoupons)                   //
+		publicRoute.GET("/categories", controllers.GetCategoryList)                 //
+		publicRoute.GET("/categories/products", controllers.GetCategoryProductList) //
+		publicRoute.GET("/products", controllers.GetProductList)                    //
+		publicRoute.GET("/product/reviewandrating", controllers.ListAllReviewsandRating)
 		publicRoute.GET("/restaurants", controllers.GetRestaurants)                          //
 		publicRoute.GET("/restaurants/products/", controllers.GetProductsByRestaurantID)     //
 		publicRoute.GET("/products/onlyveg", controllers.OnlyVegProducts)                    //
@@ -189,5 +190,3 @@ func APIDocumentation(c *gin.Context) {
 	url := "https://documenter.getpostman.com/view/32055383/2sA3e488Sh"
 	c.Redirect(http.StatusMovedPermanently, url)
 }
-
-
