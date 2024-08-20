@@ -1,6 +1,6 @@
-# FoodBuddy Platform API
+# FoodBuddy API
 
-FoodBuddy is a dynamic platform that bridges the gap between users, restaurants, and administrators, providing a robust set of features for effective communication and transaction management within the food industry.
+FoodBuddy is a restaurant aggregator platform built using Go, Gin, MySQL, Jenkins, AWS, and Cloudinary for image uploads. The platform allows users to search for restaurants, manage their profiles, order food, and more. The API is structured with different routes for users, restaurants, and administrators, ensuring a seamless experience for all parties involved.
 
 ## Key Features
 
@@ -38,5 +38,54 @@ FoodBuddy is a dynamic platform that bridges the gap between users, restaurants,
 ## Payment Integration
 
 - **Stripe & Razorpay:** Integrated support for popular payment gateways for secure transactions.
+
+## Installation
+
+To set up the project locally, follow these steps:
+
+1. **Clone the Repository:**
+
+    ```bash
+    git clone https://github.com/liju-github/FoodBuddy-API.git
+    cd FoodBuddy-API
+    ```
+
+2. **Set Up the Environment Variables:**
+
+    Create a `.env` file in the root directory and add the following variables:
+
+    ```bash
+    SERVERIP=localhost:8080
+    CLIENTID=your_google_oauth_client_id
+    CLIENTSECRET=your_google_oauth_client_secret
+    DBUSER=your_database_username
+    DBPASSWORD=your_database_password
+    DBNAME=your_database_name
+    JWTSECRET=your_jwt_secret_key
+    CLOUDNAME=your_cloudinary_cloud_name
+    CLOUDINARYACCESSKEY=your_cloudinary_access_key
+    CLOUDINARYSECRETKEY=your_cloudinary_secret_key
+    CLOUDINARYURL=your_cloudinary_url
+    RAZORPAY_KEY_ID=your_razorpay_key_id
+    RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+    SMTPAPP=your_smtp_app_password
+    STRIPE_KEY=your_stripe_secret_key
+    STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+    ```
+
+3. **Install Dependencies:**
+
+    ```bash
+    go mod tidy
+    ```
+
+4. **Run the Application:**
+
+    ```bash
+    go run .
+    ```
+## API Documentation
+
+Detailed API documentation is available [here](https://documenter.getpostman.com/view/32055383/2sA3e488Sh).
 
 ---
