@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foodbuddy
+  namespace: foodbuddy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foodbuddy
+  template:
+    metadata:
+      labels:
+        app: foodbuddy
+    spec:
+      containers:
+        - name: foodbuddy
+          image: lijuthomas/foodbuddy:latest
+          imagePullPolicy: Always              
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: foodbuddy-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foodbuddy
+  namespace: foodbuddy
+spec:
+  selector:
+    app: foodbuddy
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

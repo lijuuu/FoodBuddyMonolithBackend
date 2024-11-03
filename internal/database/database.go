@@ -2,10 +2,10 @@ package database
 
 import (
 	"fmt"
-	"foodbuddy/internal/utils"
 	"foodbuddy/internal/model"
-
+	"foodbuddy/internal/utils"
 	"log"
+	"os"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -17,18 +17,60 @@ func ConnectToDB() {
 	var err error
 	databaseCredentials := utils.GetEnvVariables()
 
-	dsn := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
+	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword)
+	log.Println("Connecting to MySQL server with DSN:", dsn)
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-
 	if err != nil {
-		log.Fatal("unable to connect to database, ", databaseCredentials.DBName)
-	} else {
-		fmt.Println("connection to database :OK")
+		log.Fatalf("unable to connect to MySQL server: %v", err)
 	}
 
+	if !databaseExists(databaseCredentials.DBName) {
+		if err := createDatabase(databaseCredentials.DBName); err != nil {
+			log.Printf("Warning: %v", err)
+		}
+	}
+
+	dsn = fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/%s?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("unable to connect to database: %v", err)
+	} else {
+		log.Println("Connection to database: OK")
+	}
+
+
+	AutoMigrate()
 }
 
+func databaseExists(dbName string) bool {
+	var exists int
+	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("unable to connect to MySQL server: %v", err)
+	}
+
+	if err := db.Raw("SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = ?", dbName).Scan(&exists).Error; err != nil {
+		log.Printf("Failed to check database existence: %v", err)
+		return false
+	}
+	return exists > 0
+}
+
+func createDatabase(dbName string) error {
+	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("unable to connect to MySQL server: %w", err)
+	}
+
+	if err := db.Exec("CREATE DATABASE " + dbName).Error; err != nil {
+		return fmt.Errorf("failed to create database: %w", err)
+	}
+	log.Printf("Database %s created successfully!", dbName)
+	return nil
+}
 
 func AutoMigrate() {
 	err := DB.AutoMigrate(
@@ -54,6 +96,6 @@ func AutoMigrate() {
 	)
 
 	if err != nil {
-		log.Fatal("failed to automigrate models")
+		log.Fatal("failed to automigrate models:", err)
 	}
 }
