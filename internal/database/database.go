@@ -39,7 +39,6 @@ func ConnectToDB() {
 		log.Println("Connection to database: OK")
 	}
 
-
 	AutoMigrate()
 }
 

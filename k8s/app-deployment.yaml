@@ -4,7 +4,7 @@ metadata:
   name: foodbuddy
   namespace: foodbuddy
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: foodbuddy
@@ -13,10 +13,14 @@ spec:
       labels:
         app: foodbuddy
     spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox
+          command: ['sh', '-c', 'until nc -z mysql 3306; do echo waiting for mysql; sleep 2; done;']
       containers:
         - name: foodbuddy
           image: lijuthomas/foodbuddy:latest
-          imagePullPolicy: Always              
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
@@ -35,4 +39,5 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: ClusterIP
+  type: LoadBalancer
+

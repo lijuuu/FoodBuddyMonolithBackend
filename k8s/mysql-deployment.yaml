@@ -14,31 +14,36 @@ spec:
         app: mysql
     spec:
       containers:
-      - name: mysql
-        image: mysql:8.0
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: foodbuddy-secrets
-              key: DBPASSWORD
-        - name: MYSQL_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: foodbuddy-secrets
-              key: DBNAME
-        - name: MYSQL_USER
-          valueFrom:
-            secretKeyRef:
-              name: foodbuddy-secrets
-              key: DBUSER
-        - name: MYSQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: foodbuddy-secrets
-              key: DBPASSWORD
-        ports:
-        - containerPort: 3306
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: foodbuddy-secrets
+                  key: DBPASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: foodbuddy-secrets
+                  key: DBNAME
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: foodbuddy-secrets
+                  key: DBUSER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: foodbuddy-secrets
+                  key: DBPASSWORD
+          ports:
+            - containerPort: 3306
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 15
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -49,6 +54,4 @@ spec:
   selector:
     app: mysql
   ports:
-    - protocol: TCP
-      port: 3306
-      targetPort: 3306
+    - port: 3306
