@@ -17,7 +17,7 @@ func ConnectToDB() {
 	var err error
 	databaseCredentials := utils.GetEnvVariables()
 
-	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword)
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword)
 	log.Println("Connecting to MySQL server with DSN:", dsn)
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -31,7 +31,7 @@ func ConnectToDB() {
 		}
 	}
 
-	dsn = fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/%s?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
+	dsn = fmt.Sprintf("%s:%s@tcp(localhost:3306)/%s?parseTime=true", databaseCredentials.DBUser, databaseCredentials.DBPassword, databaseCredentials.DBName)
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("unable to connect to database: %v", err)
@@ -44,7 +44,7 @@ func ConnectToDB() {
 
 func databaseExists(dbName string) bool {
 	var exists int
-	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("unable to connect to MySQL server: %v", err)
@@ -58,7 +58,7 @@ func databaseExists(dbName string) bool {
 }
 
 func createDatabase(dbName string) error {
-	dsn := fmt.Sprintf("%s:%s@tcp(mysql.foodbuddy:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/?parseTime=true", os.Getenv("DBUSER"), os.Getenv("DBPASSWORD"))
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("unable to connect to MySQL server: %w", err)

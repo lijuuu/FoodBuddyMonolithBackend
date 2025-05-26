@@ -8,6 +8,7 @@ import (
 
 type EnvVariables struct {
 	ServerIP            string
+	Port                string
 	ClientID            string
 	ClientSecret        string
 	DBUser              string

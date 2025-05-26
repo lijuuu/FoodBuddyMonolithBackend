@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	database.ConnectToDB() 
+	database.ConnectToDB()
 	database.AutoMigrate()
 	fmt.Println("Database intitialization done")
 }
@@ -20,7 +20,7 @@ func main() {
 	//start server with default logger and recovery
 	router := gin.Default()
 	//load html from templates folder
-	// router.LoadHTMLGlob("./templates/*") 
+	// router.LoadHTMLGlob("./templates/*")
 
 	router.Use(utils.RateLimitMiddleware())
 	router.Use(utils.CorsMiddleware())
@@ -34,7 +34,7 @@ func main() {
 	api.RestaurantRoutes(router)
 	api.AdditionalRoutes(router)
 
-	err := router.Run(":8080")
+	err := router.Run(":"+utils.GetEnvVariables().Port)
 	if err != nil {
 		panic(err)
 	}
