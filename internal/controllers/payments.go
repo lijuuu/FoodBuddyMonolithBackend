@@ -214,8 +214,8 @@ func HandleStripe(c *gin.Context, initiatePayment model.InitiatePayment, order m
 		},
 		Metadata:   map[string]string{"order_id": order.OrderID},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(fmt.Sprintf("https://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
-		CancelURL:  stripe.String(fmt.Sprintf("https://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
+		SuccessURL: stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
+		CancelURL:  stripe.String(fmt.Sprintf("http://%v/api/v1/user/order/step3/stripecallback?session_id={CHECKOUT_SESSION_ID}", utils.GetEnvVariables().ServerIP)),
 	}
 
 	s, err := session.New(params)
@@ -291,7 +291,7 @@ func StripeCallback(c *gin.Context) {
 			})
 			return
 		}
-			//update all the orderitems as intiated
+		//update all the orderitems as intiated
 		if err := database.DB.Model(&model.OrderItem{}).Where("order_id = ?", OrderID).Update("order_status", model.OrderStatusInitiated).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  false,

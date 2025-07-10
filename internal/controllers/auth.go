@@ -36,8 +36,9 @@ var googleOauthConfig = &oauth2.Config{
 func GoogleHandleLogin(c *gin.Context) {
 	utils.NoCache(c)
 	url := googleOauthConfig.AuthCodeURL("hjdfyuhadVFYU6781235")
-	c.Redirect(http.StatusTemporaryRedirect, url)
-	c.Next()
+	c.JSON(200, gin.H{
+		"link": url,
+	})
 }
 
 func GoogleHandleCallback(c *gin.Context) {

@@ -7,7 +7,6 @@ import (
 	"foodbuddy/internal/model"
 	"foodbuddy/internal/utils"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -57,7 +56,7 @@ func GeneratePDFInvoice(order model.Order, orderItems []model.OrderItem, address
 	pdf.SetFont("Arial", "B", 12)
 
 	// Inserting an image
-	pdf.Image(os.Getenv(model.ProjectRoot)+"/assets/FoodBuddy-Logo.png", 10, 10, 50, 0, false, "", 0, "")
+	pdf.Image("./assets/foodbuddy.png", 10, 10, 50, 0, false, "", 0, "")
 	pdf.Ln(20)
 	// Title
 	pdf.Cell(40, 10, "Order Invoice")
@@ -465,8 +464,8 @@ func RestaurantOverallSalesReport(c *gin.Context) {
 		})
 		return
 	}
-	
-	RestaurantID,_ := RestIDfromEmail(email)
+
+	RestaurantID, _ := RestIDfromEmail(email)
 
 	var input model.RestaurantOverallSalesReport
 
