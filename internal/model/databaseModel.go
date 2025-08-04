@@ -7,7 +7,7 @@ import (
 )
 
 type EnvVariables struct {
-	ServerIP            string
+	ServerURL            string
 	Port                string
 	ClientID            string
 	ClientSecret        string

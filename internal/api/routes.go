@@ -15,6 +15,7 @@ func ServerHealth(router *gin.Engine) {
 		})
 	})
 }
+
 func AuthenticationRoutes(router *gin.Engine) {
 	//admin
 	router.GET("/api/v1/auth/admin/login", controllers.AdminLogin) //

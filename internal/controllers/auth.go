@@ -26,7 +26,7 @@ import (
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  fmt.Sprintf("http://%v/api/v1/googlecallback", utils.GetEnvVariables().ServerIP),
+	RedirectURL:  fmt.Sprintf("%v/api/v1/googlecallback", utils.GetEnvVariables().ServerURL),
 	ClientID:     utils.GetEnvVariables().ClientID,
 	ClientSecret: utils.GetEnvVariables().ClientSecret,
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
@@ -463,7 +463,7 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 
-	url := fmt.Sprintf("https://%v/api/v1/auth/verifyemail/%v/%v/%v", utils.GetEnvVariables().ServerIP, role, to, otp)
+	url := fmt.Sprintf("%v/api/v1/auth/verifyemail/%v/%v/%v", utils.GetEnvVariables().ServerURL, role, to, otp)
 
 	htmlContent := fmt.Sprintf(`
 	<!DOCTYPE html>

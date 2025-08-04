@@ -100,7 +100,7 @@ docker run -d --name foodbuddy \
 
 | Key                     | Description                                     |
 | ----------------------- | ----------------------------------------------- |
-| `SERVERIP`              | App base URL with port (e.g., `localhost:8080`) |
+| `ServerURL`              | App base URL with port (e.g., `localhost:8080`) |
 | `PORT`                  | Port to run the backend on                      |
 | `CLIENTID`              | Google OAuth Client ID                          |
 | `CLIENTSECRET`          | Google OAuth Client Secret                      |
@@ -123,7 +123,7 @@ docker run -d --name foodbuddy \
 ## 🧪 .env.example
 
 ```env
-SERVERIP=localhost:8080
+ServerURL=localhost:8080
 PORT=8080
 
 CLIENTID=your_google_oauth_client_id
