@@ -25,10 +25,23 @@ func RoundDecimalValue(value float64) float64 {
 	return math.Round(value*multiplier) / multiplier
 }
 
+func RazorpayHealthCheck(client *razorpay.Client) bool {
+	_, err := client.Order.All(nil, nil)
+	return err == nil
+}
+
 func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order model.Order) {
 	// Create Razorpay order
-	fmt.Println(initiatePayment, order)
+	// fmt.Println(initiatePayment, order)
 	client := razorpay.NewClient(os.Getenv("RAZORPAY_KEY_ID"), os.Getenv("RAZORPAY_KEY_SECRET"))
+	if RazorpayHealthCheck(client) {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status":     false,
+			"message":    "razorpay service is down",
+			"error_code": http.StatusServiceUnavailable,
+		})
+	}
+
 	data := map[string]interface{}{
 		"amount":          order.FinalAmount * 100, // Amount in paisa
 		"currency":        "INR",
@@ -36,14 +49,14 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 		"payment_capture": 1,
 	}
 
-	fmt.Println(data)
+	// fmt.Println(data)
 	rzpOrder, err := client.Order.Create(data, nil)
 	if err != nil {
 		PaymentFailedOrderTable(initiatePayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"status":     false,
 			"message":    err.Error(),
-			"error_code": http.StatusInternalServerError,
+			"error_code": http.StatusServiceUnavailable,
 		})
 		return
 	}
@@ -58,7 +71,7 @@ func HandleRazorpay(c *gin.Context, initiatePayment model.InitiatePayment, order
 	}
 	if err := database.DB.Create(&PaymentDetails).Error; err != nil {
 		PaymentFailedOrderTable(initiatePayment.OrderID)
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"status":     false,
 			"message":    "Failed to add Payment order details",
 			"error_code": http.StatusInternalServerError,

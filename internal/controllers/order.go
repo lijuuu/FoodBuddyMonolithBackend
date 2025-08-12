@@ -345,6 +345,15 @@ func InitiatePayment(c *gin.Context) {
 		return
 	}
 
+	if initiatePayment.OrderID == "" || initiatePayment.PaymentGateway == ""{
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":     false,
+			"message":    "provide both order_id and payment_gateway fields",
+			"error_code": http.StatusBadRequest,
+		})
+		return
+	}
+
 	// Check if payment status is confirmed
 	var Order []model.Order
 	if err := database.DB.Where("order_id = ?", initiatePayment.OrderID).Find(&Order).Error; err != nil {
