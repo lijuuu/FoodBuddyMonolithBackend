@@ -18,7 +18,7 @@ func ServerHealth(router *gin.Engine) {
 
 func AuthenticationRoutes(router *gin.Engine) {
 	//admin
-	router.GET("/api/v1/auth/admin/login", controllers.AdminLogin) //
+	router.POST("/api/v1/auth/admin/login", controllers.AdminLogin) //
 
 	//user
 	router.POST("/api/v1/auth/user/email/login", controllers.EmailLogin)   //
@@ -27,7 +27,7 @@ func AuthenticationRoutes(router *gin.Engine) {
 	router.GET("/api/v1/googlecallback", controllers.GoogleHandleCallback) //
 
 	//additional endpoints for email verification and password reset
-	router.GET("/api/v1/auth/verifyemail/:role/:email/:otp", controllers.VerifyEmail) //
+	router.GET("/api/v1/auth/verifyemail/:role/:email/:otp", controllers.VerifyEmail) //use for admin token gen as well.
 
 	router.POST("/api/v1/auth/passwordreset/step1", controllers.Step1PasswordReset) //
 	router.GET("/api/v1/auth/passwordreset", controllers.LoadPasswordReset)         //
