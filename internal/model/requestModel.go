@@ -3,7 +3,7 @@ package model
 type EmailSignupRequest struct {
 	Name            string `validate:"required" json:"name"`
 	Email           string `validate:"required,email" json:"email"`
-	PhoneNumber     uint   `validate:"required,number,min=1000000000,max=9999999999" json:"phone_number"`
+	PhoneNumber     string `validate:"required" json:"phone_number"`
 	Password        string `validate:"required" json:"password"`
 	ConfirmPassword string `validate:"required" json:"confirmpassword"`
 }
@@ -15,7 +15,7 @@ type EmailLoginRequest struct {
 
 type UpdateUserInformation struct {
 	Name        string `json:"name"`
-	PhoneNumber uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
+	PhoneNumber string `gorm:"column:phone_number" validate:"required" json:"phone_number"`
 	Picture     string `json:"picture"`
 }
 
@@ -26,7 +26,7 @@ type RestaurantSignupRequest struct {
 	Email           string `gorm:"column:email" validate:"required,email" json:"email"`
 	ConfirmPassword string `gorm:"column:confirmpassword" validate:"required" json:"confirmpassword"`
 	Password        string `gorm:"column:password" validate:"required" json:"password"`
-	PhoneNumber     uint   `gorm:"column:phone_number" validate:"required,number,min=1000000000,max=9999999999" json:"phone_number"`
+	PhoneNumber     string `gorm:"column:phone_number" validate:"required" json:"phone_number"`
 	ImageURL        string `gorm:"column:image_url" validate:"required,url" json:"image_url"`
 	CertificateURL  string `gorm:"column:certificate_url" validate:"required,url" json:"certificate_url"`
 }
@@ -197,14 +197,14 @@ type RestaurantProfileUpdate struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Address     string `json:"address"`
-	PhoneNumber uint   `json:"phone_number"`
+	PhoneNumber string `json:"phone_number"`
 	ImageURL    string `json:"image_url"`
 }
 
 type EditUserAddress struct {
 	UserID       uint   `json:"user_id" gorm:"column:user_id"`
 	AddressID    uint   `gorm:"column:address_id" json:"address_id"`
-	PhoneNumber  uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
+	PhoneNumber  string `validate:"required" json:"phone_number"`
 	AddressType  string `validate:"required" json:"address_type" gorm:"column:address_type"`
 	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
 	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`

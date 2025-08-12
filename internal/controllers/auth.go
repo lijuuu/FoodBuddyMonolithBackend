@@ -238,7 +238,7 @@ func EmailSignup(c *gin.Context) {
 	User := model.User{
 		Name:           EmailSignupRequest.Name,
 		Email:          EmailSignupRequest.Email,
-		PhoneNumber:    strconv.Itoa(int(EmailSignupRequest.PhoneNumber)),
+		PhoneNumber:    EmailSignupRequest.PhoneNumber,
 		HashedPassword: string(hash),
 		LoginMethod:    model.EmailLoginMethod,
 		Blocked:        false,

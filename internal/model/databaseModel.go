@@ -7,7 +7,7 @@ import (
 )
 
 type EnvVariables struct {
-	ServerURL            string
+	ServerURL           string
 	Port                string
 	ClientID            string
 	ClientSecret        string
@@ -91,7 +91,7 @@ type Restaurant struct {
 	Description        string `gorm:"column:description" validate:"required" json:"description"`
 	Address            string
 	Email              string
-	PhoneNumber        uint    `gorm:"column:phone_number"`
+	PhoneNumber        string  `gorm:"column:phone_number" validate:"required" json:"phone_number"`
 	WalletAmount       float64 `gorm:"column:wallet_amount;type:double" json:"wallet_amount"`
 	ImageURL           string  `gorm:"column:image_url" validate:"required" json:"image_url"`
 	CertificateURL     string  `gorm:"column:certificate_url" validate:"required" json:"certificate_url"`
@@ -109,7 +109,7 @@ type FavouriteProduct struct {
 type Address struct {
 	UserID       uint   `json:"user_id" gorm:"column:user_id"`
 	AddressID    uint   `gorm:"primaryKey;autoIncrement;column:address_id" json:"address_id"`
-	PhoneNumber  uint   `gorm:"column:phone_number" validate:"number,min=1000000000,max=9999999999" json:"phone_number"`
+	PhoneNumber  string `validate:"required" json:"phone_number"`
 	AddressType  string `validate:"required" json:"address_type" gorm:"column:address_type"`
 	StreetName   string `validate:"required" json:"street_name" gorm:"column:street_name"`
 	StreetNumber string `validate:"required" json:"street_number" gorm:"column:street_number"`

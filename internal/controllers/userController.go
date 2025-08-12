@@ -72,7 +72,7 @@ func GetUserList(c *gin.Context) {
 		ID           uint    `json:"id"`
 		Name         string  `json:"name"`
 		Email        string  `json:"email"`
-		PhoneNumber  uint    `json:"phone_number"`
+		PhoneNumber  string  `json:"phone_number"`
 		Picture      string  `json:"picture"`
 		ReferralCode string  `json:"referral_code"`
 		WalletAmount float64 `json:"wallet_amount"`
