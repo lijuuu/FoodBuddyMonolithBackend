@@ -33,6 +33,7 @@ func CreateCoupon(c *gin.Context) { //admin
 		return
 	}
 
+
 	if err := utils.Validate(&Request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
@@ -153,6 +154,7 @@ func UpdateCoupon(c *gin.Context) { //admin
 	existingCoupon.Expiry = request.Expiry
 	existingCoupon.Percentage = request.Percentage
 	existingCoupon.MaximumUsage = request.MaximumUsage
+	existingCoupon.MinimumAmount = float64(request.MinimumAmount)
 
 	if err := database.DB.Save(&existingCoupon).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
