@@ -17,7 +17,7 @@ func GetEnvVariables() model.EnvVariables {
 
 	//retrieving all the variables and storing it on the struct and returning it
 	EnvVariables := model.EnvVariables{
-		ServerURL:            os.Getenv("SERVERURL"),
+		ServerURL:           os.Getenv("SERVERURL"),
 		Port:                os.Getenv("PORT"),
 		ClientID:            os.Getenv("CLIENTID"),
 		ClientSecret:        os.Getenv("CLIENTSECRET"),
@@ -28,6 +28,7 @@ func GetEnvVariables() model.EnvVariables {
 		CloudinaryCloudName: os.Getenv("CLOUDNAME"),
 		CloudinaryAccessKey: os.Getenv("CLOUDINARYACCESSKEY"),
 		CloudinarySecretKey: os.Getenv("CLOUDINARYSECRETKEY"),
+		AESKey: os.Getenv("AESKEY"),
 	}
 	return EnvVariables
 }
