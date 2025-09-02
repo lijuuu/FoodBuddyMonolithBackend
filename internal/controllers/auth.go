@@ -463,7 +463,13 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 	appPassword := os.Getenv("SMTPAPP")
 	auth := smtp.PlainAuth("", from, appPassword, "smtp.gmail.com")
 
-	url := fmt.Sprintf("%v/api/v1/auth/verifyemail/%v/%v/%v", utils.GetEnvVariables().ServerURL, role, to, otp)
+	// url := fmt.Sprintf("%v/api/v1/auth/verifyemail/%v/%v/%v", utils.GetEnvVariables().ServerURL, role, to, otp)
+
+	token := utils.ConcatQueryParams(role,to,strconv.Itoa(otp))
+	encryptedToken,er := utils.EncodeWithSecret(token)
+	fmt.Println("encryptedToken: ",encryptedToken,er)
+	url := fmt.Sprintf("%v/api/v1/auth/verifyemail?token=%v",utils.GetEnvVariables().ServerURL,encryptedToken)
+
 
 	htmlContent := fmt.Sprintf(`
 	<!DOCTYPE html>
@@ -524,11 +530,21 @@ func SendOTP(c *gin.Context, to string, otpexpiry uint64, role string) error {
 
 func VerifyEmail(c *gin.Context) {
 	///welcome?firstname=Jane&lastname=Doe
-	entityRole := c.Param("role")
-	entityEmail := c.Param("email")
-	entityOTP, _ := strconv.Atoi(c.Param("otp"))
+	// entityRole := c.Param("role")
+	// entityEmail := c.Param("email")
+	// entityOTP, _ := strconv.Atoi(c.Param("otp"))
 
-	if entityRole == "" || entityEmail == "" || entityOTP == 0 {
+	queryToken := c.Query("token")
+
+	decQuery, _ := utils.DecodeWithSecret(queryToken)
+	decQueryArr := utils.SplitQueryParams(decQuery)
+
+	role,email,otpStr := decQueryArr[0], decQueryArr[1], decQueryArr[2]
+
+	otp,_ := strconv.Atoi(otpStr)
+
+
+	if role == "" || email == "" || otp == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "failed to process incoming request",
@@ -538,7 +554,7 @@ func VerifyEmail(c *gin.Context) {
 
 	var VerificationTable model.VerificationTable
 
-	tx := database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).First(&VerificationTable)
+	tx := database.DB.Where("email = ? AND role = ?", email, role).First(&VerificationTable)
 	if tx.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  false,
@@ -571,7 +587,7 @@ func VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	if VerificationTable.OTP != uint64(entityOTP) {
+	if VerificationTable.OTP != uint64(otp) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
 			"message": "otp is invalid",
@@ -581,7 +597,7 @@ func VerifyEmail(c *gin.Context) {
 
 	VerificationTable.VerificationStatus = model.VerificationStatusVerified
 
-	tx = database.DB.Where("email = ? AND role = ?", entityEmail, entityRole).Updates(&VerificationTable)
+	tx = database.DB.Where("email = ? AND role = ?", email, role).Updates(&VerificationTable)
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,
@@ -592,7 +608,7 @@ func VerifyEmail(c *gin.Context) {
 	var token string
 	var err error
 
-	token, err = GenerateJWT(c, entityEmail, entityRole)
+	token, err = GenerateJWT(c, email, role)
 	if token == "" || err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  false,

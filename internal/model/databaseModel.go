@@ -18,6 +18,7 @@ type EnvVariables struct {
 	CloudinaryCloudName string
 	CloudinaryAccessKey string
 	CloudinarySecretKey string
+	AESKey              string
 }
 
 type Admin struct {
