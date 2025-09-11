@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gocarina/gocsv"
@@ -94,10 +95,12 @@ func RestaurantSignup(c *gin.Context) {
 		return
 	}
 
+	SendOTP(c, restaurant.Email, verification.OTPExpiry, model.RestaurantRole)
+
 	//respond with restaurant data including id
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
-		"message": "restaurant signup successful",
+		"message": "Please verify your email to complete signup",
 		"data": gin.H{
 			"id":                  restaurant.ID,
 			"name":                restaurant.Name,
@@ -147,19 +150,31 @@ func RestaurantLogin(c *gin.Context) {
 		return
 	}
 
-	//check email verification status
+	// check email verification status
 	var verification model.VerificationTable
 	if err := database.DB.Where("email = ?", req.Email).First(&verification).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to fetch email verification status"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  false,
+			"message": "unable to retrieve email verification details, please try again later",
+		})
 		return
 	}
 
 	if verification.VerificationStatus != model.VerificationStatusVerified {
-		if err := SendOTP(c, req.Email, verification.OTPExpiry, model.RestaurantRole); err != nil {
-			c.JSON(http.StatusAlreadyReported, gin.H{"status": false, "message": err.Error()})
-			return
+		if time.Now().Unix() > int64(verification.OTPExpiry) {
+			// resend OTP if expired
+			if err := SendOTP(c, req.Email, verification.OTPExpiry, model.RestaurantRole); err != nil {
+				c.JSON(http.StatusAlreadyReported, gin.H{
+					"status":  false,
+					"message": "your email is not verified. failed to send verification link, please try again later",
+				})
+				return
+			}
 		}
-		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "message": "please verify your email to continue"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  false,
+			"message": "your email is not verified. please check your inbox for the verification link or request a new one if needed",
+		})
 		return
 	}
 
