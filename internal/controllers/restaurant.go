@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//RestaurantSignup
+// RestaurantSignup
 func RestaurantSignup(c *gin.Context) {
 	//bind json to struct
 	var req model.RestaurantSignupRequest
@@ -43,25 +43,13 @@ func RestaurantSignup(c *gin.Context) {
 		return
 	}
 
-	//check if email exists
-	var verification model.VerificationTable
-	tx := database.DB.Where("email = ? AND role = ?", req.Email, model.RestaurantRole).First(&verification)
-	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "database error"})
-		return
-	} else if tx.Error == gorm.ErrRecordNotFound {
-		//create verification entry
-		verification = model.VerificationTable{
-			Email:              req.Email,
-			Role:               model.RestaurantRole,
-			VerificationStatus: model.VerificationStatusPending,
-		}
-		if err := database.DB.Create(&verification).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to create verification entry"})
-			return
-		}
-	} else {
+	//check if email exists in restaurant table
+	var existing model.Restaurant
+	if err := database.DB.Where("email = ?", req.Email).First(&existing).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "message": "restaurant email already exists"})
+		return
+	} else if err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "database error"})
 		return
 	}
 
@@ -95,6 +83,17 @@ func RestaurantSignup(c *gin.Context) {
 		return
 	}
 
+	// create verification entry at last
+	verification := model.VerificationTable{
+		Email:              req.Email,
+		Role:               model.RestaurantRole,
+		VerificationStatus: model.VerificationStatusPending,
+	}
+	if err := database.DB.Create(&verification).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "message": "failed to create verification entry"})
+		return
+	}
+
 	//respond with restaurant data including id
 	c.JSON(http.StatusOK, gin.H{
 		"status":  true,
@@ -114,7 +113,7 @@ func RestaurantSignup(c *gin.Context) {
 	})
 }
 
-//RestaurantLogin
+// RestaurantLogin
 func RestaurantLogin(c *gin.Context) {
 	var req model.RestaurantLoginRequest
 	var restaurant model.Restaurant
@@ -189,7 +188,7 @@ func RestaurantLogin(c *gin.Context) {
 	})
 }
 
-//public
+// public
 func GetRestaurants(c *gin.Context) {
 	var restaurants []model.Restaurant
 	//Search db and get all
@@ -223,7 +222,7 @@ func GetRestaurants(c *gin.Context) {
 	})
 }
 
-//restaurant
+// restaurant
 func EditRestaurant(c *gin.Context) {
 
 	//check restaurant api authentication
@@ -289,7 +288,7 @@ func EditRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func DeleteRestaurant(c *gin.Context) {
 
 	//check admin api authentication
@@ -338,7 +337,7 @@ func DeleteRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func BlockRestaurant(c *gin.Context) {
 	//check admin api authentication
 	_, role, err := utils.GetJWTClaim(c)
@@ -412,7 +411,7 @@ func BlockRestaurant(c *gin.Context) {
 	})
 }
 
-//admin
+// admin
 func UnblockRestaurant(c *gin.Context) {
 	//check admin api authentication
 	_, role, err := utils.GetJWTClaim(c)
@@ -562,7 +561,7 @@ func RemoveVerifyStatusRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "message": "restaurant status changed to status - pending"})
 }
 
-//get restaurantid from rest email
+// get restaurantid from rest email
 func RestIDfromEmail(email string) (uint, bool) {
 	var Restaurant model.Restaurant
 	if err := database.DB.Where("email = ?", email).First(&Restaurant).Error; err != nil {
